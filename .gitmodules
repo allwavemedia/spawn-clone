@@ -1,0 +1,4 @@
+[submodule "Libs/JUCE"]
+	path = Libs/JUCE
+	url = https://github.com/juce-framework/JUCE.git
+	branch = master

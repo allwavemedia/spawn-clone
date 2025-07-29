@@ -1,0 +1,54 @@
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+compile_commands.json
+
+# Build artifacts
+build/
+Build/
+build-debug/
+build-release/
+**/build/*
+!/build/installers/
+!/build/SpawnClone_artefacts/
+
+# JUCE
+JuceLibraryCode/
+*.jucer
+
+# Visual Studio
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.sdf
+*.opensdf
+.vs/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+*.mode1v3
+*.mode2v3
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Other
+*~
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+nbproject/
