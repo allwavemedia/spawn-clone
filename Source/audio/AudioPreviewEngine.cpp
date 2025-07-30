@@ -1,0 +1,459 @@
+/*
+  ==============================================================================
+
+    AudioPreviewEngine.cpp
+    Created: 29 Jul 2025
+    Author:  Epic 2 Story 2.2 Implementation
+
+    Implementation of lightweight audio preview engine for immediate MIDI pattern playback.
+
+  ==============================================================================
+*/
+
+#include "AudioPreviewEngine.h"
+#include <cmath>
+
+//==============================================================================
+// AudioPreviewEngine Implementation
+
+AudioPreviewEngine::AudioPreviewEngine()
+{
+    // Task 2.2.1: Initialize synthesizer
+    initializeSynthesiser();
+    
+    // Add this as a listener to the keyboard state
+    keyboardState.addListener(this);
+}
+
+AudioPreviewEngine::~AudioPreviewEngine()
+{
+    keyboardState.removeListener(this);
+}
+
+//==============================================================================
+// Task 2.2.4: PluginProcessor Integration
+
+void AudioPreviewEngine::prepareToPlay(double newSampleRate, int samplesPerBlock)
+{
+    sampleRate = newSampleRate;
+    synthesiser.setCurrentPlaybackSampleRate(sampleRate);
+    
+    // Reset playback state
+    totalSamplesProcessed = 0;
+    playbackStartSample.store(0);
+    currentPlaybackPosition.store(0.0);
+}
+
+void AudioPreviewEngine::releaseResources()
+{
+    synthesiser.allNotesOff(0, false);
+}
+
+void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    // Clear the buffer
+    buffer.clear();
+    
+    // Process pattern playback if playing
+    if (isCurrentlyPlaying.load())
+    {
+        processPatternPlayback(midiMessages, buffer.getNumSamples());
+    }
+    
+    // Let the synthesizer process the MIDI
+    synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    
+    // Update sample counter
+    totalSamplesProcessed += buffer.getNumSamples();
+}
+
+//==============================================================================
+// Task 2.2.5: Pattern Playback Control
+
+void AudioPreviewEngine::loadPattern(const MIDIPattern& pattern)
+{
+    currentPattern = pattern;
+    
+    // Calculate pattern length in samples
+    if (currentPattern.metadata.tempo > 0)
+    {
+        patternLengthInSamples = (currentPattern.lengthInBeats * getSamplesPerBeat(currentPattern.metadata.tempo));
+    }
+    else
+    {
+        patternLengthInSamples = (currentPattern.lengthInBeats * getSamplesPerBeat(120.0)); // Default tempo
+    }
+}
+
+void AudioPreviewEngine::startPlayback()
+{
+    if (!currentPattern.notes.empty())
+    {
+        // Stop any currently playing notes
+        synthesiser.allNotesOff(0, false);
+        
+        // Reset playback position
+        playbackStartSample.store(totalSamplesProcessed);
+        currentPlaybackPosition.store(0.0);
+        
+        // Start playback
+        isCurrentlyPlaying.store(true);
+    }
+}
+
+void AudioPreviewEngine::stopPlayback()
+{
+    isCurrentlyPlaying.store(false);
+    synthesiser.allNotesOff(0, false);
+    currentPlaybackPosition.store(0.0);
+}
+
+double AudioPreviewEngine::getPlaybackPosition() const
+{
+    if (!isCurrentlyPlaying.load() || patternLengthInSamples <= 0)
+        return 0.0;
+    
+    auto startSample = playbackStartSample.load();
+    auto currentSample = totalSamplesProcessed;
+    auto elapsedSamples = currentSample - startSample;
+    
+    double position = static_cast<double>(elapsedSamples) / patternLengthInSamples;
+    
+    if (looping.load())
+    {
+        position = std::fmod(position, 1.0);
+    }
+    else if (position >= 1.0)
+    {
+        // Pattern finished, stop playback
+        const_cast<AudioPreviewEngine*>(this)->stopPlayback();
+        return 1.0;
+    }
+    
+    return position;
+}
+
+//==============================================================================
+// Task 2.2.3: Sound Selection
+
+void AudioPreviewEngine::setSoundType(SoundType type)
+{
+    if (currentSoundType != type)
+    {
+        currentSoundType = type;
+        updateSynthesiserSounds();
+    }
+}
+
+//==============================================================================
+// Task 2.2.1: Synthesizer Management
+
+void AudioPreviewEngine::initializeSynthesiser()
+{
+    // Add voices for each sound type
+    const int numVoices = 16; // Polyphony of 16 voices
+    
+    for (int i = 0; i < numVoices; ++i)
+    {
+        synthesiser.addVoice(new PreviewSynthVoice(SoundType::Piano));
+    }
+    
+    // Initialize with piano sound
+    updateSynthesiserSounds();
+}
+
+void AudioPreviewEngine::updateSynthesiserSounds()
+{
+    synthesiser.clearSounds();
+    
+    switch (currentSoundType)
+    {
+        case SoundType::Piano:
+            createPianoSound();
+            break;
+        case SoundType::Synth:
+            createSynthSound();
+            break;
+        case SoundType::Bass:
+            createBassSound();
+            break;
+    }
+}
+
+void AudioPreviewEngine::createPianoSound()
+{
+    synthesiser.addSound(new PreviewSynthSound(SoundType::Piano));
+}
+
+void AudioPreviewEngine::createSynthSound()
+{
+    synthesiser.addSound(new PreviewSynthSound(SoundType::Synth));
+}
+
+void AudioPreviewEngine::createBassSound()
+{
+    synthesiser.addSound(new PreviewSynthSound(SoundType::Bass));
+}
+
+//==============================================================================
+// Pattern Playback Processing
+
+void AudioPreviewEngine::processPatternPlayback(juce::MidiBuffer& midiBuffer, int numSamples)
+{
+    if (currentPattern.notes.empty() || patternLengthInSamples <= 0)
+        return;
+    
+    auto startSample = playbackStartSample.load();
+    auto currentSample = totalSamplesProcessed;
+    auto elapsedSamples = currentSample - startSample;
+    
+    // Calculate time positions in beats
+    double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
+    double startTimeBeats = static_cast<double>(elapsedSamples) / samplesPerBeat;
+    double endTimeBeats = static_cast<double>(elapsedSamples + numSamples) / samplesPerBeat;
+    
+    // Handle looping
+    if (looping.load())
+    {
+        double patternLength = currentPattern.lengthInBeats;
+        startTimeBeats = std::fmod(startTimeBeats, patternLength);
+        endTimeBeats = std::fmod(endTimeBeats, patternLength);
+        
+        if (endTimeBeats < startTimeBeats) // Wrapped around
+        {
+            // Process from startTime to end of pattern
+            generateMidiEventsForPosition(midiBuffer, startTimeBeats, patternLength, numSamples);
+            // Process from start of pattern to endTime
+            generateMidiEventsForPosition(midiBuffer, 0.0, endTimeBeats, numSamples);
+        }
+        else
+        {
+            generateMidiEventsForPosition(midiBuffer, startTimeBeats, endTimeBeats, numSamples);
+        }
+    }
+    else
+    {
+        // Non-looping playback
+        if (startTimeBeats < currentPattern.lengthInBeats)
+        {
+            generateMidiEventsForPosition(midiBuffer, startTimeBeats, endTimeBeats, numSamples);
+        }
+        else
+        {
+            // Pattern finished
+            isCurrentlyPlaying.store(false);
+            synthesiser.allNotesOff(0, false);
+        }
+    }
+    
+    // Update position
+    double position = startTimeBeats / currentPattern.lengthInBeats;
+    if (looping.load())
+    {
+        position = std::fmod(position, 1.0);
+    }
+    currentPlaybackPosition.store(position);
+}
+
+void AudioPreviewEngine::generateMidiEventsForPosition(juce::MidiBuffer& midiBuffer, double startTime, double endTime, int bufferSize)
+{
+    for (const auto& note : currentPattern.notes)
+    {
+        // Check if note starts within this time window
+        if (note.startTime >= startTime && note.startTime < endTime)
+        {
+            // Calculate sample position within buffer
+            double relativeTime = note.startTime - startTime;
+            double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
+            int sampleOffset = static_cast<int>(relativeTime * samplesPerBeat);
+            sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
+            
+            // Add note on event
+            auto noteOnMsg = juce::MidiMessage::noteOn(1, note.pitch, static_cast<float>(note.velocity) / 127.0f);
+            midiBuffer.addEvent(noteOnMsg, sampleOffset);
+        }
+        
+        // Check if note ends within this time window
+        double noteEndTime = note.startTime + note.duration;
+        if (noteEndTime >= startTime && noteEndTime < endTime)
+        {
+            // Calculate sample position within buffer
+            double relativeTime = noteEndTime - startTime;
+            double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
+            int sampleOffset = static_cast<int>(relativeTime * samplesPerBeat);
+            sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
+            
+            // Add note off event
+            auto noteOffMsg = juce::MidiMessage::noteOff(1, note.pitch, 0.0f);
+            midiBuffer.addEvent(noteOffMsg, sampleOffset);
+        }
+    }
+}
+
+double AudioPreviewEngine::getSamplesPerBeat(double tempo) const
+{
+    // 60 seconds per minute / tempo = seconds per beat
+    // seconds per beat * sample rate = samples per beat
+    return (60.0 / tempo) * sampleRate;
+}
+
+//==============================================================================
+// MidiKeyboardStateListener implementation
+
+void AudioPreviewEngine::handleNoteOn(juce::MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity)
+{
+    auto msg = juce::MidiMessage::noteOn(midiChannel, midiNoteNumber, velocity);
+    juce::MidiBuffer buffer;
+    buffer.addEvent(msg, 0);
+    
+    // Create temporary audio buffer for synthesizer
+    juce::AudioBuffer<float> tempBuffer(2, 1);
+    tempBuffer.clear();
+    synthesiser.renderNextBlock(tempBuffer, buffer, 0, 1);
+}
+
+void AudioPreviewEngine::handleNoteOff(juce::MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity)
+{
+    auto msg = juce::MidiMessage::noteOff(midiChannel, midiNoteNumber, velocity);
+    juce::MidiBuffer buffer;
+    buffer.addEvent(msg, 0);
+    
+    // Create temporary audio buffer for synthesizer
+    juce::AudioBuffer<float> tempBuffer(2, 1);
+    tempBuffer.clear();
+    synthesiser.renderNextBlock(tempBuffer, buffer, 0, 1);
+}
+
+//==============================================================================
+// PreviewSynthVoice Implementation
+
+PreviewSynthVoice::PreviewSynthVoice(AudioPreviewEngine::SoundType type) : soundType(type)
+{
+}
+
+bool PreviewSynthVoice::canPlaySound(juce::SynthesiserSound* sound)
+{
+    return dynamic_cast<const PreviewSynthSound*>(sound) != nullptr;
+}
+
+void PreviewSynthVoice::startNote(int midiNoteNumber, float velocity, juce::SynthesiserSound* sound, int currentPitchWheelPosition)
+{
+    auto* previewSound = dynamic_cast<const PreviewSynthSound*>(sound);
+    if (previewSound == nullptr) return;
+    
+    // Calculate frequency
+    auto frequency = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+    auto cyclesPerSample = frequency / getSampleRate();
+    angleDelta = cyclesPerSample * 2.0 * juce::MathConstants<double>::pi;
+    
+    // Set level based on velocity
+    level = velocity * 0.15; // Scale down for reasonable volume
+    
+    // Adjust sound characteristics based on type
+    switch (previewSound->getSoundType())
+    {
+        case AudioPreviewEngine::SoundType::Piano:
+            level *= 0.8; // Slightly softer for piano
+            break;
+        case AudioPreviewEngine::SoundType::Synth:
+            level *= 1.0; // Normal level for synth
+            break;
+        case AudioPreviewEngine::SoundType::Bass:
+            level *= 1.2; // Slightly louder for bass
+            if (midiNoteNumber < 60) // Below middle C, enhance for bass
+            {
+                level *= 1.3;
+            }
+            break;
+    }
+    
+    tailOff = 0.0;
+}
+
+void PreviewSynthVoice::stopNote(float velocity, bool allowTailOff)
+{
+    if (allowTailOff)
+    {
+        if (tailOff == 0.0)
+            tailOff = 1.0;
+    }
+    else
+    {
+        clearCurrentNote();
+        angleDelta = 0.0;
+    }
+}
+
+void PreviewSynthVoice::pitchWheelMoved(int newValue)
+{
+    // Not implemented for this simple synth
+}
+
+void PreviewSynthVoice::controllerMoved(int controllerNumber, int newValue)
+{
+    // Not implemented for this simple synth
+}
+
+void PreviewSynthVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples)
+{
+    if (angleDelta != 0.0)
+    {
+        if (tailOff > 0.0)
+        {
+            while (--numSamples >= 0)
+            {
+                auto currentSample = generateSample() * level * tailOff;
+                
+                for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
+                    outputBuffer.addSample(i, startSample, currentSample);
+                
+                currentAngle += angleDelta;
+                ++startSample;
+                
+                tailOff *= 0.99; // Exponential decay
+                
+                if (tailOff <= 0.005)
+                {
+                    clearCurrentNote();
+                    angleDelta = 0.0;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            while (--numSamples >= 0)
+            {
+                auto currentSample = generateSample() * level;
+                
+                for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
+                    outputBuffer.addSample(i, startSample, currentSample);
+                
+                currentAngle += angleDelta;
+                ++startSample;
+            }
+        }
+    }
+}
+
+float PreviewSynthVoice::generateSample()
+{
+    // Generate different waveforms based on sound type
+    switch (soundType)
+    {
+        case AudioPreviewEngine::SoundType::Piano:
+            // Piano-like sound: sine wave with some harmonics
+            return static_cast<float>(std::sin(currentAngle) * 0.8 + std::sin(currentAngle * 2.0) * 0.1 + std::sin(currentAngle * 3.0) * 0.05);
+            
+        case AudioPreviewEngine::SoundType::Synth:
+            // Synth sound: sawtooth wave
+            return static_cast<float>(2.0 * (currentAngle / (2.0 * juce::MathConstants<double>::pi) - std::floor(currentAngle / (2.0 * juce::MathConstants<double>::pi) + 0.5)));
+            
+        case AudioPreviewEngine::SoundType::Bass:
+            // Bass sound: sine wave with sub-harmonic
+            return static_cast<float>(std::sin(currentAngle) * 0.7 + std::sin(currentAngle * 0.5) * 0.3);
+            
+        default:
+            return static_cast<float>(std::sin(currentAngle));
+    }
+}

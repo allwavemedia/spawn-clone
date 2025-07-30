@@ -35,20 +35,40 @@ target_sources(SpawnClone PRIVATE
     Source/ParameterManager.h
     Source/GenerationParameters.h
     Source/MIDIPattern.h
+    Source/MIDIPattern.cpp
     Source/Note.h
     Source/PatternSerializer.cpp
     Source/PatternSerializer.h
     Source/PatternManager.cpp
     Source/PatternManager.h
+    Source/PatternVisualizationComponent.cpp
+    Source/PatternVisualizationComponent.h
     Source/ai/AIGenerationEngine.cpp
     Source/ai/AIGenerationEngine.h
     Source/ai/ThreadManager.cpp
-    Source/ai/ThreadManager.h)
+    Source/ai/ThreadManager.h
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/ONNXModelManager.h
+    Source/ai/CloudAPIManager.cpp
+    Source/ai/CloudAPIManager.h
+    Source/ai/ModelCacheManager.cpp
+    Source/ai/ModelCacheManager.h
+    Source/ai/SecureCredentialManager.cpp
+    Source/ai/SecureCredentialManager.h
+    Source/ai/MusicTheoryEngine.cpp
+    Source/ai/MusicTheoryEngine.h
+    Source/ai/GenreSpecialist_Fixed.cpp
+    Source/ai/GenreSpecialist.h
+    Source/audio/AudioPreviewEngine.cpp
+    Source/audio/AudioPreviewEngine.h
+    Source/audio/MIDIExporter.cpp
+    Source/audio/MIDIExporter.h)
 
 target_compile_definitions(SpawnClone PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0)
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    CLOUD_API_SIMULATION=1)
 
 # Link JUCE modules
 target_link_libraries(SpawnClone PUBLIC
@@ -68,4 +88,35 @@ target_link_libraries(SpawnClone PUBLIC
 
 # Target Include Directories
 target_include_directories(SpawnClone PUBLIC "Source")
+
+# Optional ONNX Runtime Integration
+option(USE_ONNX_RUNTIME "Enable ONNX Runtime for Quality Mode" OFF)
+
+if(USE_ONNX_RUNTIME)
+    find_package(onnxruntime QUIET)
+    
+    if(onnxruntime_FOUND)
+        target_link_libraries(SpawnClone PRIVATE onnxruntime::onnxruntime)
+        target_compile_definitions(SpawnClone PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+        message(STATUS "ONNX Runtime found - Quality Mode enabled")
+    else()
+        message(STATUS "ONNX Runtime not found - Quality Mode will use fallback")
+    endif()
+else()
+    message(STATUS "ONNX Runtime disabled - Quality Mode will use fallback")
+endif()
+
+# Epic 4 Story 4.2 Test Executable
+add_executable(Epic4_Story4_2_CoreTest
+    Source/Epic4_Story4_2_CoreTest.cpp
+    Source/ai/GenreSpecialist_Fixed.cpp
+    Source/ai/MusicTheoryEngine.cpp
+)
+
+target_include_directories(Epic4_Story4_2_CoreTest PRIVATE Source Source/ai)
+target_link_libraries(Epic4_Story4_2_CoreTest PRIVATE 
+    juce::juce_core
+    juce::juce_audio_basics
+)
+target_compile_features(Epic4_Story4_2_CoreTest PRIVATE cxx_std_17)
 

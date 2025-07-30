@@ -13,6 +13,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include <juce_data_structures/juce_data_structures.h>
 #include <vector>
 #include "Note.h"
 #include "GenerationParameters.h"
@@ -52,4 +53,11 @@ struct MIDIPattern
     {
         return notes.empty();
     }
+    
+    //==============================================================================
+    /** Serialize this pattern to a ValueTree for persistence */
+    juce::ValueTree toValueTree() const;
+    
+    /** Deserialize this pattern from a ValueTree */
+    void fromValueTree(const juce::ValueTree& tree);
 };

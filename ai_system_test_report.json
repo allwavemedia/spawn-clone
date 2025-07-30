@@ -1,0 +1,69 @@
+{
+  "timestamp": 1753794257.3116758,
+  "success_rate": 80.64516129032258,
+  "passed_tests": 25,
+  "total_tests": 31,
+  "detailed_results": {
+    "build_system": {
+      "Standalone": true,
+      "AU": true,
+      "VST3": true
+    },
+    "ai_components": {
+      "AIGenerationEngine": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      },
+      "ONNXModelManager": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      },
+      "CloudAPIManager": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      },
+      "ModelCacheManager": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      },
+      "SecureCredentialManager": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      },
+      "ThreadManager": {
+        "header": true,
+        "implementation": true,
+        "complete": true
+      }
+    },
+    "fallback_logic": {
+      "Fast Mode Always Available": true,
+      "Quality Mode Fallback": true,
+      "Cloud Mode Fallback": true,
+      "Error Handling": true
+    },
+    "security": {
+      "Credential Manager": true,
+      "Platform Specific Storage": true,
+      "API Key Validation": true,
+      "Secure Transmission": true
+    },
+    "cache_management": {
+      "Cache Manager": true,
+      "LRU Eviction": true,
+      "Model Integrity": true,
+      "Background Downloads": true
+    },
+    "performance": {
+      "Thread Management": true,
+      "Async Operations": true,
+      "Memory Management": true,
+      "CPU Optimization": true
+    }
+  }
+}

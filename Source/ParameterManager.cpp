@@ -8,6 +8,12 @@ const juce::String ParameterManager::TEMPO_PARAM_ID = "tempo";
 const juce::String ParameterManager::COMPLEXITY_PARAM_ID = "complexity";
 const juce::String ParameterManager::GENERATION_TYPE_PARAM_ID = "generationType";
 const juce::String ParameterManager::PATTERN_LENGTH_PARAM_ID = "patternLength";
+const juce::String ParameterManager::AI_MODE_PARAM_ID = "aiMode";
+const juce::String ParameterManager::GENERATION_SEED_PARAM_ID = "generationSeed";
+
+// Epic 6 Feature Parameter Constants  
+const juce::String ParameterManager::INSTRUMENT_MODE_PARAM_ID = "instrumentMode";
+const juce::String ParameterManager::AUTO_PLAY_PARAM_ID = "autoPlay";
 
 //==============================================================================
 ParameterManager::ParameterManager(juce::AudioProcessor& processor)
@@ -20,6 +26,10 @@ ParameterManager::ParameterManager(juce::AudioProcessor& processor)
     atomicComplexity.store(0.5f);
     atomicGenerationType.store(0);
     atomicPatternLength.store(16.0f);
+    atomicAIMode.store(0);
+    atomicGenerationSeed.store(0);
+    atomicInstrumentMode.store(false);
+    atomicAutoPlay.store(true);
 }
 
 juce::AudioProcessorValueTreeState& ParameterManager::getState()
@@ -32,20 +42,15 @@ GenerationParameters ParameterManager::getCurrentParameters() const
 {
     GenerationParameters params;
     
-    // Get values from the parameter tree
-    auto keyParam = valueTreeState.getRawParameterValue(KEY_PARAM_ID);
-    auto scaleParam = valueTreeState.getRawParameterValue(SCALE_PARAM_ID);
-    auto tempoParam = valueTreeState.getRawParameterValue(TEMPO_PARAM_ID);
-    auto complexityParam = valueTreeState.getRawParameterValue(COMPLEXITY_PARAM_ID);
-    auto genTypeParam = valueTreeState.getRawParameterValue(GENERATION_TYPE_PARAM_ID);
-    auto lengthParam = valueTreeState.getRawParameterValue(PATTERN_LENGTH_PARAM_ID);
-    
-    params.key = keyParam ? static_cast<int>(keyParam->load()) : 0;
-    params.scale = scaleParam ? static_cast<GenerationParameters::ScaleType>(static_cast<int>(scaleParam->load())) : GenerationParameters::ScaleType::Major;
-    params.tempo = tempoParam ? tempoParam->load() : 120.0f;
-    params.rhythmicComplexity = complexityParam ? complexityParam->load() : 0.5f;
-    params.generationType = genTypeParam ? static_cast<GenerationParameters::GenerationType>(static_cast<int>(genTypeParam->load())) : GenerationParameters::GenerationType::Melody;
-    params.patternLengthBeats = lengthParam ? lengthParam->load() : 16.0f;
+    // Use atomic values for thread-safe access
+    params.key = atomicKey.load();
+    params.scale = static_cast<GenerationParameters::ScaleType>(atomicScale.load());
+    params.tempo = atomicTempo.load();
+    params.rhythmicComplexity = atomicComplexity.load();
+    params.generationType = static_cast<GenerationParameters::GenerationType>(atomicGenerationType.load());
+    params.patternLengthBeats = atomicPatternLength.load();
+    params.aiMode = static_cast<GenerationParameters::AIMode>(atomicAIMode.load());
+    params.generationSeed = atomicGenerationSeed.load();
     
     return params;
 }
@@ -53,59 +58,75 @@ GenerationParameters ParameterManager::getCurrentParameters() const
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createParameterLayout()
 {
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameters;
-    
-    // Key parameter (0-11 for C to B)
-    parameters.push_back(std::make_unique<juce::AudioParameterChoice>(
-        KEY_PARAM_ID,
-        "Key",
-        juce::StringArray { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" },
-        0  // Default to C
-    ));
-    
-    // Scale parameter
-    parameters.push_back(std::make_unique<juce::AudioParameterChoice>(
-        SCALE_PARAM_ID,
-        "Scale",
-        juce::StringArray { "Major", "Minor", "Pentatonic", "Blues", "Dorian", "Mixolydian" },
-        0  // Default to Major
-    ));
-    
-    // Tempo parameter (60-200 BPM)
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
-        TEMPO_PARAM_ID,
-        "Tempo",
-        juce::NormalisableRange<float>(60.0f, 200.0f, 1.0f),
-        120.0f,  // Default tempo
-        "BPM"
-    ));
-    
-    // Rhythmic complexity (0.0 to 1.0)
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
-        COMPLEXITY_PARAM_ID,
-        "Complexity",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f  // Default complexity
-    ));
-    
-    // Generation type
-    parameters.push_back(std::make_unique<juce::AudioParameterChoice>(
-        GENERATION_TYPE_PARAM_ID,
-        "Generation Type",
-        juce::StringArray { "Melody", "Chord", "Bass", "Drum" },
-        0  // Default to Melody
-    ));
-    
-    // Pattern length (4-32 beats)
-    parameters.push_back(std::make_unique<juce::AudioParameterFloat>(
-        PATTERN_LENGTH_PARAM_ID,
-        "Pattern Length",
-        juce::NormalisableRange<float>(4.0f, 32.0f, 4.0f),
-        16.0f,  // Default to 16 beats
-        "beats"
-    ));
-    
-    return { parameters.begin(), parameters.end() };
+    return juce::AudioProcessorValueTreeState::ParameterLayout
+    (
+        // Key parameter (0-11 for C to B)
+        std::make_unique<juce::AudioParameterChoice>(
+            KEY_PARAM_ID,
+            "Key",
+            juce::StringArray { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" },
+            0  // Default to C
+        ),
+        
+        // Scale parameter
+        std::make_unique<juce::AudioParameterChoice>(
+            SCALE_PARAM_ID,
+            "Scale",
+            juce::StringArray { "Major", "Minor", "Pentatonic", "Blues", "Dorian", "Mixolydian" },
+            0  // Default to Major
+        ),
+        
+        // Tempo parameter (60-200 BPM)
+        std::make_unique<juce::AudioParameterFloat>(
+            TEMPO_PARAM_ID,
+            "Tempo",
+            juce::NormalisableRange<float>(60.0f, 200.0f, 1.0f),
+            120.0f,  // Default tempo
+            "BPM"
+        ),
+        
+        // Rhythmic complexity (0.0 to 1.0)
+        std::make_unique<juce::AudioParameterFloat>(
+            COMPLEXITY_PARAM_ID,
+            "Complexity",
+            juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+            0.5f  // Default complexity
+        ),
+        
+        // Generation type
+        std::make_unique<juce::AudioParameterChoice>(
+            GENERATION_TYPE_PARAM_ID,
+            "Generation Type",
+            juce::StringArray { "Melody", "Chord", "Bass", "Drum" },
+            0  // Default to Melody
+        ),
+        
+        // Pattern length (4-32 beats)
+        std::make_unique<juce::AudioParameterFloat>(
+            PATTERN_LENGTH_PARAM_ID,
+            "Pattern Length",
+            juce::NormalisableRange<float>(4.0f, 32.0f, 4.0f),
+            16.0f,  // Default to 16 beats
+            "beats"
+        ),
+        
+        // AI Mode parameter (Fast/Quality/Cloud)
+        std::make_unique<juce::AudioParameterChoice>(
+            AI_MODE_PARAM_ID,
+            "AI Mode",
+            juce::StringArray { "Fast", "Quality", "Cloud" },
+            0  // Default to Fast
+        ),
+        
+        // Generation seed parameter (0-10000)
+        std::make_unique<juce::AudioParameterInt>(
+            GENERATION_SEED_PARAM_ID,
+            "Generation Seed",
+            0,
+            10000,
+            0  // Default seed
+        )
+    );
 }
 
 //==============================================================================
@@ -123,6 +144,10 @@ void ParameterManager::parameterChanged(const juce::String& parameterID, float n
         atomicGenerationType.store(static_cast<int>(newValue));
     else if (parameterID == PATTERN_LENGTH_PARAM_ID)
         atomicPatternLength.store(newValue);
+    else if (parameterID == AI_MODE_PARAM_ID)
+        atomicAIMode.store(static_cast<int>(newValue));
+    else if (parameterID == GENERATION_SEED_PARAM_ID)
+        atomicGenerationSeed.store(static_cast<int>(newValue));
 }
 
 //==============================================================================
@@ -139,4 +164,27 @@ const juce::StringArray ParameterManager::getScaleTypeItems() const
 const juce::StringArray ParameterManager::getGenerationTypeItems() const
 {
     return juce::StringArray { "Melody", "Chords", "Bassline", "Drums" };
+}
+
+//==============================================================================
+// Epic 7: AI Mode helper methods
+const juce::StringArray ParameterManager::getAIModeItems() const
+{
+    return juce::StringArray { "Fast", "Quality", "Cloud" };
+}
+
+//==============================================================================
+// Epic 6: Setter methods for new parameters
+void ParameterManager::setInstrumentMode(bool enabled)
+{
+    atomicInstrumentMode.store(enabled);
+    // Also update the parameter tree if needed
+    // valueTreeState.getParameter(INSTRUMENT_MODE_PARAM_ID)->setValueNotifyingHost(enabled ? 1.0f : 0.0f);
+}
+
+void ParameterManager::setAutoPlayOnGenerate(bool enabled)
+{
+    atomicAutoPlay.store(enabled);
+    // Also update the parameter tree if needed  
+    // valueTreeState.getParameter(AUTO_PLAY_PARAM_ID)->setValueNotifyingHost(enabled ? 1.0f : 0.0f);
 }

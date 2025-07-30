@@ -55,6 +55,26 @@ The SpawnClone project focuses on delivering the essential features that make Sp
 
 **FR15:** The plugin shall generate loopable patterns typically 4-8 bars in length suitable for immediate musical use.
 
+**FR16:** The plugin shall provide three AI generation modes to serve different user needs and performance requirements.
+
+**FR17:** The plugin shall implement "Fast Mode" using rule-based algorithms for generation times under 2 seconds.
+
+**FR18:** The plugin shall implement "Quality Mode" using on-device MIDI-native Transformer models for enhanced musical coherence with generation times of 3-5 seconds.
+
+**FR19:** The plugin shall implement "Cloud Mode" as a premium subscription feature using specialized Text-to-MIDI APIs for state-of-the-art generation quality.
+
+**FR20:** The plugin shall automatically fall back to Quality Mode if Cloud Mode experiences connectivity issues.
+
+**FR21:** The plugin shall support ONNX Runtime integration for local machine learning model inference in Quality Mode.
+
+**FR22:** The plugin shall provide secure API key management for Cloud Mode authentication.
+
+**FR23:** The plugin shall support model downloading and caching for Quality Mode operation.
+
+**FR24:** Cloud Mode shall integrate with Pozalabs ARIA API as the primary text-to-MIDI service.
+
+**FR25:** The plugin shall maintain full functionality in offline mode through Fast Mode and Quality Mode operation.
+
 ### Non Functional
 
 **NFR1:** The plugin shall support VST3, AudioUnit (AU), and Standalone formats for cross-platform compatibility.
@@ -153,6 +173,9 @@ Integrate the custom rule-based AI engine with genre-specific logic for Hip Hop,
 
 ### Epic 5: Performance Optimization & Testing
 Comprehensive testing across target DAWs, performance optimization for real-time audio requirements, and preparation for beta release.
+
+### Epic 6: AI Generation Modes
+Implement multi-tier AI generation system with Fast Mode (rule-based), Quality Mode (ONNX-based local models), and Cloud Mode (premium API-based) to serve different user needs and performance requirements.
 
 ## Epic 1: Foundation & Core Infrastructure
 
@@ -311,6 +334,85 @@ Comprehensive testing across target DAWs, performance optimization for real-time
 4. Pattern playback synchronizes with DAW transport when enabled
 5. Multiple patterns can be queued for sequential playback comparison
 6. Playback responds immediately to user controls without latency
+
+## Epic 6: AI Generation Modes
+
+**Epic Goal:** Implement a multi-tier AI generation system that provides users with three distinct modes (Fast, Quality, Cloud) to balance generation speed, quality, and feature availability based on their specific needs and workflow requirements.
+
+### Story 6.1: Fast Mode Rule-Based AI Engine
+
+**User Story:** As a music producer, I want a fast pattern generation mode that can create usable MIDI patterns in under 2 seconds so that I can maintain creative flow during rapid ideation sessions.
+
+**Business Value:** Ensures immediate pattern generation for users prioritizing speed over complexity, providing baseline functionality for all users without requiring additional dependencies.
+
+#### Acceptance Criteria
+
+1. Pattern generation completes within 2 seconds on standard hardware
+2. Rule-based engine generates musically coherent patterns using music theory algorithms
+3. Fast Mode operates completely offline without external dependencies
+4. Generated patterns respect selected genre characteristics (Hip Hop, Pop, Dance, EDM, R&B)
+5. Pattern complexity is appropriate for immediate musical use without manual editing
+6. Engine provides deterministic results for identical input parameters
+
+### Story 6.2: Quality Mode ONNX Runtime Integration
+
+**User Story:** As a music producer, I want access to machine learning-generated patterns that offer enhanced musical coherence and sophistication while still running locally on my machine.
+
+**Business Value:** Provides premium-quality pattern generation for users willing to accept longer generation times, differentiating the product through AI sophistication while maintaining offline capability.
+
+#### Acceptance Criteria
+
+1. ONNX Runtime successfully integrates with existing plugin architecture
+2. MIDI-native Transformer models generate patterns within 3-5 seconds
+3. Quality Mode operates offline after initial model download
+4. Generated patterns demonstrate improved musical coherence compared to Fast Mode
+5. Model downloading and caching system manages local storage efficiently
+6. Fallback to Fast Mode occurs gracefully if models are unavailable
+
+### Story 6.3: Cloud Mode Premium API Integration
+
+**User Story:** As a professional music producer, I want access to state-of-the-art AI generation capabilities through cloud-based models that provide the highest quality patterns available.
+
+**Business Value:** Creates premium subscription revenue stream while offering cutting-edge generation quality for professional users through specialized Text-to-MIDI APIs.
+
+#### Acceptance Criteria
+
+1. Pozalabs ARIA API integration provides text-to-MIDI generation capabilities
+2. Secure API key management protects user credentials and subscription access
+3. Network connectivity monitoring enables automatic fallback to Quality Mode
+4. Cloud-generated patterns demonstrate superior musical sophistication
+5. Subscription management integration handles premium feature access
+6. Generation requests complete within 5-8 seconds under normal network conditions
+
+### Story 6.4: Model Management and Caching System
+
+**User Story:** As a plugin user, I want the system to automatically manage AI models and cache generated content so that I experience consistent performance without manual intervention.
+
+**Business Value:** Ensures smooth user experience by automating technical complexity while optimizing local storage and network usage.
+
+#### Acceptance Criteria
+
+1. Automatic model downloading occurs on first Quality Mode access
+2. Local model caching prevents redundant downloads
+3. Cache management maintains optimal disk space usage
+4. Model versioning system enables automatic updates
+5. Cache clearing functionality provides user control over storage
+6. Download progress indication keeps users informed during model acquisition
+
+### Story 6.5: Secure API Key Management
+
+**User Story:** As a Cloud Mode subscriber, I want my API credentials to be stored securely and managed transparently so that I can access premium features without security concerns.
+
+**Business Value:** Enables premium feature monetization while ensuring user trust through robust security practices and seamless credential management.
+
+#### Acceptance Criteria
+
+1. API keys are encrypted using platform-appropriate secure storage
+2. Key validation occurs during subscription activation
+3. Automatic key rotation supports subscription management
+4. Secure transmission protocols protect API communications
+5. Key expiration handling maintains uninterrupted service
+6. Error messaging clearly indicates authentication issues without exposing sensitive information
 
 ## Checklist Results Report
 

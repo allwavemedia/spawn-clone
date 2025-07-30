@@ -52,6 +52,18 @@ struct GenerationParameters
     };
     GenerationType generationType = GenerationType::Melody;
     
+    // AI generation mode selection
+    enum class AIMode
+    {
+        Fast = 0,      // Rule-based algorithms, sub-2-second generation
+        Quality,       // ONNX-based local ML models, 3-5 second generation
+        Cloud          // Premium cloud API, 5-8 second generation
+    };
+    AIMode aiMode = AIMode::Fast;
+    
+    // Deterministic seed for reproducible results (0 = random)
+    uint32_t generationSeed = 0;
+    
     // Pattern length in beats
     float patternLengthBeats = 16.0f;
     
@@ -90,6 +102,30 @@ struct GenerationParameters
             case GenerationType::Bassline: return "Bassline";
             case GenerationType::Drums:   return "Drums";
             default:                      return "Melody";
+        }
+    }
+    
+    /** Returns the AI mode as a string */
+    juce::String getAIModeString() const
+    {
+        switch (aiMode)
+        {
+            case AIMode::Fast:    return "Fast Mode";
+            case AIMode::Quality: return "Quality Mode";
+            case AIMode::Cloud:   return "Cloud Mode";
+            default:              return "Fast Mode";
+        }
+    }
+    
+    /** Returns expected generation time in seconds for current AI mode */
+    float getExpectedGenerationTime() const
+    {
+        switch (aiMode)
+        {
+            case AIMode::Fast:    return 1.5f;  // Sub-2-second target
+            case AIMode::Quality: return 4.0f;  // 3-5 second target
+            case AIMode::Cloud:   return 6.5f;  // 5-8 second target
+            default:              return 1.5f;
         }
     }
 };

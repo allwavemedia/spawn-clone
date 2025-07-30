@@ -76,24 +76,31 @@ graph TB
         subgraph "Presentation Layer"
             GUI[GUI Components<br/>JUCE]
             Controls[Parameter Controls]
+            ModeSelector[Generation Mode Selector<br/>Fast/Quality/Cloud]
         end
         
         subgraph "Application Layer"
             Controller[Plugin Controller]
             ParamMgr[Parameter Manager<br/>Real-time Safe]
+            StateManager[Plugin State Manager<br/>History & Preferences]
         end
         
-        subgraph "Domain Layer"
-            AIEngine[AI Generation Engine<br/>TensorFlow Lite]
+        subgraph "Domain Layer - AI Generation"
+            AIEngine[AI Generation Engine<br/>Multi-Modal]
+            FastEngine[Fast Mode<br/>Rule-Based Engine]
+            QualityEngine[Quality Mode<br/>ONNX Runtime + Transformer]
+            CloudEngine[Cloud Mode<br/>REST API Client]
             MIDIProc[MIDI Processor]
             AudioPrev[Audio Preview Engine]
-            PatternMgr[Pattern Manager]
+            PatternMgr[Pattern Manager<br/>Enhanced History]
         end
         
         subgraph "Infrastructure Layer"
             AudioProc[Audio Processor<br/>JUCE]
             Threading[Thread Manager]
             Storage[State Management]
+            ModelLoader[ONNX Model Loader<br/>Quality Mode]
+            APIClient[Secure REST Client<br/>Cloud Mode]
         end
         
         subgraph "Communication"
@@ -328,6 +335,197 @@ graph TD
 - `getPatternHistory()`: Returns the list of all generated patterns.
 **Dependencies:** `MIDIPattern` data model.
 **Technology Stack:** C++.
+
+---
+
+## **AI Integration Architecture**
+
+Based on comprehensive research analysis, SpawnClone will implement a tiered AI system with three generation modes, each optimized for different use cases and performance requirements.
+
+### **AI Generation Mode Strategy**
+
+#### **Fast Mode (Current Implementation)**
+- **Technology**: Rule-based engine with music theory algorithms
+- **Performance**: < 2 seconds generation time
+- **Use Case**: Rapid ideation and real-time creativity
+- **Implementation**: Custom C++ algorithms in `AIGenerationEngine`
+
+#### **Quality Mode (Next Priority - Version 1.1)**
+- **Technology**: On-device MIDI-native Transformer models via ONNX Runtime
+- **Performance**: 3-5 seconds generation time
+- **Use Case**: Enhanced musical coherence without internet dependency
+- **Target Models**: 
+  - Google Magenta Music Transformer
+  - Hugging Face skytnt/midi-model
+  - Other symbolic MIDI Transformers
+
+#### **Cloud Mode (Future Premium Feature)**
+- **Technology**: REST API integration with specialized Text-to-MIDI services
+- **Performance**: 5-15 seconds (network dependent)
+- **Use Case**: Access to state-of-the-art generative models
+- **Primary API**: Pozalabs ARIA (Text-to-MIDI)
+- **Secondary API**: Pollinations.ai (for limited tier)
+
+### **AI Generation Engine Architecture**
+
+```mermaid
+graph TB
+    subgraph "AI Generation Engine"
+        ModeSelector[Generation Mode Selector]
+        
+        subgraph "Fast Mode Engine"
+            RuleEngine[Rule-Based Engine]
+            MusicTheory[Music Theory Algorithms]
+        end
+        
+        subgraph "Quality Mode Engine"
+            ONNXLoader[ONNX Model Loader]
+            Transformer[MIDI Transformer Model]
+            TokenProcessor[MIDI Token Processor]
+        end
+        
+        subgraph "Cloud Mode Engine"
+            RESTClient[Secure REST Client]
+            APIManager[API Key Manager]
+            ResponseParser[MIDI Response Parser]
+        end
+        
+        ResultProcessor[Result Post-Processor]
+        PatternBuilder[MIDI Pattern Builder]
+    end
+    
+    GenerationParams[Generation Parameters] --> ModeSelector
+    ModeSelector --> RuleEngine
+    ModeSelector --> ONNXLoader
+    ModeSelector --> RESTClient
+    
+    RuleEngine --> ResultProcessor
+    Transformer --> ResultProcessor
+    ResponseParser --> ResultProcessor
+    
+    ResultProcessor --> PatternBuilder
+    PatternBuilder --> MIDIPattern[MIDI Pattern Output]
+```
+
+### **Quality Mode Implementation Strategy**
+
+#### **Model Integration Approach**
+- **Framework**: ONNX Runtime C++ API
+- **Model Format**: Convert PyTorch/TensorFlow models to ONNX
+- **Integration Point**: Extend existing `AIGenerationEngine` worker thread
+- **Dependencies**: ONNX Runtime (cross-platform, lightweight)
+
+#### **Model Selection Criteria**
+1. **Symbolic MIDI Native**: Models that operate directly on MIDI events
+2. **Parameter Controllability**: Support for key, scale, tempo, complexity inputs
+3. **Performance**: Inference time under 5 seconds on typical hardware
+4. **License Compatibility**: Open-source or commercial-friendly licensing
+
+#### **Implementation Components**
+
+##### **ONNX Model Loader**
+```cpp
+class ONNXModelLoader {
+public:
+    bool loadModel(const std::string& modelPath);
+    std::vector<int> generateMIDISequence(const GenerationParameters& params);
+    bool isModelLoaded() const;
+private:
+    Ort::Session* session_;
+    Ort::Env env_;
+};
+```
+
+##### **MIDI Token Processor**
+```cpp
+class MIDITokenProcessor {
+public:
+    std::vector<int> parametersToTokens(const GenerationParameters& params);
+    MIDIPattern tokensToPattern(const std::vector<int>& tokens);
+private:
+    // Token vocabulary and conversion utilities
+};
+```
+
+### **Cloud Mode Implementation Strategy**
+
+#### **API Integration Architecture**
+- **Primary Service**: Pozalabs ARIA API
+- **HTTP Client**: JUCE WebInputStream or curl
+- **Authentication**: Secure API key management
+- **Error Handling**: Fallback to Quality Mode on failure
+
+#### **Implementation Components**
+
+##### **Secure REST Client**
+```cpp
+class CloudAPIClient {
+public:
+    void setAPIKey(const std::string& key);
+    std::future<MIDIPattern> generatePattern(const GenerationParameters& params);
+    bool isConnected() const;
+private:
+    std::string apiKey_;
+    std::unique_ptr<juce::WebInputStream> httpClient_;
+};
+```
+
+##### **API Key Management**
+```cpp
+class APIKeyManager {
+public:
+    bool storeKey(const std::string& key);
+    std::string getKey() const;
+    bool validateKey() const;
+private:
+    // Encrypted storage using JUCE Keychain integration
+};
+```
+
+### **Enhanced Data Flow with AI Modes**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Plugin Editor
+    participant Engine as AI Generation Engine
+    participant Fast as Fast Mode
+    participant Quality as Quality Mode
+    participant Cloud as Cloud Mode
+    participant Pattern as Pattern Manager
+
+    User->>UI: Select generation mode & parameters
+    UI->>Engine: triggerGeneration(mode, parameters)
+    
+    alt Fast Mode
+        Engine->>Fast: generatePattern(parameters)
+        Fast-->>Engine: MIDIPattern
+    else Quality Mode
+        Engine->>Quality: loadModel() & generatePattern(parameters)
+        Quality-->>Engine: MIDIPattern
+    else Cloud Mode
+        Engine->>Cloud: sendAPIRequest(parameters)
+        Cloud-->>Engine: MIDIPattern
+    end
+    
+    Engine->>Pattern: addPatternToHistory(pattern)
+    Engine-->>UI: generationComplete(pattern)
+    UI->>User: Display new pattern
+```
+
+### **Performance and Resource Considerations**
+
+#### **Quality Mode Resource Requirements**
+- **Model Size**: 10-100MB ONNX files
+- **Memory Usage**: Additional 50-200MB during inference
+- **CPU Requirements**: Modern multi-core processor recommended
+- **Disk Space**: 100-500MB for model storage
+
+#### **Cloud Mode Resource Requirements**
+- **Network**: Stable internet connection
+- **Latency**: 5-15 seconds depending on API response time
+- **API Costs**: Subscription-based pricing model
+- **Fallback**: Automatic fallback to Quality Mode on network failure
 
 ---
 

@@ -16,6 +16,7 @@
 #include <juce_data_structures/juce_data_structures.h>
 #include "MIDIPattern.h"
 #include "PatternSerializer.h"
+#include <optional>
 
 //==============================================================================
 /**
@@ -38,6 +39,26 @@ public:
     
     /** Removes all patterns from the manager. */
     void clear();
+    
+    //==============================================================================
+    // NEW FEATURE: Pattern History Management
+    
+    /** Add pattern to history with automatic size management */
+    void addPatternToHistory(const MIDIPattern& pattern);
+    
+    /** Get recent patterns for UI display */
+    std::vector<MIDIPattern> getRecentPatterns(int maxCount = 10) const;
+    
+    /** Get current active pattern */
+    std::optional<MIDIPattern> getCurrentPattern() const;
+    
+    /** Navigate pattern history */
+    bool undoLastGeneration();
+    const MIDIPattern* getCurrentHistoryPattern() const;
+    int getCurrentHistoryIndex() const { return currentHistoryIndex; }
+    
+    /** Check navigation availability */
+    bool canUndoGeneration() const;
 
     /** Serializes the entire collection of patterns into a ValueTree. */
     juce::ValueTree toValueTree() const;
@@ -47,6 +68,11 @@ public:
 
 private:
     std::vector<MIDIPattern> patterns;
+    
+    // NEW: Pattern history management
+    std::vector<MIDIPattern> patternHistory;
+    int currentHistoryIndex = -1;
+    static constexpr int MAX_HISTORY_SIZE = 50;
     
     // Identifiers for serialization
     static const juce::Identifier PATTERN_MANAGER_ID;

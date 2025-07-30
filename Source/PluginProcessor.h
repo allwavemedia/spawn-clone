@@ -11,13 +11,16 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ParameterManager.h"
 #include "PatternManager.h"
+#include "PluginState.h"
 #include "ai/ThreadManager.h"
 #include "ai/AIGenerationEngine.h"
+#include "audio/AudioPreviewEngine.h"
 
 //==============================================================================
 /**
 */
-class SpawnCloneAudioProcessor  : public juce::AudioProcessor
+class SpawnCloneAudioProcessor  : public juce::AudioProcessor,
+                                  public juce::ChangeBroadcaster
 {
 public:
     //==============================================================================
@@ -61,6 +64,60 @@ public:
     ParameterManager& getParameterManager() { return *parameterManager; }
     PatternManager& getPatternManager() { return *patternManager; }
     AIGenerationEngine& getAIGenerationEngine() { return *aiEngine; }
+    
+    //==============================================================================
+    // NEW FEATURE METHODS
+    
+    /** Get the current plugin state */
+    PluginState& getPluginState() { return pluginState; }
+    const PluginState& getPluginState() const { return pluginState; }
+    
+    /** Pattern history navigation */
+    bool navigateToPreviousPattern();
+    bool navigateToNextPattern();
+    
+    /** Check if pattern history navigation is possible */
+    bool canNavigateBackward() const { return pluginState.canNavigateBackward(); }
+    bool canNavigateForward() const { return pluginState.canNavigateForward(); }
+    
+    /** Trigger pattern generation with current parameters */
+    void generateNewPattern();
+    
+    //==============================================================================
+    // Epic 2 Story 2.1: Host DAW Communication (Task 2.1.1-2.1.4)
+    
+    /** Get current host transport state and tempo */
+    struct HostTransportInfo
+    {
+        double tempo = 120.0;
+        int timeSigNumerator = 4;
+        int timeSigDenominator = 4;
+        bool isPlaying = false;
+        bool isRecording = false;
+        double ppqPosition = 0.0;
+        bool hostTempoAvailable = false;
+        bool hostTimeSigAvailable = false;
+    };
+    
+    HostTransportInfo getHostTransportInfo() const;
+    bool isHostTempoAvailable() const { return lastHostInfo.hostTempoAvailable; }
+    double getHostTempo() const { return lastHostInfo.tempo; }
+    
+    /** Update UI with host information */
+    void updateHostInfo();
+    
+    //==============================================================================
+    //==============================================================================
+    // Epic 2 Story 2.2: Audio Preview Engine Methods
+    
+    /** Preview the current pattern through audio engine */
+    void previewCurrentPattern();
+    
+    /** Stop audio preview playback */
+    void stopAudioPreview();
+    
+    /** Get audio preview engine for UI integration */
+    AudioPreviewEngine* getAudioPreviewEngine() { return audioPreviewEngine.get(); }
 
 
 private:
@@ -68,8 +125,17 @@ private:
     std::unique_ptr<ParameterManager> parameterManager;
     std::unique_ptr<PatternManager> patternManager;
     
+    // NEW: Central plugin state
+    PluginState pluginState;
+    
     ThreadManager threadManager; // Manages the AI background thread
     std::unique_ptr<AIGenerationEngine> aiEngine;
+    
+    // Epic 2 Story 2.1: Host communication state
+    mutable HostTransportInfo lastHostInfo;
+    
+    // Epic 2 Story 2.2: Audio preview engine
+    std::unique_ptr<AudioPreviewEngine> audioPreviewEngine;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessor)

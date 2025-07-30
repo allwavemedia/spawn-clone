@@ -25,6 +25,9 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
     parameterManager = std::make_unique<ParameterManager>(*this);
     patternManager = std::make_unique<PatternManager>();
     aiEngine = std::make_unique<AIGenerationEngine>(threadManager, *patternManager);
+    
+    // Epic 2 Story 2.2: Initialize audio preview engine
+    audioPreviewEngine = std::make_unique<AudioPreviewEngine>();
 }
 
 SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
@@ -96,14 +99,20 @@ void SpawnCloneAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void SpawnCloneAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    // Epic 2 Story 2.2 Task 2.2.4: Prepare audio preview engine
+    if (audioPreviewEngine)
+    {
+        audioPreviewEngine->prepareToPlay(sampleRate, samplesPerBlock);
+    }
 }
 
 void SpawnCloneAudioProcessor::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
+    // Epic 2 Story 2.2: Release audio preview engine resources
+    if (audioPreviewEngine)
+    {
+        audioPreviewEngine->releaseResources();
+    }
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -137,27 +146,44 @@ void SpawnCloneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    
+    // Epic 2 Story 2.1 Task 2.1.1: Update host transport info
+    updateHostInfo();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
+    // Clear any output channels that don't contain input data
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
+    // NEW FEATURE: Handle Instrument Mode
+    if (parameterManager->getInstrumentMode())
+    {
+        // In Instrument Mode, route incoming MIDI through audio preview engine
+        // without triggering AI generation (prevents double-triggering)
+        
+        // Epic 2 Story 2.2 Task 2.2.4: Process audio through preview engine
+        if (audioPreviewEngine)
+        {
+            audioPreviewEngine->processBlock(buffer, midiMessages);
+        }
+    }
+    else
+    {
+        // Normal mode - clear incoming MIDI as we generate our own patterns
+        midiMessages.clear();
+        
+        // Epic 2 Story 2.2: Process audio preview playback
+        if (audioPreviewEngine)
+        {
+            audioPreviewEngine->processBlock(buffer, midiMessages);
+        }
+    }
+
+    // Basic audio processing placeholder - now handled by AudioPreviewEngine
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        // Audio processing is now handled by AudioPreviewEngine
+        (void)channelData; // Suppress unused variable warning
     }
 }
 
@@ -176,11 +202,12 @@ juce::AudioProcessorEditor* SpawnCloneAudioProcessor::createEditor()
 void SpawnCloneAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
     juce::ValueTree state("state");
     state.addChild(parameterManager->getState().copyState(), -1, nullptr);
     state.addChild(patternManager->toValueTree(), -1, nullptr);
+    
+    // NEW: Add PluginState serialization
+    state.addChild(pluginState.toValueTree(), -1, nullptr);
 
     juce::MemoryOutputStream stream(destData, false);
     state.writeToStream(stream);
@@ -202,6 +229,13 @@ void SpawnCloneAudioProcessor::setStateInformation (const void* data, int sizeIn
         {
             patternManager->fromValueTree(patternManagerTree);
         }
+        
+        // NEW: Restore PluginState
+        auto pluginStateTree = tree.getChildWithName("PluginState");
+        if (pluginStateTree.isValid())
+        {
+            pluginState.fromValueTree(pluginStateTree);
+        }
     }
 }
 
@@ -210,4 +244,172 @@ void SpawnCloneAudioProcessor::setStateInformation (const void* data, int sizeIn
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new SpawnCloneAudioProcessor();
+}
+
+//==============================================================================
+// NEW FEATURE IMPLEMENTATIONS
+
+bool SpawnCloneAudioProcessor::navigateToPreviousPattern()
+{
+    bool success = pluginState.navigateToPreviousPattern();
+    if (success)
+    {
+        // Notify UI of pattern change
+        sendChangeMessage();
+        
+        // If auto-play is enabled, start playing the pattern
+        if (parameterManager->getAutoPlayOnGenerate())
+        {
+            // TODO: Start playback when AudioPreviewEngine is implemented
+        }
+    }
+    return success;
+}
+
+bool SpawnCloneAudioProcessor::navigateToNextPattern()
+{
+    bool success = pluginState.navigateToNextPattern();
+    if (success)
+    {
+        // Notify UI of pattern change
+        sendChangeMessage();
+        
+        // If auto-play is enabled, start playing the pattern
+        if (parameterManager->getAutoPlayOnGenerate())
+        {
+            // TODO: Start playback when AudioPreviewEngine is implemented
+        }
+    }
+    return success;
+}
+
+void SpawnCloneAudioProcessor::generateNewPattern()
+{
+    // Get current parameters
+    auto params = parameterManager->getCurrentParameters();
+    
+    // Epic 2 Story 2.1 Task 2.1.3: Use host tempo if available
+    if (isHostTempoAvailable())
+    {
+        params.tempo = getHostTempo();
+    }
+    
+    // Request AI generation using the correct method name
+    aiEngine->generatePattern(params);
+    
+    // Note: The AI engine will callback when generation is complete
+    // and the new pattern will be added to pluginState.patternHistory
+    // via the existing PatternManager integration
+}
+
+//==============================================================================
+// Epic 2 Story 2.1: Host DAW Communication Implementation
+
+SpawnCloneAudioProcessor::HostTransportInfo SpawnCloneAudioProcessor::getHostTransportInfo() const
+{
+    return lastHostInfo;
+}
+
+void SpawnCloneAudioProcessor::updateHostInfo()
+{
+    auto* playHead = getPlayHead();
+    
+    if (playHead != nullptr)
+    {
+        auto posInfo = playHead->getPosition();
+        
+        if (posInfo.hasValue())
+        {
+            // Update tempo information (Task 2.1.1)
+            if (posInfo->getBpm().hasValue())
+            {
+                lastHostInfo.tempo = *posInfo->getBpm();
+                lastHostInfo.hostTempoAvailable = true;
+            }
+            else
+            {
+                lastHostInfo.hostTempoAvailable = false;
+            }
+            
+            // Update time signature (Task 2.1.1)
+            if (posInfo->getTimeSignature().hasValue())
+            {
+                auto timeSig = *posInfo->getTimeSignature();
+                lastHostInfo.timeSigNumerator = timeSig.numerator;
+                lastHostInfo.timeSigDenominator = timeSig.denominator;
+                lastHostInfo.hostTimeSigAvailable = true;
+            }
+            else
+            {
+                lastHostInfo.hostTimeSigAvailable = false;
+            }
+            
+            // Update transport state (Task 2.1.1)
+            lastHostInfo.isPlaying = posInfo->getIsPlaying();
+            lastHostInfo.isRecording = posInfo->getIsRecording();
+            if (posInfo->getPpqPosition().hasValue())
+            {
+                lastHostInfo.ppqPosition = *posInfo->getPpqPosition();
+            }
+        }
+        else
+        {
+            // Host doesn't provide position info
+            lastHostInfo.hostTempoAvailable = false;
+            lastHostInfo.hostTimeSigAvailable = false;
+        }
+    }
+    else
+    {
+        // No play head available (standalone mode)
+        lastHostInfo.hostTempoAvailable = false;
+        lastHostInfo.hostTimeSigAvailable = false;
+        lastHostInfo.isPlaying = false;
+        lastHostInfo.isRecording = false;
+    }
+}
+
+//==============================================================================
+// Epic 2 Story 2.2: Audio Preview Engine Methods
+
+void SpawnCloneAudioProcessor::previewCurrentPattern()
+{
+    if (audioPreviewEngine && patternManager)
+    {
+        auto currentPattern = patternManager->getCurrentPattern();
+        if (currentPattern.has_value())
+        {
+            // Set sound type based on generation type
+            auto params = parameterManager->getCurrentParameters();
+            AudioPreviewEngine::SoundType soundType = AudioPreviewEngine::SoundType::Piano;
+            
+            switch (params.generationType)
+            {
+                case GenerationParameters::GenerationType::Melody:
+                    soundType = AudioPreviewEngine::SoundType::Piano;
+                    break;
+                case GenerationParameters::GenerationType::Chords:
+                    soundType = AudioPreviewEngine::SoundType::Synth;
+                    break;
+                case GenerationParameters::GenerationType::Bassline:
+                    soundType = AudioPreviewEngine::SoundType::Bass;
+                    break;
+                case GenerationParameters::GenerationType::Drums:
+                    soundType = AudioPreviewEngine::SoundType::Synth; // Use synth for drums
+                    break;
+            }
+            
+            audioPreviewEngine->setSoundType(soundType);
+            audioPreviewEngine->loadPattern(*currentPattern);
+            audioPreviewEngine->startPlayback();
+        }
+    }
+}
+
+void SpawnCloneAudioProcessor::stopAudioPreview()
+{
+    if (audioPreviewEngine)
+    {
+        audioPreviewEngine->stopPlayback();
+    }
 }

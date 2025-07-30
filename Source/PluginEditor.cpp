@@ -9,7 +9,7 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (600, 400);
+    setSize (600, 480);  // Increased height to accommodate AI mode controls
 
     // Initialize UI components
     setupParameterControls();
@@ -75,13 +75,32 @@ void SpawnCloneAudioProcessorEditor::resized()
     patternLengthLabel.setBounds(lengthRow.removeFromLeft(60));
     patternLengthSlider.setBounds(lengthRow.removeFromLeft(200).reduced(2));
     
+    // AI Mode row
+    auto aiModeRow = bounds.removeFromTop(paramHeight);
+    aiModeLabel.setBounds(aiModeRow.removeFromLeft(60));
+    aiModeComboBox.setBounds(aiModeRow.removeFromLeft(100).reduced(2));
+    
+    // Generation seed row
+    auto seedRow = bounds.removeFromTop(paramHeight);
+    generationSeedLabel.setBounds(seedRow.removeFromLeft(60));
+    generationSeedSlider.setBounds(seedRow.removeFromLeft(200).reduced(2));
+    
     // Generate button
     bounds.removeFromTop(margin);
     generateButton.setBounds(bounds.removeFromTop(40).reduced(margin));
     
-    // Pattern display (remaining space)
+    // Visualization controls
     bounds.removeFromTop(margin);
-    patternDisplay.setBounds(bounds.reduced(margin));
+    auto controlsRow = bounds.removeFromTop(paramHeight);
+    showGridButton.setBounds(controlsRow.removeFromLeft(80).reduced(2));
+    showVelocityButton.setBounds(controlsRow.removeFromLeft(80).reduced(2));
+    zoomLabel.setBounds(controlsRow.removeFromLeft(40));
+    zoomSlider.setBounds(controlsRow.removeFromLeft(100).reduced(2));
+    exportButton.setBounds(controlsRow.removeFromLeft(100).reduced(2));
+    
+    // Pattern visualization (remaining space)
+    bounds.removeFromTop(margin);
+    patternVisualization.setBounds(bounds.reduced(margin));
 }
 
 //==============================================================================
@@ -97,6 +116,8 @@ void SpawnCloneAudioProcessorEditor::setupParameterControls()
     tempoLabel.setText("Tempo:", juce::dontSendNotification);
     complexityLabel.setText("Complexity:", juce::dontSendNotification);
     patternLengthLabel.setText("Length:", juce::dontSendNotification);
+    aiModeLabel.setText("AI Mode:", juce::dontSendNotification);
+    generationSeedLabel.setText("Seed:", juce::dontSendNotification);
     
     addAndMakeVisible(keyLabel);
     addAndMakeVisible(scaleLabel);
@@ -104,6 +125,8 @@ void SpawnCloneAudioProcessorEditor::setupParameterControls()
     addAndMakeVisible(tempoLabel);
     addAndMakeVisible(complexityLabel);
     addAndMakeVisible(patternLengthLabel);
+    addAndMakeVisible(aiModeLabel);
+    addAndMakeVisible(generationSeedLabel);
     
     // Key selection
     keySignatureComboBox.addItemList(params.getKeySignatureItems(), 1);
@@ -152,19 +175,53 @@ void SpawnCloneAudioProcessorEditor::setupParameterControls()
     addAndMakeVisible(patternLengthSlider);
     patternLengthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         valueTreeState, "patternLength", patternLengthSlider);
+    
+    // Epic 7: AI Mode selection
+    aiModeComboBox.addItemList(params.getAIModeItems(), 1);
+    aiModeComboBox.addListener(this);
+    addAndMakeVisible(aiModeComboBox);
+    aiModeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        valueTreeState, "aiMode", aiModeComboBox);
+    
+    // Generation seed slider
+    generationSeedSlider.setSliderStyle(juce::Slider::LinearBar);
+    generationSeedSlider.setRange(0.0, 10000.0, 1.0);
+    generationSeedSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 80, 20);
+    generationSeedSlider.addListener(this);
+    addAndMakeVisible(generationSeedSlider);
+    generationSeedAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        valueTreeState, "generationSeed", generationSeedSlider);
 }
 
 void SpawnCloneAudioProcessorEditor::setupPatternDisplay()
 {
-    patternDisplay.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
-    patternDisplay.setMultiLine(true);
-    patternDisplay.setReturnKeyStartsNewLine(true);
-    patternDisplay.setReadOnly(true);
-    patternDisplay.setScrollbarsShown(true);
-    patternDisplay.setCaretVisible(false);
-    patternDisplay.setPopupMenuEnabled(false);
-    patternDisplay.setText("No pattern generated yet...");
-    addAndMakeVisible(patternDisplay);
+    // Setup pattern visualization component
+    addAndMakeVisible(patternVisualization);
+    
+    // Setup visualization controls
+    showGridButton.setButtonText("Grid");
+    showGridButton.setToggleState(true, juce::dontSendNotification);
+    showGridButton.addListener(this);
+    addAndMakeVisible(showGridButton);
+    
+    showVelocityButton.setButtonText("Velocity");
+    showVelocityButton.setToggleState(true, juce::dontSendNotification);
+    showVelocityButton.addListener(this);
+    addAndMakeVisible(showVelocityButton);
+    
+    zoomLabel.setText("Zoom:", juce::dontSendNotification);
+    addAndMakeVisible(zoomLabel);
+    
+    zoomSlider.setSliderStyle(juce::Slider::LinearBar);
+    zoomSlider.setRange(0.5, 3.0, 0.1);
+    zoomSlider.setValue(1.0);
+    zoomSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 40, 20);
+    zoomSlider.addListener(this);
+    addAndMakeVisible(zoomSlider);
+    
+    exportButton.setButtonText("Export MIDI");
+    exportButton.addListener(this);
+    addAndMakeVisible(exportButton);
 }
 
 void SpawnCloneAudioProcessorEditor::setupGenerateButton()
@@ -177,6 +234,10 @@ void SpawnCloneAudioProcessorEditor::setupGenerateButton()
 //==============================================================================
 void SpawnCloneAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
+    if (slider == &zoomSlider)
+    {
+        patternVisualization.setZoomLevel(static_cast<float>(zoomSlider.getValue()));
+    }
     // Parameter changes are handled automatically by the attachments
 }
 
@@ -196,7 +257,20 @@ void SpawnCloneAudioProcessorEditor::buttonClicked(juce::Button* button)
         audioProcessor.getAIGenerationEngine().generatePattern(params);
         
         // Update UI to show generation is in progress
-        patternDisplay.setText("Generating pattern...");
+        patternVisualization.clearPattern();
+    }
+    else if (button == &showGridButton)
+    {
+        patternVisualization.setShowGrid(showGridButton.getToggleState());
+    }
+    else if (button == &showVelocityButton)
+    {
+        patternVisualization.setShowVelocity(showVelocityButton.getToggleState());
+    }
+    else if (button == &exportButton)
+    {
+        // Epic 8 Story 8.3: Export current pattern to MIDI file
+        patternVisualization.exportCurrentPatternToFile();
     }
 }
 
@@ -220,29 +294,12 @@ void SpawnCloneAudioProcessorEditor::updatePatternDisplay()
         auto pattern = patternManager.getPattern(patternCount - 1);
         if (pattern != nullptr)
         {
-            // Format pattern information for display
-            juce::String displayText;
-            displayText += "Pattern ID: " + pattern->id.toString() + "\n";
-            displayText += "Length: " + juce::String(pattern->lengthInBeats, 1) + " beats\n";
-            displayText += "Key: " + juce::String(static_cast<int>(pattern->metadata.key)) + "\n";
-            displayText += "Scale: " + juce::String(static_cast<int>(pattern->metadata.scale)) + "\n";
-            displayText += "Tempo: " + juce::String(pattern->metadata.tempo, 1) + " BPM\n";
-            displayText += "Notes: " + juce::String(pattern->notes.size()) + "\n\n";
-            
-            // Add note information
-            displayText += "MIDI Notes:\n";
-            for (const auto& note : pattern->notes)
-            {
-                displayText += "Note " + juce::String(note.pitch) + 
-                              " @ " + juce::String(note.startTime, 2) + 
-                              "s (vel " + juce::String(note.velocity) + ")\n";
-            }
-            
-            patternDisplay.setText(displayText);
+            // Update the pattern visualization
+            patternVisualization.setPattern(*pattern);
         }
     }
     else
     {
-        patternDisplay.setText("No patterns generated yet...");
+        patternVisualization.clearPattern();
     }
 }

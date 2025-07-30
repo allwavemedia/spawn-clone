@@ -11,6 +11,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
+#include "PatternVisualizationComponent.h"
 
 //==============================================================================
 /**
@@ -74,8 +75,26 @@ private:
     juce::Slider patternLengthSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> patternLengthAttachment;
 
+    // Epic 7: AI Mode Selection Controls
+    juce::Label aiModeLabel;
+    juce::ComboBox aiModeComboBox;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> aiModeAttachment;
+    
+    juce::Label generationSeedLabel;
+    juce::Slider generationSeedSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> generationSeedAttachment;
+
     juce::TextButton generateButton;
-    juce::TextEditor patternDisplay;
+    
+    // Epic 8: Pattern Visualization Component
+    PatternVisualizationComponent patternVisualization;
+    
+    // Epic 8: Visualization Controls
+    juce::ToggleButton showGridButton;
+    juce::ToggleButton showVelocityButton;
+    juce::Slider zoomSlider;
+    juce::Label zoomLabel;
+    juce::TextButton exportButton;  // Epic 8 Story 8.3: Export functionality
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessorEditor)
