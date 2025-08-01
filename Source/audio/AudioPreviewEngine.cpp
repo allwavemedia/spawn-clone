@@ -63,6 +63,13 @@ void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     // Let the synthesizer process the MIDI
     synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
     
+    // Apply master volume
+    const float volume = masterVolume.load();
+    if (volume != 1.0f)
+    {
+        buffer.applyGain(volume);
+    }
+    
     // Update sample counter
     totalSamplesProcessed += buffer.getNumSamples();
 }
@@ -75,9 +82,15 @@ void AudioPreviewEngine::loadPattern(const MIDIPattern& pattern)
     currentPattern = pattern;
     
     // Calculate pattern length in samples
-    if (currentPattern.metadata.tempo > 0)
+    double effectiveTempo = currentPattern.metadata.tempo;
+    if (dawTransportSync.load() && dawTempo.load() > 0)
     {
-        patternLengthInSamples = (currentPattern.lengthInBeats * getSamplesPerBeat(currentPattern.metadata.tempo));
+        effectiveTempo = dawTempo.load(); // Use DAW tempo when synced
+    }
+    
+    if (effectiveTempo > 0)
+    {
+        patternLengthInSamples = (currentPattern.lengthInBeats * getSamplesPerBeat(effectiveTempo));
     }
     else
     {
@@ -146,6 +159,23 @@ void AudioPreviewEngine::setSoundType(SoundType type)
 }
 
 //==============================================================================
+// Epic 4 Story 4.1: Enhanced tempo control
+
+void AudioPreviewEngine::setTempo(double bpm)
+{
+    // Clamp tempo to reasonable range
+    bpm = juce::jlimit(60.0, 200.0, bpm);
+    currentTempo.store(bpm);
+    
+    // Update pattern timing calculations if a pattern is loaded
+    if (!currentPattern.isEmpty())
+    {
+        // Recalculate timing based on new tempo
+        patternLengthInSamples = (currentPattern.lengthInBeats * 60.0 / bpm) * sampleRate;
+    }
+}
+
+//==============================================================================
 // Task 2.2.1: Synthesizer Management
 
 void AudioPreviewEngine::initializeSynthesiser()
@@ -208,7 +238,17 @@ void AudioPreviewEngine::processPatternPlayback(juce::MidiBuffer& midiBuffer, in
     auto elapsedSamples = currentSample - startSample;
     
     // Calculate time positions in beats
-    double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
+    double effectiveTempo = currentPattern.metadata.tempo;
+    if (dawTransportSync.load() && dawTempo.load() > 0)
+    {
+        effectiveTempo = dawTempo.load(); // Use DAW tempo when synced
+    }
+    else if (effectiveTempo <= 0)
+    {
+        effectiveTempo = 120.0; // Default tempo
+    }
+    
+    double samplesPerBeat = getSamplesPerBeat(effectiveTempo);
     double startTimeBeats = static_cast<double>(elapsedSamples) / samplesPerBeat;
     double endTimeBeats = static_cast<double>(elapsedSamples + numSamples) / samplesPerBeat;
     
@@ -257,6 +297,18 @@ void AudioPreviewEngine::processPatternPlayback(juce::MidiBuffer& midiBuffer, in
 
 void AudioPreviewEngine::generateMidiEventsForPosition(juce::MidiBuffer& midiBuffer, double startTime, double endTime, int bufferSize)
 {
+    // Get effective tempo
+    double effectiveTempo = currentPattern.metadata.tempo;
+    if (dawTransportSync.load() && dawTempo.load() > 0)
+    {
+        effectiveTempo = dawTempo.load(); // Use DAW tempo when synced
+    }
+    else if (effectiveTempo <= 0)
+    {
+        effectiveTempo = 120.0; // Default tempo
+    }
+    
+    double samplesPerBeat = getSamplesPerBeat(effectiveTempo);
     for (const auto& note : currentPattern.notes)
     {
         // Check if note starts within this time window
@@ -264,7 +316,6 @@ void AudioPreviewEngine::generateMidiEventsForPosition(juce::MidiBuffer& midiBuf
         {
             // Calculate sample position within buffer
             double relativeTime = note.startTime - startTime;
-            double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
             int sampleOffset = static_cast<int>(relativeTime * samplesPerBeat);
             sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
             
@@ -279,7 +330,6 @@ void AudioPreviewEngine::generateMidiEventsForPosition(juce::MidiBuffer& midiBuf
         {
             // Calculate sample position within buffer
             double relativeTime = noteEndTime - startTime;
-            double samplesPerBeat = getSamplesPerBeat(currentPattern.metadata.tempo);
             int sampleOffset = static_cast<int>(relativeTime * samplesPerBeat);
             sampleOffset = juce::jlimit(0, bufferSize - 1, sampleOffset);
             
@@ -295,6 +345,31 @@ double AudioPreviewEngine::getSamplesPerBeat(double tempo) const
     // 60 seconds per minute / tempo = seconds per beat
     // seconds per beat * sample rate = samples per beat
     return (60.0 / tempo) * sampleRate;
+}
+
+//==============================================================================
+// Task 2.2.3: DAW Transport Integration
+
+void AudioPreviewEngine::updateWithDAWTransport(double currentTempo, bool isPlaying, double timeInBeats)
+{
+    dawTempo.store(currentTempo);
+    dawIsPlaying.store(isPlaying);
+    dawTimeInBeats = timeInBeats;
+    
+    // If DAW transport sync is enabled, sync playback state
+    if (dawTransportSync.load())
+    {
+        if (isPlaying && !isCurrentlyPlaying.load())
+        {
+            // DAW started playing, start our playback
+            startPlayback();
+        }
+        else if (!isPlaying && isCurrentlyPlaying.load())
+        {
+            // DAW stopped playing, stop our playback
+            stopPlayback();
+        }
+    }
 }
 
 //==============================================================================

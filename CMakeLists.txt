@@ -41,6 +41,10 @@ target_sources(SpawnClone PRIVATE
     Source/PatternSerializer.h
     Source/PatternManager.cpp
     Source/PatternManager.h
+    Source/PatternHistoryListBox.cpp
+    Source/PatternHistoryListBox.h
+    Source/PatternSearchComponent.cpp
+    Source/PatternSearchComponent.h
     Source/PatternVisualizationComponent.cpp
     Source/PatternVisualizationComponent.h
     Source/ai/AIGenerationEngine.cpp
@@ -61,6 +65,8 @@ target_sources(SpawnClone PRIVATE
     Source/ai/GenreSpecialist.h
     Source/audio/AudioPreviewEngine.cpp
     Source/audio/AudioPreviewEngine.h
+    Source/audio/TransportControlsComponent.cpp
+    Source/audio/TransportControlsComponent.h
     Source/audio/MIDIExporter.cpp
     Source/audio/MIDIExporter.h)
 
@@ -104,6 +110,153 @@ if(USE_ONNX_RUNTIME)
     endif()
 else()
     message(STATUS "ONNX Runtime disabled - Quality Mode will use fallback")
+endif()
+
+# Testing Configuration
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+    # Google Test
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG release-1.12.1
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+    
+    # Epic 2 Story 2.2: AudioPreviewEngine Unit Tests
+    add_executable(test_AudioPreviewEngine
+        Source/test_AudioPreviewEngine.cpp
+        Source/audio/AudioPreviewEngine.cpp
+        Source/ParameterManager.cpp
+        Source/PatternManager.cpp
+        Source/PatternHistoryListBox.cpp
+        Source/PatternSerializer.cpp
+        Source/ai/MusicTheoryEngine.cpp
+        Source/ai/GenreSpecialist_Fixed.cpp
+    )
+
+    target_include_directories(test_AudioPreviewEngine PRIVATE 
+        Source 
+        Source/ai 
+        Source/audio
+    )
+    
+    target_link_libraries(test_AudioPreviewEngine PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+    )
+    
+    target_compile_features(test_AudioPreviewEngine PRIVATE cxx_std_17)
+    
+    include(GoogleTest)
+    gtest_discover_tests(test_AudioPreviewEngine)
+    
+    # Epic 5 Story 5.1: Transport Controls Unit Tests
+    add_executable(test_TransportControls
+        Source/test_TransportControls.cpp
+        Source/audio/AudioPreviewEngine.cpp
+        Source/audio/TransportControlsComponent.cpp
+        Source/ParameterManager.cpp
+        Source/PatternManager.cpp
+        Source/PatternSerializer.cpp
+        Source/ai/MusicTheoryEngine.cpp
+        Source/ai/GenreSpecialist_Fixed.cpp
+    )
+
+    target_include_directories(test_TransportControls PRIVATE 
+        Source 
+        Source/ai 
+        Source/audio
+    )
+    
+    target_link_libraries(test_TransportControls PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_gui_basics
+    )
+    
+    target_compile_features(test_TransportControls PRIVATE cxx_std_17)
+    gtest_discover_tests(test_TransportControls)
+    
+    # Epic 5 Story 5.1: Visual-Audio Synchronization Unit Tests
+    add_executable(test_VisualAudioSync
+        Source/test_VisualAudioSync.cpp
+        Source/PatternVisualizationComponent.cpp
+        Source/MIDIPattern.cpp
+        Source/ParameterManager.cpp
+        Source/PatternManager.cpp
+        Source/PatternSerializer.cpp
+        Source/ai/MusicTheoryEngine.cpp
+        Source/ai/GenreSpecialist_Fixed.cpp
+    )
+
+    target_include_directories(test_VisualAudioSync PRIVATE 
+        Source 
+        Source/ai
+    )
+    
+    target_link_libraries(test_VisualAudioSync PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+        juce::juce_data_structures
+    )
+    
+    target_compile_features(test_VisualAudioSync PRIVATE cxx_std_17)
+    gtest_discover_tests(test_VisualAudioSync)
+    
+    # Epic 5 Story 5.2: Performance Profiling Tests
+    add_executable(test_Performance
+        Source/test_Performance.cpp
+        Source/audio/AudioPreviewEngine.cpp
+        Source/audio/TransportControlsComponent.cpp
+        Source/PatternVisualizationComponent.cpp
+        Source/ai/AIGenerationEngine.cpp
+        Source/ai/ThreadManager.cpp
+        Source/ai/ONNXModelManager.cpp
+        Source/ai/CloudAPIManager.cpp
+        Source/ai/ModelCacheManager.cpp
+        Source/ai/SecureCredentialManager.cpp
+        Source/PatternManager.cpp
+        Source/ParameterManager.cpp
+        Source/PatternSerializer.cpp
+        Source/ai/MusicTheoryEngine.cpp
+        Source/ai/GenreSpecialist_Fixed.cpp
+    )
+
+    target_include_directories(test_Performance PRIVATE 
+        Source 
+        Source/ai
+        Source/audio
+    )
+    
+    target_link_libraries(test_Performance PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_gui_basics
+        juce::juce_data_structures
+    )
+    
+    target_compile_features(test_Performance PRIVATE cxx_std_17)
+    gtest_discover_tests(test_Performance)
 endif()
 
 # Epic 4 Story 4.2 Test Executable

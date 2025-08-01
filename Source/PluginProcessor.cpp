@@ -351,6 +351,14 @@ void SpawnCloneAudioProcessor::updateHostInfo()
             {
                 lastHostInfo.ppqPosition = *posInfo->getPpqPosition();
             }
+            
+            // Task 2.2.3: Update AudioPreviewEngine with DAW transport
+            if (audioPreviewEngine)
+            {
+                double currentTempo = lastHostInfo.hostTempoAvailable ? lastHostInfo.tempo : 120.0;
+                double timeInBeats = lastHostInfo.ppqPosition;
+                audioPreviewEngine->updateWithDAWTransport(currentTempo, lastHostInfo.isPlaying, timeInBeats);
+            }
         }
         else
         {

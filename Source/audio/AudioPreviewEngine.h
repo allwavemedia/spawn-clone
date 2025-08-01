@@ -46,6 +46,16 @@ public:
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages);
     
     //==============================================================================
+    // Task 2.2.3: DAW Transport Integration
+    
+    /** Update with DAW transport information */
+    void updateWithDAWTransport(double currentTempo, bool isPlaying, double timeInBeats);
+    
+    /** Sync playback with DAW transport */
+    void setDAWTransportSync(bool shouldSync) { dawTransportSync.store(shouldSync); }
+    bool isDAWTransportSyncEnabled() const { return dawTransportSync.load(); }
+    
+    //==============================================================================
     // Task 2.2.5: Pattern Playback Control
     
     /** Load a pattern for preview playback */
@@ -68,6 +78,15 @@ public:
     double getPlaybackPosition() const;
     
     //==============================================================================
+    // Epic 4 Story 4.1: Enhanced tempo control
+    
+    /** Set playback tempo in BPM */
+    void setTempo(double bpm);
+    
+    /** Get current tempo in BPM */
+    double getTempo() const { return currentTempo.load(); }
+
+    //==============================================================================
     // Task 2.2.3: Sound Selection
     
     enum class SoundType
@@ -80,6 +99,10 @@ public:
     /** Set the current sound type */
     void setSoundType(SoundType type);
     SoundType getCurrentSoundType() const { return currentSoundType; }
+    
+    /** Set master volume for preview playback */
+    void setMasterVolume(float volume) { masterVolume.store(volume); }
+    float getMasterVolume() const { return masterVolume.load(); }
     
     //==============================================================================
     // Task 2.2.1: Synthesizer Management
@@ -102,6 +125,15 @@ private:
     std::atomic<bool> looping{true};
     std::atomic<double> currentPlaybackPosition{0.0};
     
+    // DAW Transport Integration
+    std::atomic<bool> dawTransportSync{false};
+    std::atomic<double> dawTempo{120.0};
+    std::atomic<bool> dawIsPlaying{false};
+    double dawTimeInBeats = 0.0;
+    
+    // Epic 4 Story 4.1: Enhanced tempo control
+    std::atomic<double> currentTempo{120.0};
+    
     // Pattern Data
     MIDIPattern currentPattern;
     double sampleRate = 44100.0;
@@ -110,6 +142,9 @@ private:
     
     // Sound Management
     SoundType currentSoundType = SoundType::Piano;
+    
+    // Master Volume Control
+    std::atomic<float> masterVolume{0.7f}; // Default to 70% volume
     
     // Timing
     std::atomic<int64_t> playbackStartSample{0};

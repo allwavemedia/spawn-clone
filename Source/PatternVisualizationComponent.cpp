@@ -31,6 +31,13 @@ void PatternVisualizationComponent::paint(juce::Graphics& g)
     drawTimeAxis(g);
     drawNotes(g);
     
+    // Epic 4 Story 4.3: Visual-Audio Synchronization
+    if (isInPlaybackMode)
+    {
+        drawActiveNotes(g);      // Highlight currently playing notes
+        drawPlaybackPosition(g); // Draw playback cursor
+    }
+    
     // Draw drag-over overlay if files are being dragged (Epic 8 Story 8.3)
     if (isDragOver)
         drawDragOverlay(g);
@@ -70,6 +77,21 @@ void PatternVisualizationComponent::setShowGrid(bool shouldShowGrid)
 void PatternVisualizationComponent::setShowVelocity(bool shouldShow)
 {
     showVelocity = shouldShow;
+    repaint();
+}
+
+//==============================================================================
+// Epic 4 Story 4.3: Visual-Audio Synchronization
+void PatternVisualizationComponent::setPlaybackPosition(double position)
+{
+    playbackPosition = juce::jlimit(0.0, 1.0, position);
+    if (isInPlaybackMode)
+        repaint();
+}
+
+void PatternVisualizationComponent::setPlaybackMode(bool isPlaying)
+{
+    isInPlaybackMode = isPlaying;
     repaint();
 }
 
@@ -442,4 +464,70 @@ void PatternVisualizationComponent::drawDragOverlay(juce::Graphics& g)
     g.setFont(juce::Font(juce::FontOptions(16.0f)));
     g.drawText("Drop MIDI file here to import pattern", 
                getLocalBounds(), juce::Justification::centred, true);
+}
+
+//==============================================================================
+// Epic 4 Story 4.3: Visual-Audio Synchronization Methods
+
+void PatternVisualizationComponent::drawPlaybackPosition(juce::Graphics& g)
+{
+    if (!isInPlaybackMode || currentPattern.notes.empty())
+        return;
+        
+    auto bounds = getLocalBounds();
+    auto displayArea = juce::Rectangle<int>(bounds.getX() + leftMargin, 
+                                           bounds.getY() + topMargin,
+                                           bounds.getWidth() - leftMargin - rightMargin,
+                                           bounds.getHeight() - topMargin - bottomMargin);
+    
+    // Calculate cursor position based on playback position
+    float cursorX = displayArea.getX() + (playbackPosition * displayArea.getWidth());
+    
+    // Draw playback cursor line
+    g.setColour(playbackCursorColour);
+    g.drawLine(cursorX, displayArea.getY(), 
+               cursorX, displayArea.getBottom(), 2.0f);
+    
+    // Draw cursor handle at top
+    juce::Rectangle<float> handle(cursorX - 4, displayArea.getY() - 8, 8, 8);
+    g.fillEllipse(handle);
+}
+
+void PatternVisualizationComponent::drawActiveNotes(juce::Graphics& g)
+{
+    if (!isInPlaybackMode || currentPattern.notes.empty())
+        return;
+        
+    auto bounds = getLocalBounds();
+    auto displayArea = juce::Rectangle<int>(bounds.getX() + leftMargin, 
+                                           bounds.getY() + topMargin,
+                                           bounds.getWidth() - leftMargin - rightMargin,
+                                           bounds.getHeight() - topMargin - bottomMargin);
+    
+    // Calculate current time based on playback position
+    double currentTime = playbackPosition * currentPattern.lengthInBeats;
+    
+    g.setColour(activeNoteColour);
+    
+    // Highlight notes that should be playing at current time
+    for (const auto& note : currentPattern.notes)
+    {
+        double noteStart = note.startTime;
+        double noteEnd = noteStart + note.duration;
+        
+        // Check if note is active at current playback time
+        if (currentTime >= noteStart && currentTime <= noteEnd)
+        {
+            auto noteRect = getNoteRectangle(note);
+            
+            // Draw bright highlight around active note
+            g.drawRect(noteRect.toFloat(), 2.0f);
+            
+            // Add subtle glow effect
+            g.setColour(activeNoteColour.withAlpha(0.3f));
+            auto glowRect = noteRect.expanded(2);
+            g.fillRect(glowRect);
+            g.setColour(activeNoteColour);
+        }
+    }
 }

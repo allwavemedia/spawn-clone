@@ -51,6 +51,14 @@ public:
     void setShowVelocity(bool shouldShow);
     
     //==============================================================================
+    // Epic 4 Story 4.3: Visual-Audio Synchronization
+    /** Set the current playback position (0.0-1.0) for visual sync */
+    void setPlaybackPosition(double position);
+    
+    /** Set whether the visualizer is in playback mode */
+    void setPlaybackMode(bool isPlaying);
+    
+    //==============================================================================
     // Drag and drop support (Epic 8 Story 8.3)
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
     void fileDragEnter(const juce::StringArray& files, int x, int y) override;
@@ -71,6 +79,8 @@ private:
     void drawTimeAxis(juce::Graphics& g);
     void drawPitchAxis(juce::Graphics& g);
     void drawDragOverlay(juce::Graphics& g);  // For drag-and-drop visual feedback
+    void drawPlaybackPosition(juce::Graphics& g); // Epic 4 Story 4.3: Playback cursor
+    void drawActiveNotes(juce::Graphics& g);       // Epic 4 Story 4.3: Highlight playing notes
     
     juce::Rectangle<int> getNoteRectangle(const Note& note);
     juce::Colour getNoteColour(const Note& note);
@@ -101,6 +111,12 @@ private:
     juce::Colour noteColour = juce::Colour(0xff4a9eff);
     juce::Colour noteSelectedColour = juce::Colour(0xffff6b4a);
     juce::Colour dragOverColour = juce::Colour(0x664a9eff);  // Semi-transparent for drag overlay
+    
+    // Epic 4 Story 4.3: Visual-Audio Synchronization
+    double playbackPosition = 0.0;  // Current playback position (0.0-1.0)
+    bool isInPlaybackMode = false;   // Whether we're currently playing
+    juce::Colour playbackCursorColour = juce::Colour(0xffffffff);  // White cursor
+    juce::Colour activeNoteColour = juce::Colour(0xffffff6b);      // Bright yellow for active notes
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternVisualizationComponent)
 };
