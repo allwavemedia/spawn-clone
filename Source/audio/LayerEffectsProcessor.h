@@ -17,6 +17,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include <juce_core/juce_core.h>
+#include "RealTimeProcessor.h"
 
 //==============================================================================
 /**
@@ -140,6 +141,23 @@ public:
     //==============================================================================
     /** Get current CPU usage for performance monitoring */
     float getCurrentCPUUsage() const { return currentCPUUsage.load(); }
+    
+    //==============================================================================
+    /** Epic 8 Story 8.4: Advanced Real-Time Processing Methods */
+    
+    /** Real-time parameter smoothing with lock-free updates */
+    void setParameterSmooth(LayerType layer, RealTimeProcessor::ParameterType paramType, 
+                           float value, float smoothingTime = -1.0f);
+    
+    /** Get performance metrics for monitoring */
+    RealTimeProcessor::PerformanceMetrics getPerformanceMetrics() const;
+    
+    /** Validate real-time constraints */
+    bool isRealTimeSafe() const;
+    void validateRealTimeConstraints();
+    
+    /** Reset performance monitoring */
+    void resetPerformanceMetrics();
 
 private:
     //==============================================================================
@@ -191,6 +209,9 @@ private:
     std::atomic<float> currentCPUUsage{0.0f};
     juce::Time lastCPUMeasurement;
     
+    /** Epic 8 Story 8.4: Advanced Real-Time Processing */
+    RealTimeProcessor realTimeProcessor;
+    
     //==============================================================================
     /** Helper methods */
     void updateEffectsFromMorph(LayerType layer, float morphValue);
@@ -198,6 +219,11 @@ private:
     float semitonesToRatio(float semitones);
     void setupEffectsChain(LayerEffectsChain& chain);
     void updateCPUUsage();
+    
+    /** Story 8.4: Real-time parameter smoothing methods */
+    void updateRealTimeParameters();
+    void mapParametersToRealTimeProcessor(LayerType layer);
+    void updateLayerFromRealTimeProcessor(LayerType layer);
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LayerEffectsProcessor)
 };

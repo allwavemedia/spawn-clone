@@ -69,6 +69,8 @@ target_sources(SpawnClone PRIVATE
     Source/audio/AudioPreviewEngine.h
     Source/audio/LayerEffectsProcessor.cpp
     Source/audio/LayerEffectsProcessor.h
+    Source/audio/RealTimeProcessor.cpp
+    Source/audio/RealTimeProcessor.h
     Source/audio/MultiOutputManager.cpp
     Source/audio/MultiOutputManager.h
     Source/audio/TransportControlsComponent.cpp
@@ -424,4 +426,28 @@ if(GTEST_FOUND)
     target_compile_features(test_ExperimentPadComponent PRIVATE cxx_std_17)
     gtest_discover_tests(test_ExperimentPadComponent)
 endif()
+
+# Epic 8 Story 8.4 Test: Advanced Real-Time Processing
+add_executable(Epic4_Story4_RealTimeTest
+    Epic4_Story4_RealTimeTest.cpp
+    Source/audio/RealTimeProcessor.cpp
+    Source/audio/LayerEffectsProcessor.cpp
+)
+
+target_include_directories(Epic4_Story4_RealTimeTest PRIVATE 
+    Source 
+    Source/audio
+    Source/ui
+    Source/ai
+)
+
+target_link_libraries(Epic4_Story4_RealTimeTest PRIVATE 
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_dsp
+    juce::juce_gui_basics
+)
+
+target_compile_features(Epic4_Story4_RealTimeTest PRIVATE cxx_std_17)
 

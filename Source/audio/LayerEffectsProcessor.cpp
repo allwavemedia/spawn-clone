@@ -68,6 +68,9 @@ void LayerEffectsProcessor::prepareToPlay(double sampleRate, int samplesPerBlock
     spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
     spec.numChannels = static_cast<juce::uint32>(numChannels);
     
+    // Epic 8 Story 8.4: Prepare advanced real-time processor
+    realTimeProcessor.prepareToPlay(sampleRate, samplesPerBlock);
+    
     // Prepare each layer's effects chain
     for (auto& chain : layerChains)
     {
@@ -79,10 +82,17 @@ void LayerEffectsProcessor::prepareToPlay(double sampleRate, int samplesPerBlock
         chain.volumeGain.prepare(spec);
         chain.prepared = true;
     }
+    
+    juce::Logger::writeToLog("LayerEffectsProcessor: Prepared for " + 
+                           juce::String(sampleRate) + "Hz, " + 
+                           juce::String(samplesPerBlock) + " samples with Story 8.4 real-time processing");
 }
 
 void LayerEffectsProcessor::releaseResources()
 {
+    // Epic 8 Story 8.4: Release real-time processor resources
+    realTimeProcessor.releaseResources();
+    
     for (auto& chain : layerChains)
     {
         chain.processorChain.reset();
@@ -108,6 +118,10 @@ void LayerEffectsProcessor::processLayer(LayerType layer, juce::AudioBuffer<floa
     const int samplesToProcess = (numSamples < 0) ? buffer.getNumSamples() - startSample : numSamples;
     if (samplesToProcess <= 0)
         return;
+    
+    // Epic 8 Story 8.4: Process real-time parameter smoothing
+    realTimeProcessor.processParameterSmoothing(samplesToProcess);
+    updateLayerFromRealTimeProcessor(layer);
     
     // Check if layer is muted or if another layer is soloed
     if (isLayerMuted(layer) || (isAnyLayerSoloed() && !isLayerSoloed(layer)))
@@ -480,5 +494,157 @@ void LayerEffectsProcessor::updateCPUUsage()
         
         currentCPUUsage.store(estimatedUsage);
         lastCPUMeasurement = currentTime;
+        
+        // Epic 8 Story 8.4: Update real-time processor with CPU usage
+        realTimeProcessor.updateCPUUsage(estimatedUsage);
+    }
+}
+
+//==============================================================================
+// Epic 8 Story 8.4: Advanced Real-Time Processing Implementation
+//==============================================================================
+
+void LayerEffectsProcessor::setParameterSmooth(LayerType layer, RealTimeProcessor::ParameterType paramType, 
+                                              float value, float smoothingTime)
+{
+    // Map parameter to the appropriate layer-specific parameter
+    int layerOffset = static_cast<int>(layer) * static_cast<int>(RealTimeProcessor::ParameterType::NumParameterTypes);
+    
+    // For simplicity, we'll use a direct mapping approach
+    // In a full implementation, you might want more sophisticated layer-parameter mapping
+    realTimeProcessor.setParameterTarget(paramType, value, smoothingTime);
+    
+    // Also update the direct parameters for compatibility
+    auto& params = layerChains[static_cast<int>(layer)].parameters;
+    
+    switch (paramType)
+    {
+        case RealTimeProcessor::ParameterType::FilterCutoff:
+            setFilterCutoff(layer, juce::jlimit(20.0f, 20000.0f, value * 19980.0f + 20.0f));
+            break;
+            
+        case RealTimeProcessor::ParameterType::ReverbMix:
+            setReverbMix(layer, value);
+            break;
+            
+        case RealTimeProcessor::ParameterType::DelayFeedback:
+            setDelayFeedback(layer, value);
+            break;
+            
+        case RealTimeProcessor::ParameterType::ChorusMix:
+            setChorusMix(layer, value);
+            break;
+            
+        case RealTimeProcessor::ParameterType::DistortionMix:
+            setDistortionMix(layer, value);
+            break;
+            
+        case RealTimeProcessor::ParameterType::Volume:
+            setLayerVolume(layer, value);
+            break;
+            
+        case RealTimeProcessor::ParameterType::Pan:
+            setLayerPan(layer, (value - 0.5f) * 2.0f); // Convert 0-1 to -1 to +1
+            break;
+            
+        case RealTimeProcessor::ParameterType::PitchShift:
+            // Global pitch shift from -12 to +12 semitones
+            setGlobalPitchShift((value - 0.5f) * 24.0f);
+            break;
+            
+        default:
+            break;
+    }
+}
+
+RealTimeProcessor::PerformanceMetrics LayerEffectsProcessor::getPerformanceMetrics() const
+{
+    return realTimeProcessor.getPerformanceMetrics();
+}
+
+bool LayerEffectsProcessor::isRealTimeSafe() const
+{
+    return realTimeProcessor.isRealTimeSafe();
+}
+
+void LayerEffectsProcessor::validateRealTimeConstraints()
+{
+    realTimeProcessor.validateRealTimeConstraints();
+    
+    // Additional layer-specific validation
+    auto metrics = getPerformanceMetrics();
+    if (metrics.cpuUsage > 0.8f)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: High CPU usage detected: " + 
+                               juce::String(metrics.cpuUsage * 100.0f, 1) + "%");
+    }
+    
+    if (metrics.droppedFrames > 0)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Audio dropouts detected: " + 
+                               juce::String(metrics.droppedFrames) + " frames");
+    }
+}
+
+void LayerEffectsProcessor::resetPerformanceMetrics()
+{
+    realTimeProcessor.resetPerformanceMetrics();
+    currentCPUUsage.store(0.0f);
+}
+
+void LayerEffectsProcessor::updateLayerFromRealTimeProcessor(LayerType layer)
+{
+    // Get smoothed parameter values from the real-time processor
+    // and apply them to the layer's effects chain
+    
+    auto layerIndex = static_cast<int>(layer);
+    auto& chain = layerChains[layerIndex];
+    
+    if (!chain.prepared)
+        return;
+    
+    // Check for parameter updates and apply them smoothly
+    float filterValue = realTimeProcessor.getCurrentParameterValue(RealTimeProcessor::ParameterType::FilterCutoff);
+    if (realTimeProcessor.parameterNeedsUpdate(RealTimeProcessor::ParameterType::FilterCutoff))
+    {
+        float cutoffFreq = juce::jlimit(20.0f, 20000.0f, filterValue * 19980.0f + 20.0f);
+        
+        // Update low-pass filter smoothly
+        auto& lpFilter = chain.processorChain.template get<1>();
+        lpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+            spec.sampleRate, cutoffFreq, chain.parameters.filterResonance);
+    }
+    
+    // Update reverb mix if needed
+    float reverbValue = realTimeProcessor.getCurrentParameterValue(RealTimeProcessor::ParameterType::ReverbMix);
+    if (realTimeProcessor.parameterNeedsUpdate(RealTimeProcessor::ParameterType::ReverbMix))
+    {
+        auto& reverb = chain.processorChain.template get<2>();
+        juce::Reverb::Parameters reverbParams;
+        reverbParams.roomSize = chain.parameters.reverbRoomSize;
+        reverbParams.damping = chain.parameters.reverbDamping;
+        reverbParams.wetLevel = reverbValue;
+        reverbParams.dryLevel = 1.0f - reverbValue;
+        reverb.setParameters(reverbParams);
+        
+        chain.parameters.reverbWetLevel = reverbValue;
+        chain.parameters.reverbDryLevel = 1.0f - reverbValue;
+    }
+    
+    // Update volume if needed
+    float volumeValue = realTimeProcessor.getCurrentParameterValue(RealTimeProcessor::ParameterType::Volume);
+    if (realTimeProcessor.parameterNeedsUpdate(RealTimeProcessor::ParameterType::Volume))
+    {
+        chain.volumeGain.setGainLinear(volumeValue);
+        chain.parameters.layerVolume = volumeValue;
+    }
+    
+    // Update pan if needed
+    float panValue = realTimeProcessor.getCurrentParameterValue(RealTimeProcessor::ParameterType::Pan);
+    if (realTimeProcessor.parameterNeedsUpdate(RealTimeProcessor::ParameterType::Pan))
+    {
+        float panPosition = (panValue - 0.5f) * 2.0f; // Convert 0-1 to -1 to +1
+        chain.panner.setPan(panPosition);
+        chain.parameters.layerPan = panPosition;
     }
 }
