@@ -18,6 +18,7 @@
 #include <juce_core/juce_core.h>
 #include "MIDIPattern.h"
 #include "GenerationParameters.h"
+#include "LayerEffectsProcessor.h"
 
 //==============================================================================
 /**
@@ -105,6 +106,36 @@ public:
     float getMasterVolume() const { return masterVolume.load(); }
     
     //==============================================================================
+    // Epic 8 Story 8.2: ExperimentPad Interface
+    
+    /** Set global pitch shift from ExperimentPad Y-axis (-12 to +12 semitones) */
+    void setGlobalPitchShift(float semitones) { layerEffects.setGlobalPitchShift(semitones); }
+    
+    /** Set filter cutoff for effects morphing from ExperimentPad X-axis */
+    void setFilterCutoff(float cutoff) { 
+        layerEffects.setFilterCutoff(LayerEffectsProcessor::LayerType::Melody, cutoff);
+        layerEffects.setFilterCutoff(LayerEffectsProcessor::LayerType::Chords, cutoff * 0.7f);
+        layerEffects.setFilterCutoff(LayerEffectsProcessor::LayerType::Bass, cutoff * 0.5f);
+    }
+    
+    /** Set reverb mix for effects morphing */
+    void setReverbMix(float mix) {
+        layerEffects.setReverbMix(LayerEffectsProcessor::LayerType::Melody, mix);
+        layerEffects.setReverbMix(LayerEffectsProcessor::LayerType::Chords, mix * 1.2f);
+        layerEffects.setReverbMix(LayerEffectsProcessor::LayerType::Bass, mix * 0.3f);
+    }
+    
+    /** Set delay feedback for effects morphing */
+    void setDelayFeedback(float feedback) {
+        layerEffects.setDelayFeedback(LayerEffectsProcessor::LayerType::Melody, feedback);
+        layerEffects.setDelayFeedback(LayerEffectsProcessor::LayerType::Chords, feedback * 0.8f);
+        layerEffects.setDelayFeedback(LayerEffectsProcessor::LayerType::Bass, feedback * 0.2f);
+    }
+    
+    /** Get LayerEffectsProcessor for advanced control */
+    LayerEffectsProcessor& getLayerEffects() { return layerEffects; }
+    
+    //==============================================================================
     // Task 2.2.1: Synthesizer Management
     
     /** Get the internal synthesizer for advanced control */
@@ -145,6 +176,9 @@ private:
     
     // Master Volume Control
     std::atomic<float> masterVolume{0.7f}; // Default to 70% volume
+    
+    // Epic 8 Story 8.2: Per-Layer Effects Processing
+    LayerEffectsProcessor layerEffects;
     
     // Timing
     std::atomic<int64_t> playbackStartSample{0};

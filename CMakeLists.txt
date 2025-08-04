@@ -24,7 +24,9 @@ juce_add_plugin(SpawnClone
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_EMAIL "support@spawnclone.com"
     PLUGIN_MANUFACTURER_WEBSITE "https://spawnclone.com"
-    PLUGIN_DESCRIPTION "AI-Powered MIDI Pattern Generator")
+    PLUGIN_DESCRIPTION "AI-Powered MIDI Pattern Generator"
+    # Epic 8 Story 8.3: Multi-Output Configuration
+    PLUGIN_NUM_OUTPUT_CHANNELS 6)
 
 target_sources(SpawnClone PRIVATE
     Source/PluginProcessor.cpp
@@ -65,10 +67,16 @@ target_sources(SpawnClone PRIVATE
     Source/ai/GenreSpecialist.h
     Source/audio/AudioPreviewEngine.cpp
     Source/audio/AudioPreviewEngine.h
+    Source/audio/LayerEffectsProcessor.cpp
+    Source/audio/LayerEffectsProcessor.h
+    Source/audio/MultiOutputManager.cpp
+    Source/audio/MultiOutputManager.h
     Source/audio/TransportControlsComponent.cpp
     Source/audio/TransportControlsComponent.h
     Source/audio/MIDIExporter.cpp
-    Source/audio/MIDIExporter.h)
+    Source/audio/MIDIExporter.h
+    Source/ui/ExperimentPadComponent.cpp
+    Source/ui/ExperimentPadComponent.h)
 
 target_compile_definitions(SpawnClone PRIVATE
     JUCE_WEB_BROWSER=0
@@ -86,6 +94,7 @@ target_link_libraries(SpawnClone PUBLIC
     juce::juce_audio_utils
     juce::juce_core
     juce::juce_data_structures
+    juce::juce_dsp
     juce::juce_events
     juce::juce_graphics
     juce::juce_gui_basics
@@ -134,6 +143,7 @@ if(BUILD_TESTS)
         Source/ParameterManager.cpp
         Source/PatternManager.cpp
         Source/PatternHistoryListBox.cpp
+        Source/PatternSearchComponent.cpp
         Source/PatternSerializer.cpp
         Source/ai/MusicTheoryEngine.cpp
         Source/ai/GenreSpecialist_Fixed.cpp
@@ -257,6 +267,121 @@ if(BUILD_TESTS)
     
     target_compile_features(test_Performance PRIVATE cxx_std_17)
     gtest_discover_tests(test_Performance)
+    
+    # Epic 6 Story 6.1: Advanced Generation Unit Tests
+    add_executable(test_AdvancedGeneration
+        Source/test_AdvancedGeneration.cpp
+        Source/ai/MusicTheoryEngine.cpp
+    )
+
+    target_include_directories(test_AdvancedGeneration PRIVATE 
+        Source 
+        Source/ai
+    )
+    
+    target_link_libraries(test_AdvancedGeneration PRIVATE 
+        gtest_main
+        juce::juce_core
+    )
+    
+    target_compile_features(test_AdvancedGeneration PRIVATE cxx_std_17)
+    gtest_discover_tests(test_AdvancedGeneration)
+    
+    # Epic 6 Story 6.2: Pattern Evolution Unit Tests
+    add_executable(test_PatternEvolution
+        Source/test_PatternEvolution.cpp
+        Source/ai/MusicTheoryEngine.cpp
+    )
+
+    target_include_directories(test_PatternEvolution PRIVATE 
+        Source 
+        Source/ai
+    )
+    
+    target_link_libraries(test_PatternEvolution PRIVATE 
+        gtest_main
+        juce::juce_core
+    )
+    
+    target_compile_features(test_PatternEvolution PRIVATE cxx_std_17)
+    gtest_discover_tests(test_PatternEvolution)
+    
+    # Epic 6 Story 6.3: Advanced Harmony Unit Tests
+    add_executable(test_AdvancedHarmony
+        Source/test_AdvancedHarmony.cpp
+        Source/ai/MusicTheoryEngine.cpp
+    )
+
+    target_include_directories(test_AdvancedHarmony PRIVATE 
+        Source 
+        Source/ai
+    )
+    
+    target_link_libraries(test_AdvancedHarmony PRIVATE 
+        gtest_main
+        juce::juce_core
+    )
+    
+    target_compile_features(test_AdvancedHarmony PRIVATE cxx_std_17)
+    gtest_discover_tests(test_AdvancedHarmony)
+    
+    # Epic 6 Story 6.4: User Style Profiles Unit Tests
+    add_executable(test_UserStyleProfiles
+        Source/test_UserStyleProfiles.cpp
+        Source/UserStyleProfile.cpp
+        Source/UserStyleLearningEngine.cpp
+        Source/ai/MusicTheoryEngine.cpp
+    )
+
+    target_include_directories(test_UserStyleProfiles PRIVATE 
+        Source 
+        Source/ai
+    )
+    
+    target_link_libraries(test_UserStyleProfiles PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_events
+    )
+    
+    target_compile_features(test_UserStyleProfiles PRIVATE cxx_std_17)
+    gtest_discover_tests(test_UserStyleProfiles)
+    
+    # Epic 7 Story 7.1 Task 7.1.6: Fast Mode Generation Tests
+    add_executable(test_FastModeGeneration
+        Source/test_FastModeGeneration.cpp
+        Source/ai/AIGenerationEngine.cpp
+        Source/ai/MusicTheoryEngine.cpp
+        Source/ai/CloudAPIManager.cpp
+        Source/ai/ONNXModelManager.cpp
+        Source/ai/ModelCacheManager.cpp
+        Source/ai/SecureCredentialManager.cpp
+        Source/PatternManager.cpp
+        Source/ai/ThreadManager.cpp
+        Source/MIDIPattern.cpp
+        Source/ParameterManager.cpp
+    )
+    
+    target_include_directories(test_FastModeGeneration PRIVATE 
+        Source 
+        Source/ai
+        ${CMAKE_CURRENT_SOURCE_DIR}/Libs/googletest/include
+    )
+    
+    target_link_libraries(test_FastModeGeneration PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_events
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_formats
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+    )
+    
+    target_compile_features(test_FastModeGeneration PRIVATE cxx_std_17)
+    gtest_discover_tests(test_FastModeGeneration)
 endif()
 
 # Epic 4 Story 4.2 Test Executable
@@ -272,4 +397,31 @@ target_link_libraries(Epic4_Story4_2_CoreTest PRIVATE
     juce::juce_audio_basics
 )
 target_compile_features(Epic4_Story4_2_CoreTest PRIVATE cxx_std_17)
+
+# Epic 8 Story 8.1 Test: Experiment Pad Component Tests
+if(GTEST_FOUND)
+    add_executable(test_ExperimentPadComponent
+        Source/test_ExperimentPadComponent.cpp
+        Source/ui/ExperimentPadComponent.cpp
+    )
+    
+    target_include_directories(test_ExperimentPadComponent PRIVATE 
+        Source 
+        Source/ui
+        Source/ai
+        Source/audio
+    )
+    
+    target_link_libraries(test_ExperimentPadComponent PRIVATE 
+        GTest::gtest 
+        GTest::gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+    )
+    
+    target_compile_features(test_ExperimentPadComponent PRIVATE cxx_std_17)
+    gtest_discover_tests(test_ExperimentPadComponent)
+endif()
 

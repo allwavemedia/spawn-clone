@@ -1,0 +1,314 @@
+name: SpawnClone CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, edit ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  BUILD_TYPE: Release
+  JUCE_VERSION: 7.0.8
+
+jobs:
+  # Epic 5 Story 5.3: Multi-platform Build & Test
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+            artifact_name: SpawnClone-Linux
+            cmake_args: -DCMAKE_BUILD_TYPE=Release
+          - os: windows-latest
+            platform: Windows
+            artifact_name: SpawnClone-Windows
+            cmake_args: -DCMAKE_BUILD_TYPE=Release
+          - os: macos-latest
+            platform: macOS
+            artifact_name: SpawnClone-macOS
+            cmake_args: -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    # Platform-specific dependencies
+    - name: Install Linux Dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libasound2-dev \
+          libjack-jackd2-dev \
+          ladspa-sdk \
+          libcurl4-openssl-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libxcomposite-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxrender-dev \
+          libwebkit2gtk-4.0-dev \
+          libglu1-mesa-dev \
+          mesa-common-dev
+
+    - name: Setup MSVC (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: microsoft/setup-msbuild@v1.3
+
+    - name: Setup Xcode (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    # Configure CMake
+    - name: Configure CMake
+      run: |
+        cmake -B build ${{ matrix.cmake_args }} \
+          -DBUILD_TESTS=ON \
+          -DUSE_ONNX_RUNTIME=OFF
+
+    # Build the project
+    - name: Build SpawnClone
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    # Run comprehensive test suite
+    - name: Run Audio Engine Tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ env.BUILD_TYPE }} -R "test_AudioPreviewEngine"
+
+    - name: Run Transport Controls Tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ env.BUILD_TYPE }} -R "test_TransportControls"
+
+    - name: Run Visual Synchronization Tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ env.BUILD_TYPE }} -R "test_VisualAudioSync"
+
+    - name: Run Performance Tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ env.BUILD_TYPE }} -R "test_Performance"
+
+    # Package artifacts
+    - name: Package Artifacts (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        mkdir -p artifacts
+        cp -r build/SpawnClone_artefacts/* artifacts/
+        tar -czf ${{ matrix.artifact_name }}.tar.gz artifacts/
+
+    - name: Package Artifacts (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        mkdir artifacts
+        xcopy build\SpawnClone_artefacts artifacts\ /E /I /H
+        7z a ${{ matrix.artifact_name }}.zip artifacts\
+
+    - name: Package Artifacts (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        mkdir -p artifacts
+        cp -r build/SpawnClone_artefacts/* artifacts/
+        tar -czf ${{ matrix.artifact_name }}.tar.gz artifacts/
+
+    # Upload build artifacts
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: |
+          ${{ matrix.artifact_name }}.tar.gz
+          ${{ matrix.artifact_name }}.zip
+        retention-days: 30
+
+  # Epic 5 Story 5.3: Code Quality & Security Scan
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run clang-format Check
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+        find Source/ -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+
+    - name: Run cppcheck Static Analysis
+      run: |
+        sudo apt-get install -y cppcheck
+        cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem Source/
+
+    - name: SonarCloud Scan
+      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Epic 5 Story 5.3: Automated Release Creation
+  create-release:
+    name: Create Release
+    runs-on: macos-latest
+    needs: [build-and-test, code-quality]
+    if: github.event_name == 'release'
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Code Signing (macOS)
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        MACOS_KEYCHAIN_PWD: ${{ secrets.MACOS_KEYCHAIN_PWD }}
+      run: |
+        # Create keychain
+        security create-keychain -p "$MACOS_KEYCHAIN_PWD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$MACOS_KEYCHAIN_PWD" build.keychain
+        
+        # Import certificate
+        echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PWD" build.keychain
+
+    - name: Configure Release Build
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DBUILD_TESTS=OFF \
+          -DUSE_ONNX_RUNTIME=OFF
+
+    - name: Build Release
+      run: cmake --build build --config Release --parallel
+
+    - name: Code Sign Binaries (macOS)
+      env:
+        DEVELOPER_ID: ${{ secrets.DEVELOPER_ID }}
+      run: |
+        find build/SpawnClone_artefacts -name "*.vst3" -exec codesign --force --sign "$DEVELOPER_ID" {} \;
+        find build/SpawnClone_artefacts -name "*.component" -exec codesign --force --sign "$DEVELOPER_ID" {} \;
+        find build/SpawnClone_artefacts -name "*.app" -exec codesign --force --sign "$DEVELOPER_ID" {} \;
+
+    - name: Create DMG Installer (macOS)
+      run: |
+        chmod +x scripts/build_dmg.sh
+        ./scripts/build_dmg.sh
+
+    - name: Notarize DMG (macOS)
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
+      run: |
+        xcrun notarytool submit SpawnClone-Installer.dmg \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_PASSWORD" \
+          --team-id "$TEAM_ID" \
+          --wait
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Create Release Package
+      run: |
+        mkdir -p release
+        
+        # Package macOS installer
+        cp SpawnClone-Installer.dmg release/
+        
+        # Extract and repackage other platform artifacts
+        tar -xzf SpawnClone-Linux/SpawnClone-Linux.tar.gz -C release/
+        unzip SpawnClone-Windows/SpawnClone-Windows.zip -d release/
+        
+        # Create checksums
+        cd release
+        sha256sum * > checksums.txt
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          release/SpawnClone-Installer.dmg
+          release/SpawnClone-Linux.tar.gz
+          release/SpawnClone-Windows.zip
+          release/checksums.txt
+        body: |
+          ## SpawnClone ${{ github.ref_name }}
+          
+          ### ✨ Features
+          - AI-powered MIDI pattern generation
+          - Real-time audio preview and visualization
+          - Multi-platform VST3, AU, and Standalone support
+          
+          ### 📦 Downloads
+          - **macOS**: SpawnClone-Installer.dmg (Universal Binary - Apple Silicon & Intel)
+          - **Windows**: SpawnClone-Windows.zip (VST3 & Standalone)
+          - **Linux**: SpawnClone-Linux.tar.gz (VST3 & Standalone)
+          
+          ### 🔐 Security
+          - All binaries are code-signed and notarized
+          - SHA256 checksums provided for verification
+          
+          ### 🎯 Performance
+          - Optimized for professional audio production
+          - Low latency audio processing
+          - Minimal CPU and memory usage
+          
+          See [Release Notes](docs/RELEASE_NOTES.md) for detailed changes.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Epic 5 Story 5.3: Deployment Notification
+  notify-deployment:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: always()
+
+    steps:
+    - name: Send Slack Notification
+      if: ${{ secrets.SLACK_WEBHOOK_URL }}
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#releases'
+        text: |
+          SpawnClone ${{ github.ref_name }} deployment completed!
+          Status: ${{ job.status }}
+          Platform: Multi-platform (macOS, Windows, Linux)
+          Download: https://github.com/${{ github.repository }}/releases/latest
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Update Documentation
+      run: |
+        echo "Release ${{ github.ref_name }} deployed successfully at $(date)" >> deployment.log

@@ -14,6 +14,7 @@
 #include "PatternVisualizationComponent.h"
 #include "PatternHistoryListBox.h"
 #include "audio/TransportControlsComponent.h"
+#include "ui/ExperimentPadComponent.h"
 
 //==============================================================================
 /**
@@ -48,6 +49,10 @@ private:
     void setupMasterVolumeControl(); // Epic 3 Story 3.1
     void setupPatternHistoryPanel(); // Epic 3 Story 3.2
     void setupTransportControls(); // Epic 4 Story 4.2
+    void setupAIModeStatusIndicators(); // Epic 7 Story 7.6
+    void setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
+    void updateAIModeStatus(); // Epic 7 Story 7.6
+    void updatePerformanceMetrics(double generationTimeMs, int noteCount); // Epic 7 Story 7.6.7
     void updatePatternDisplay();
 
     // This reference is provided as a quick way for your editor to
@@ -88,6 +93,17 @@ private:
     juce::ComboBox aiModeComboBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> aiModeAttachment;
     
+    // Epic 7 Story 7.6: AI Mode Status and Subscription Indicators
+    juce::Label aiStatusLabel;
+    juce::Label subscriptionStatusLabel;
+    juce::TextButton upgradeButton;
+    double generationProgress = 0.0;
+    juce::ProgressBar generationProgressBar;
+    
+    // Epic 7 Story 7.6 Task 7.6.7: Performance Metrics Display
+    juce::Label performanceMetricsLabel;
+    juce::int64 generationStartTime = 0;
+    
     juce::Label generationSeedLabel;
     juce::Slider generationSeedSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> generationSeedAttachment;
@@ -109,6 +125,9 @@ private:
     
     // Epic 8: Pattern Visualization Component
     PatternVisualizationComponent patternVisualization;
+    
+    // Epic 8 Story 8.1: SPAWN-style Experiment Pad XY Controller
+    ExperimentPadComponent experimentPad;
     
     // Epic 3 Story 3.2: Pattern History Panel
     PatternHistoryListBox patternHistoryListBox;

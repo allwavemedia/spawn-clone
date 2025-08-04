@@ -39,6 +39,9 @@ public:
         The result will be delivered asynchronously via the PatternManager.
     */
     void generatePattern(const GenerationParameters& params);
+    
+    /** Get access to CloudAPIManager for subscription status checking */
+    CloudAPIManager* getCloudAPIManager() const { return cloudAPIManager.get(); }
 
 private:
     ThreadManager& threadManager;

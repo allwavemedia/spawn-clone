@@ -18,6 +18,7 @@
 #include "../MIDIPattern.h"
 #include <memory>
 #include <functional>
+#include <map>
 
 // Forward declaration
 class SecureCredentialManager;
@@ -87,6 +88,9 @@ public:
     /** Check if subscription allows cloud generation */
     bool hasCloudAccess() const;
     
+    /** Check if user has a valid subscription */
+    bool hasValidSubscription() const;
+    
     /** Get remaining API calls for current period */
     int getRemainingCalls() const;
     
@@ -131,6 +135,19 @@ private:
     
     /** Convert API response to MIDI pattern */
     bool convertResponseToPattern(const juce::var& apiData, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    // Task 7.3.4: Enhanced response parsing methods
+    /** Parse text-to-MIDI API responses (Pozalabs ARIA style) */
+    bool parseTextToMIDIResponse(const juce::var& apiData, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Parse standard JSON MIDI responses */
+    bool parseStandardMIDIResponse(const juce::var& apiData, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Parse event-based MIDI responses */
+    bool parseEventBasedResponse(const juce::var& apiData, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Generate placeholder pattern for development/fallback */
+    void generatePlaceholderPattern(MIDIPattern& pattern, const GenerationParameters& params);
     
     //==============================================================================
     // Member variables

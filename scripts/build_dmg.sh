@@ -1,5 +1,6 @@
 #!/bin/bash
 # build_dmg.sh - Professional macOS installer for SpawnClone
+# Epic 5 Story 5.3: Enhanced build automation for release pipeline
 # Usage: ./scripts/build_dmg.sh [version]
 
 set -e
@@ -8,7 +9,7 @@ set -e
 VERSION="${1:-1.0.0}"
 PRODUCT_NAME="SpawnClone"
 BUNDLE_ID="com.spawnclone.spawnclone"
-DMG_NAME="${PRODUCT_NAME}_v${VERSION}_macOS"
+DMG_NAME="${PRODUCT_NAME}-Installer"
 COMPANY_NAME="SpawnClone Audio"
 
 # Build paths
@@ -20,6 +21,7 @@ ASSETS_DIR="${PROJECT_ROOT}/scripts/assets"
 
 echo "🏗️  Building SpawnClone v${VERSION} macOS installer..."
 echo "Project root: ${PROJECT_ROOT}"
+echo "Build directory: ${BUILD_DIR}"
 
 # Clean and create directories
 rm -rf "${INSTALLER_DIR}"
@@ -39,15 +41,21 @@ echo "📦  Creating DMG package structure..."
 if [ -d "${BUILD_DIR}/Standalone/${PRODUCT_NAME}.app" ]; then
     echo "✅ Found standalone application"
     cp -R "${BUILD_DIR}/Standalone/${PRODUCT_NAME}.app" "${TEMP_DMG_DIR}/"
+    
+    # Epic 5 Story 5.3: Verify code signature
+    if command -v codesign &> /dev/null; then
+        echo "🔐 Verifying code signature..."
+        codesign -vv "${TEMP_DMG_DIR}/${PRODUCT_NAME}.app" || echo "⚠️  Application not signed"
+    fi
 else
     echo "⚠️  Standalone application not found at ${BUILD_DIR}/Standalone/${PRODUCT_NAME}.app"
 fi
 
-# Create plugin directories
-mkdir -p "${TEMP_DMG_DIR}/Plugins/VST3"
-mkdir -p "${TEMP_DMG_DIR}/Plugins/AudioUnits"
+# Create plugin directories with proper structure
+mkdir -p "${TEMP_DMG_DIR}/Audio Plugins/VST3"
+mkdir -p "${TEMP_DMG_DIR}/Audio Plugins/AudioUnits"
 
-# Copy plugins
+# Copy plugins with verification
 if [ -d "${BUILD_DIR}/VST3/${PRODUCT_NAME}.vst3" ]; then
     echo "✅ Found VST3 plugin"
     cp -R "${BUILD_DIR}/VST3/${PRODUCT_NAME}.vst3" "${TEMP_DMG_DIR}/Plugins/VST3/"

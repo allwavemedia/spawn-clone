@@ -6,7 +6,8 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
       audioProcessor (p),
       parameterManager(p.getParameterManager()),
       patternManager(p.getPatternManager()),
-      patternHistoryListBox(p.getPatternManager())
+      patternHistoryListBox(p.getPatternManager()),
+      generationProgressBar(generationProgress)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -22,6 +23,8 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
     setupMasterVolumeControl(); // Epic 3 Story 3.1
     setupPatternHistoryPanel(); // Epic 3 Story 3.2
     setupTransportControls(); // Epic 4 Story 4.2
+    setupAIModeStatusIndicators(); // Epic 7 Story 7.6
+    setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
     
     // Start listening to pattern changes
     audioProcessor.getPatternManager().addChangeListener(this);
@@ -129,6 +132,19 @@ void SpawnCloneAudioProcessorEditor::resized()
     aiModeLabel.setBounds(aiModeRow.removeFromLeft(80));
     aiModeComboBox.setBounds(aiModeRow.removeFromLeft(120).reduced(3));
     
+    // Epic 7 Story 7.6: AI Mode Status Indicators
+    auto aiStatusRow = bounds.removeFromTop(paramHeight);
+    aiStatusLabel.setBounds(aiStatusRow.removeFromLeft(180));
+    subscriptionStatusLabel.setBounds(aiStatusRow.removeFromLeft(120));
+    
+    auto aiControlsRow = bounds.removeFromTop(paramHeight);
+    upgradeButton.setBounds(aiControlsRow.removeFromLeft(140).reduced(2));
+    generationProgressBar.setBounds(aiControlsRow.removeFromLeft(160).reduced(2));
+    
+    // Epic 7 Story 7.6 Task 7.6.7: Performance Metrics Display
+    auto metricsRow = bounds.removeFromTop(paramHeight);
+    performanceMetricsLabel.setBounds(metricsRow.removeFromLeft(200));
+    
     auto seedRow = bounds.removeFromTop(paramHeight);
     generationSeedLabel.setBounds(seedRow.removeFromLeft(80));
     generationSeedSlider.setBounds(seedRow.removeFromLeft(220).reduced(3));
@@ -167,6 +183,11 @@ void SpawnCloneAudioProcessorEditor::resized()
     zoomLabel.setBounds(controlsRow.removeFromLeft(45));
     zoomSlider.setBounds(controlsRow.removeFromLeft(110).reduced(3));
     exportButton.setBounds(controlsRow.removeFromLeft(110).reduced(3));
+    
+    // Epic 8 Story 8.1: SPAWN-style Experiment Pad (prominent placement)
+    bounds.removeFromTop(margin);
+    auto experimentPadHeight = 140; // Generous height for XY controller
+    experimentPad.setBounds(bounds.removeFromTop(experimentPadHeight).reduced(margin/2));
     
     // Pattern visualization (remaining space with proper margins)
     bounds.removeFromTop(margin);
@@ -413,6 +434,12 @@ void SpawnCloneAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 
 void SpawnCloneAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBox)
 {
+    // Epic 7 Story 7.6: Update AI mode status when selection changes
+    if (comboBox == &aiModeComboBox)
+    {
+        updateAIModeStatus();
+    }
+    
     // Parameter changes are handled automatically by the attachments
 }
 
@@ -420,6 +447,13 @@ void SpawnCloneAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     if (button == &generateButton)
     {
+        // Epic 7 Story 7.6 Task 7.6.7: Start performance timing
+        generationStartTime = juce::Time::getHighResolutionTicks();
+        
+        // Update progress bar
+        generationProgress = 0.1;
+        generationProgressBar.setTextToDisplay("Generating...");
+        
         // Trigger AI pattern generation
         auto& paramManager = audioProcessor.getParameterManager();
         auto params = paramManager.getCurrentParameters();
@@ -465,12 +499,48 @@ void SpawnCloneAudioProcessorEditor::buttonClicked(juce::Button* button)
             previewEngine->setDAWTransportSync(dawSyncToggleButton.getToggleState());
         }
     }
+    // Epic 7 Story 7.6: Upgrade button handler
+    else if (button == &upgradeButton)
+    {
+        // Open subscription/upgrade URL in default browser
+        juce::URL upgradeURL("https://spawn-clone.com/upgrade");
+        upgradeURL.launchInDefaultBrowser();
+    }
 }
 
 void SpawnCloneAudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     if (source == &audioProcessor.getPatternManager())
     {
+        // Epic 7 Story 7.6 Task 7.6.7: Calculate generation performance
+        if (generationStartTime > 0)
+        {
+            auto endTime = juce::Time::getHighResolutionTicks();
+            auto elapsedMs = juce::Time::highResolutionTicksToSeconds(endTime - generationStartTime) * 1000.0;
+            
+            // Get pattern info for metrics
+            auto& patternManager = audioProcessor.getPatternManager();
+            int noteCount = 0;
+            if (patternManager.getNumPatterns() > 0)
+            {
+                auto currentPattern = patternManager.getCurrentPattern();
+                if (currentPattern.has_value())
+                {
+                    noteCount = static_cast<int>(currentPattern->notes.size());
+                }
+            }
+            
+            // Update performance display
+            updatePerformanceMetrics(elapsedMs, noteCount);
+            
+            // Reset progress bar
+            generationProgress = 1.0;
+            generationProgressBar.setTextToDisplay("Complete");
+            
+            // Reset timing
+            generationStartTime = 0;
+        }
+        
         // Pattern manager has new patterns, update display
         updatePatternDisplay();
     }
@@ -547,6 +617,232 @@ void SpawnCloneAudioProcessorEditor::setupPatternHistoryPanel()
         // For MVP, we'll just update the display
         updatePatternDisplay();
     };
+}
+
+//==============================================================================
+// Epic 7 Story 7.6: AI Mode Status Indicators Setup
+void SpawnCloneAudioProcessorEditor::setupAIModeStatusIndicators()
+{
+    // AI Status Label
+    aiStatusLabel.setText("AI Mode: Fast", juce::dontSendNotification);
+    aiStatusLabel.setFont(juce::FontOptions(12.0f));
+    aiStatusLabel.setJustificationType(juce::Justification::centredLeft);
+    aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+    aiStatusLabel.setHelpText("Current AI generation mode and processing method");
+    addAndMakeVisible(aiStatusLabel);
+    
+    // Subscription Status Label
+    subscriptionStatusLabel.setText("Free Plan", juce::dontSendNotification);
+    subscriptionStatusLabel.setFont(juce::FontOptions(11.0f));
+    subscriptionStatusLabel.setJustificationType(juce::Justification::centredLeft);
+    subscriptionStatusLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
+    subscriptionStatusLabel.setHelpText("Current subscription tier and available features");
+    addAndMakeVisible(subscriptionStatusLabel);
+    
+    // Upgrade Button
+    upgradeButton.setButtonText("Upgrade to Pro");
+    upgradeButton.setColour(juce::TextButton::buttonColourId, juce::Colours::darkblue);
+    upgradeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    upgradeButton.setHelpText("Click to upgrade your subscription for premium AI features");
+    upgradeButton.addListener(this);
+    addAndMakeVisible(upgradeButton);
+    
+    // Generation Progress Bar
+    generationProgress = 0.0;
+    generationProgressBar.setTextToDisplay("Ready");
+    generationProgressBar.setHelpText("Shows generation progress and current status");
+    addAndMakeVisible(generationProgressBar);
+    
+    // Add tooltips to AI Mode ComboBox
+    aiModeComboBox.setHelpText("Select AI generation mode:\n"
+                              "• Fast: Rule-based generation (<2s)\n"
+                              "• Quality: Local ML models (3-5s)\n"
+                              "• Cloud: Premium cloud AI (5-8s)");
+    
+    // Epic 7 Story 7.6 Task 7.6.7: Performance Metrics Display
+    performanceMetricsLabel.setText("Generation Time: --", juce::dontSendNotification);
+    performanceMetricsLabel.setFont(juce::FontOptions(10.0f));
+    performanceMetricsLabel.setJustificationType(juce::Justification::centredLeft);
+    performanceMetricsLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
+    performanceMetricsLabel.setHelpText("Shows last generation time and performance metrics");
+    addAndMakeVisible(performanceMetricsLabel);
+    
+    // Update initial status
+    updateAIModeStatus();
+}
+
+//==============================================================================
+// Epic 7 Story 7.6: Update AI Mode Status based on current selection
+void SpawnCloneAudioProcessorEditor::updateAIModeStatus()
+{
+    auto currentMode = aiModeComboBox.getSelectedItemIndex();
+    
+    switch (currentMode)
+    {
+        case 0: // Fast Mode
+            aiStatusLabel.setText("AI Mode: Fast (Rules-based)", juce::dontSendNotification);
+            aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::lightgreen);
+            subscriptionStatusLabel.setText("Free Plan - Available", juce::dontSendNotification);
+            subscriptionStatusLabel.setColour(juce::Label::textColourId, juce::Colours::lightgreen);
+            upgradeButton.setVisible(true);
+            break;
+            
+        case 1: // Quality Mode
+            aiStatusLabel.setText("AI Mode: Quality (Local ML)", juce::dontSendNotification);
+            aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::yellow);
+            subscriptionStatusLabel.setText("Pro Plan - Local Processing", juce::dontSendNotification);
+            subscriptionStatusLabel.setColour(juce::Label::textColourId, juce::Colours::yellow);
+            upgradeButton.setVisible(true);
+            upgradeButton.setButtonText("Cloud Upgrade");
+            break;
+            
+        case 2: // Cloud Mode
+            {
+                // Check subscription status from CloudAPIManager
+                auto* cloudManager = audioProcessor.getAIGenerationEngine().getCloudAPIManager();
+                if (cloudManager && cloudManager->hasValidSubscription())
+                {
+                    aiStatusLabel.setText("AI Mode: Cloud (Premium)", juce::dontSendNotification);
+                    aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::cyan);
+                    subscriptionStatusLabel.setText("Premium Plan - Active", juce::dontSendNotification);
+                    subscriptionStatusLabel.setColour(juce::Label::textColourId, juce::Colours::cyan);
+                    upgradeButton.setVisible(false);
+                }
+                else
+                {
+                    aiStatusLabel.setText("AI Mode: Cloud (No Subscription)", juce::dontSendNotification);
+                    aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::red);
+                    subscriptionStatusLabel.setText("Premium Required", juce::dontSendNotification);
+                    subscriptionStatusLabel.setColour(juce::Label::textColourId, juce::Colours::red);
+                    upgradeButton.setVisible(true);
+                    upgradeButton.setButtonText("Subscribe to Premium");
+                }
+            }
+            break;
+            
+        default:
+            aiStatusLabel.setText("AI Mode: Unknown", juce::dontSendNotification);
+            aiStatusLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
+            break;
+    }
+}
+
+//==============================================================================
+// Epic 7 Story 7.6 Task 7.6.7: Update Performance Metrics Display
+void SpawnCloneAudioProcessorEditor::updatePerformanceMetrics(double generationTimeMs, int noteCount)
+{
+    juce::String metricsText;
+    
+    if (generationTimeMs > 0)
+    {
+        metricsText = juce::String::formatted("Generated %d notes in %.1fms", noteCount, generationTimeMs);
+        
+        // Add quality indicator based on timing
+        if (generationTimeMs < 1000.0)
+            metricsText += " (Excellent)";
+        else if (generationTimeMs < 2000.0)
+            metricsText += " (Good)";
+        else if (generationTimeMs < 5000.0)
+            metricsText += " (Fair)";
+        else
+            metricsText += " (Slow)";
+    }
+    else
+    {
+        metricsText = "Generation Time: --";
+    }
+    
+    performanceMetricsLabel.setText(metricsText, juce::dontSendNotification);
+    
+    // Update color based on performance
+    if (generationTimeMs < 1000.0)
+        performanceMetricsLabel.setColour(juce::Label::textColourId, juce::Colours::lightgreen);
+    else if (generationTimeMs < 2000.0)
+        performanceMetricsLabel.setColour(juce::Label::textColourId, juce::Colours::yellow);
+    else if (generationTimeMs < 5000.0)
+        performanceMetricsLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
+    else
+        performanceMetricsLabel.setColour(juce::Label::textColourId, juce::Colours::red);
+}
+
+//==============================================================================
+// Epic 8 Story 8.1: Setup SPAWN-style Experiment Pad XY Controller
+void SpawnCloneAudioProcessorEditor::setupExperimentPad()
+{
+    // Make the experiment pad visible and configure basic properties
+    addAndMakeVisible(experimentPad);
+    
+    // Set up the pitch range (typical SPAWN range: -12 to +12 semitones)
+    experimentPad.setPitchRange(-12.0f, 12.0f);
+    
+    // Configure default effects mappings (SPAWN-style)
+    experimentPad.clearEffectMappings();
+    experimentPad.addEffectMapping("Filter Cutoff", 200.0f, 8000.0f);
+    experimentPad.addEffectMapping("Reverb Mix", 0.0f, 0.8f);
+    experimentPad.addEffectMapping("Delay Feedback", 0.0f, 0.6f);
+    
+    // Set professional color scheme matching plugin theme
+    experimentPad.setPadColors(
+        juce::Colour(0xff1a1a1a), // Background
+        juce::Colour(0xff4a90e2), // Control point
+        juce::Colour(0xff00ff88)  // Accent
+    );
+    
+    // Set up callbacks for real-time parameter updates
+    experimentPad.onPitchChanged = [this](float pitchShift)
+    {
+        // TODO: Implement global pitch shift in AudioPreviewEngine
+        // Apply global pitch shift to audio preview engine
+        if (auto* audioEngine = audioProcessor.getAudioPreviewEngine())
+        {
+            // audioEngine->setGlobalPitchShift(pitchShift);
+            DBG("Pitch shift requested: " << pitchShift << " semitones");
+        }
+    };
+    
+    experimentPad.onEffectsChanged = [this](const std::vector<ExperimentPadComponent::EffectMapping>& effects)
+    {
+        // TODO: Implement effects processing in AudioPreviewEngine
+        // Apply effects parameters to audio preview engine
+        if (auto* audioEngine = audioProcessor.getAudioPreviewEngine())
+        {
+            // Update effects parameters based on X-axis position
+            for (const auto& effect : effects)
+            {
+                if (effect.effectName == "Filter Cutoff")
+                {
+                    // TODO: Map to filter cutoff frequency
+                    // audioEngine->setFilterCutoff(effect.currentValue);
+                    DBG("Filter cutoff: " << effect.currentValue);
+                }
+                else if (effect.effectName == "Reverb Mix")
+                {
+                    // TODO: Map to reverb wet/dry mix
+                    // audioEngine->setReverbMix(effect.currentValue);
+                    DBG("Reverb mix: " << effect.currentValue);
+                }
+                else if (effect.effectName == "Delay Feedback")
+                {
+                    // TODO: Map to delay feedback amount
+                    // audioEngine->setDelayFeedback(effect.currentValue);
+                    DBG("Delay feedback: " << effect.currentValue);
+                }
+            }
+        }
+    };
+    
+    experimentPad.onPositionChanged = [this](const ExperimentPadComponent::PadPosition& position)
+    {
+        // Could be used for additional visual feedback or logging
+        DBG("Experiment Pad position: X=" << position.x << ", Y=" << position.y);
+    };
+    
+    // Set up preset callback for future preset management
+    experimentPad.setPresetCallback([this](const ExperimentPadComponent::PadPreset& preset)
+    {
+        // Future implementation: save pad presets to plugin state
+        DBG("Experiment Pad preset saved: " << preset.name);
+    });
 }
 
 //==============================================================================

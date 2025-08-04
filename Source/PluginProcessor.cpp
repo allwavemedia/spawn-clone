@@ -17,7 +17,8 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                       // Epic 8 Story 8.3: 6-channel output for multi-layer routing
+                       .withOutput ("Output", juce::AudioChannelSet::create6point0(), true)
                      #endif
                        )
 #endif
@@ -28,6 +29,9 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
     
     // Epic 2 Story 2.2: Initialize audio preview engine
     audioPreviewEngine = std::make_unique<AudioPreviewEngine>();
+    
+    // Epic 8 Story 8.3: Initialize multi-output manager
+    multiOutputManager = std::make_unique<MultiOutputManager>();
 }
 
 SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
@@ -104,6 +108,12 @@ void SpawnCloneAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     {
         audioPreviewEngine->prepareToPlay(sampleRate, samplesPerBlock);
     }
+    
+    // Epic 8 Story 8.3: Prepare multi-output manager
+    if (multiOutputManager)
+    {
+        multiOutputManager->prepareToPlay(sampleRate, samplesPerBlock);
+    }
 }
 
 void SpawnCloneAudioProcessor::releaseResources()
@@ -113,24 +123,34 @@ void SpawnCloneAudioProcessor::releaseResources()
     {
         audioPreviewEngine->releaseResources();
     }
+    
+    // Epic 8 Story 8.3: Release multi-output manager resources
+    if (multiOutputManager)
+    {
+        multiOutputManager->releaseResources();
+    }
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool SpawnCloneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
+    // Epic 8 Story 8.3: Support 6-channel output for multi-layer routing
+    auto outputChannels = layouts.getMainOutputChannelSet().size();
+    
+    // Support stereo (2 channels) for compatibility and 6 channels for multi-output
+    if (outputChannels == 2 || outputChannels == 6)
+        return true;
+    
+    return false;
   #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    // For non-MIDI effects, support standard layouts plus 6-channel
+    auto outputChannels = layouts.getMainOutputChannelSet().size();
+    
+    if (outputChannels != 2 && outputChannels != 6)
         return false;
 
-    // This checks if the input layout matches the output layout
+    // This checks if the input layout matches the output layout for non-synths
    #if ! JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;

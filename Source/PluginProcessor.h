@@ -15,6 +15,7 @@
 #include "ai/ThreadManager.h"
 #include "ai/AIGenerationEngine.h"
 #include "audio/AudioPreviewEngine.h"
+#include "audio/MultiOutputManager.h"
 
 //==============================================================================
 /**
@@ -118,6 +119,12 @@ public:
     
     /** Get audio preview engine for UI integration */
     AudioPreviewEngine* getAudioPreviewEngine() { return audioPreviewEngine.get(); }
+    
+    //==============================================================================
+    // Epic 8 Story 8.3: Multi-Output Routing Methods
+    
+    /** Get multi-output manager for layer routing control */
+    MultiOutputManager* getMultiOutputManager() { return multiOutputManager.get(); }
 
 
 private:
@@ -136,6 +143,9 @@ private:
     
     // Epic 2 Story 2.2: Audio preview engine
     std::unique_ptr<AudioPreviewEngine> audioPreviewEngine;
+    
+    // Epic 8 Story 8.3: Multi-output routing manager
+    std::unique_ptr<MultiOutputManager> multiOutputManager;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessor)

@@ -38,6 +38,9 @@ void AudioPreviewEngine::prepareToPlay(double newSampleRate, int samplesPerBlock
     sampleRate = newSampleRate;
     synthesiser.setCurrentPlaybackSampleRate(sampleRate);
     
+    // Epic 8 Story 8.2: Prepare LayerEffectsProcessor
+    layerEffects.prepareToPlay(sampleRate, samplesPerBlock, 2); // Stereo
+    
     // Reset playback state
     totalSamplesProcessed = 0;
     playbackStartSample.store(0);
@@ -47,6 +50,7 @@ void AudioPreviewEngine::prepareToPlay(double newSampleRate, int samplesPerBlock
 void AudioPreviewEngine::releaseResources()
 {
     synthesiser.allNotesOff(0, false);
+    layerEffects.releaseResources();
 }
 
 void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -62,6 +66,14 @@ void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     
     // Let the synthesizer process the MIDI
     synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    
+    // Epic 8 Story 8.2: Apply layer effects processing
+    // For now, process the combined output through the melody layer effects
+    // In a full implementation, we would separate layers by MIDI channel or note range
+    if (buffer.getNumSamples() > 0)
+    {
+        layerEffects.processLayer(LayerEffectsProcessor::LayerType::Melody, buffer);
+    }
     
     // Apply master volume
     const float volume = masterVolume.load();

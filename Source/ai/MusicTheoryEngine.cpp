@@ -945,3 +945,1268 @@ MusicTheoryEngine::Chord MusicTheoryEngine::analyzeChord(const std::vector<int>&
     
     return chord;
 }
+
+//==============================================================================
+// Epic 6 Story 6.1: Advanced Generation Functions
+
+std::vector<int> MusicTheoryEngine::generateMelodicContour(const std::vector<int>& scale,
+                                                           int numNotes,
+                                                           GenerationParameters::MelodicContour contourShape,
+                                                           float intervalVariety)
+{
+    std::vector<int> melody;
+    if (scale.empty() || numNotes <= 0) return melody;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    int currentNoteIndex = scale.size() / 2; // Start in middle of scale
+    melody.push_back(scale[currentNoteIndex]);
+
+    for (int i = 1; i < numNotes; ++i)
+    {
+        int step = calculateNextStep(i, numNotes, contourShape, intervalVariety, gen);
+        currentNoteIndex = std::clamp(currentNoteIndex + step, 0, (int)scale.size() - 1);
+        melody.push_back(scale[currentNoteIndex]);
+    }
+
+    return melody;
+}
+
+std::vector<double> MusicTheoryEngine::generateRhythmicPattern(int numNotes,
+                                                               double totalBeats,
+                                                               float complexity,
+                                                               float density,
+                                                               float swing)
+{
+    std::vector<double> rhythm;
+    if (numNotes <= 0) return rhythm;
+
+    // Calculate the actual time span based on density
+    double actualTimeSpan = totalBeats / std::max(0.1f, density);
+    double beatIncrement = actualTimeSpan / numNotes;
+    
+    for (int i = 0; i < numNotes; ++i)
+    {
+        double position = i * beatIncrement;
+        
+        // Apply swing to off-beats
+        if (swing > 0.0 && (i % 2 != 0))
+        {
+            position += beatIncrement * swing * 0.5;
+        }
+        
+        rhythm.push_back(position);
+    }
+    
+    return rhythm;
+}
+
+int MusicTheoryEngine::calculateNextStep(int noteIndex, int totalNotes, 
+                                         GenerationParameters::MelodicContour contourShape, 
+                                         float intervalVariety, std::mt19937& gen)
+{
+    std::uniform_int_distribution<> intervalDist(1, 1 + (int)(intervalVariety * 3));
+    int step = intervalDist(gen);
+
+    switch (contourShape)
+    {
+        case GenerationParameters::MelodicContour::Rising:
+            return step;
+        case GenerationParameters::MelodicContour::Falling:
+            return -step;
+        case GenerationParameters::MelodicContour::Wave:
+        {
+            // Create a wave pattern that goes up for the first quarter, down for the second quarter, etc.
+            int quarterLength = std::max(1, totalNotes / 4);
+            int currentQuarter = noteIndex / quarterLength;
+            return (currentQuarter % 2 == 0) ? step : -step;
+        }
+        case GenerationParameters::MelodicContour::Arch:
+            return (noteIndex < totalNotes / 2) ? step : -step;
+        case GenerationParameters::MelodicContour::Random:
+        default:
+            return (gen() % 2 == 0) ? step : -step;
+    }
+}
+
+//==============================================================================
+// Epic 6 Story 6.2: Dynamic Pattern Variation Implementation
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::evolvePattern(const PatternGenome& parent1, 
+                                                                  const PatternGenome& parent2,
+                                                                  const GenerationParameters& params)
+{
+    PatternGenome offspring;
+    
+    // Apply crossover if rate allows
+    std::mt19937 gen{std::random_device{}()};
+    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(gen) < params.variation.crossoverRate)
+    {
+        offspring = crossoverPatterns(parent1, parent2, params);
+    }
+    else
+    {
+        // Select fitter parent
+        offspring = (parent1.fitness > parent2.fitness) ? parent1 : parent2;
+    }
+    
+    // Apply mutation
+    offspring = mutatePattern(offspring, params);
+    
+    // Update generation info
+    offspring.generation = std::max(parent1.generation, parent2.generation) + 1;
+    offspring.id = juce::Uuid().toString();
+    offspring.timestamp = juce::Time::getCurrentTime().toMilliseconds() / 1000.0;
+    
+    // Calculate new fitness
+    offspring.fitness = calculatePatternFitness(offspring, params);
+    
+    return offspring;
+}
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::mutatePattern(const PatternGenome& pattern,
+                                                                  const GenerationParameters& params)
+{
+    PatternGenome mutated = pattern;
+    std::mt19937 gen{std::random_device{}()};
+    std::uniform_real_distribution<float> mutationChance(0.0f, 1.0f);
+    
+    for (auto& note : mutated.notes)
+    {
+        if (mutationChance(gen) < params.variation.mutationRate)
+        {
+            switch (params.variation.scope)
+            {
+                case GenerationParameters::VariationSettings::VariationScope::Rhythm:
+                    // Mutate timing
+                    note.startTime += std::normal_distribution<double>(0.0, 0.1)(gen);
+                    note.duration *= std::uniform_real_distribution<double>(0.8, 1.2)(gen);
+                    break;
+                    
+                case GenerationParameters::VariationSettings::VariationScope::Melody:
+                    // Mutate pitch
+                    note.pitch += std::uniform_int_distribution<int>(-2, 2)(gen);
+                    note.pitch = std::clamp(note.pitch, 0, 127);
+                    break;
+                    
+                case GenerationParameters::VariationSettings::VariationScope::Harmony:
+                    // Mutate velocity (affects harmonic perception)
+                    note.velocity = std::clamp(note.velocity + std::uniform_int_distribution<int>(-20, 20)(gen), 1, 127);
+                    break;
+                    
+                case GenerationParameters::VariationSettings::VariationScope::All:
+                default:
+                    // Mutate any aspect
+                    if (mutationChance(gen) < 0.33f)
+                        note.startTime += std::normal_distribution<double>(0.0, 0.1)(gen);
+                    if (mutationChance(gen) < 0.33f)
+                        note.pitch += std::uniform_int_distribution<int>(-2, 2)(gen);
+                    if (mutationChance(gen) < 0.33f)
+                        note.velocity = std::clamp(note.velocity + std::uniform_int_distribution<int>(-10, 10)(gen), 1, 127);
+                    break;
+            }
+        }
+    }
+    
+    return mutated;
+}
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::crossoverPatterns(const PatternGenome& parent1,
+                                                                      const PatternGenome& parent2,
+                                                                      const GenerationParameters& params)
+{
+    PatternGenome offspring;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Determine crossover point
+    size_t minSize = std::min(parent1.notes.size(), parent2.notes.size());
+    size_t maxSize = std::max(parent1.notes.size(), parent2.notes.size());
+    
+    if (minSize == 0)
+    {
+        return parent1.notes.empty() ? parent2 : parent1;
+    }
+    
+    size_t crossoverPoint = std::uniform_int_distribution<size_t>(1, minSize - 1)(gen);
+    
+    // Combine genetic material
+    offspring.notes.reserve(maxSize);
+    
+    // First part from parent1
+    for (size_t i = 0; i < crossoverPoint && i < parent1.notes.size(); ++i)
+    {
+        offspring.notes.push_back(parent1.notes[i]);
+    }
+    
+    // Second part from parent2
+    for (size_t i = crossoverPoint; i < parent2.notes.size(); ++i)
+    {
+        offspring.notes.push_back(parent2.notes[i]);
+    }
+    
+    return offspring;
+}
+
+float MusicTheoryEngine::calculatePatternFitness(const PatternGenome& pattern,
+                                                 const GenerationParameters& params)
+{
+    if (pattern.notes.empty())
+        return 0.0f;
+        
+    float fitness = 0.0f;
+    
+    // Musical coherence factors
+    float rhythmicConsistency = 0.0f;
+    float melodicFlow = 0.0f;
+    float harmoniousness = 0.0f;
+    
+    // Calculate rhythmic consistency
+    std::vector<double> intervals;
+    for (size_t i = 1; i < pattern.notes.size(); ++i)
+    {
+        intervals.push_back(pattern.notes[i].startTime - pattern.notes[i-1].startTime);
+    }
+    
+    if (!intervals.empty())
+    {
+        double meanInterval = std::accumulate(intervals.begin(), intervals.end(), 0.0) / intervals.size();
+        double variance = 0.0;
+        for (double interval : intervals)
+        {
+            variance += (interval - meanInterval) * (interval - meanInterval);
+        }
+        variance /= intervals.size();
+        rhythmicConsistency = 1.0f / (1.0f + static_cast<float>(variance));
+    }
+    
+    // Calculate melodic flow (prefer smaller pitch intervals)
+    for (size_t i = 1; i < pattern.notes.size(); ++i)
+    {
+        int interval = std::abs(pattern.notes[i].pitch - pattern.notes[i-1].pitch);
+        melodicFlow += 1.0f / (1.0f + interval * 0.1f);  // Penalize large jumps
+    }
+    melodicFlow /= std::max(1.0f, static_cast<float>(pattern.notes.size() - 1));
+    
+    // Calculate basic harmoniousness (prefer notes in key)
+    // This is a simplified version - could be enhanced with scale awareness
+    for (const auto& note : pattern.notes)
+    {
+        int pitchClass = note.pitch % 12;
+        // Basic major scale preference (C major for simplicity)
+        std::vector<int> majorScale = {0, 2, 4, 5, 7, 9, 11};
+        bool inScale = std::find(majorScale.begin(), majorScale.end(), pitchClass) != majorScale.end();
+        harmoniousness += inScale ? 1.0f : 0.3f;
+    }
+    harmoniousness /= std::max(1.0f, static_cast<float>(pattern.notes.size()));
+    
+    // Weight and combine factors
+    fitness = (rhythmicConsistency * 0.3f) + (melodicFlow * 0.4f) + (harmoniousness * 0.3f);
+    
+    return std::clamp(fitness, 0.0f, 1.0f);
+}
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::morphPatterns(const PatternGenome& source,
+                                                                  const PatternGenome& target,
+                                                                  float morphAmount)
+{
+    PatternGenome morphed;
+    morphAmount = std::clamp(morphAmount, 0.0f, 1.0f);
+    
+    size_t minSize = std::min(source.notes.size(), target.notes.size());
+    size_t maxSize = std::max(source.notes.size(), target.notes.size());
+    
+    morphed.notes.reserve(maxSize);
+    
+    // Morph existing notes
+    for (size_t i = 0; i < minSize; ++i)
+    {
+        Note morphedNote;
+        morphedNote.pitch = static_cast<int>(
+            source.notes[i].pitch * (1.0f - morphAmount) + 
+            target.notes[i].pitch * morphAmount
+        );
+        morphedNote.startTime = 
+            source.notes[i].startTime * (1.0 - morphAmount) + 
+            target.notes[i].startTime * morphAmount;
+        morphedNote.duration = 
+            source.notes[i].duration * (1.0 - morphAmount) + 
+            target.notes[i].duration * morphAmount;
+        morphedNote.velocity = static_cast<int>(
+            source.notes[i].velocity * (1.0f - morphAmount) + 
+            target.notes[i].velocity * morphAmount
+        );
+        
+        morphed.notes.push_back(morphedNote);
+    }
+    
+    // Add remaining notes if target is longer
+    if (target.notes.size() > source.notes.size() && morphAmount > 0.5f)
+    {
+        for (size_t i = minSize; i < target.notes.size(); ++i)
+        {
+            morphed.notes.push_back(target.notes[i]);
+        }
+    }
+    // Add remaining notes if source is longer
+    else if (source.notes.size() > target.notes.size() && morphAmount < 0.5f)
+    {
+        for (size_t i = minSize; i < source.notes.size(); ++i)
+        {
+            morphed.notes.push_back(source.notes[i]);
+        }
+    }
+    
+    morphed.generation = std::max(source.generation, target.generation);
+    morphed.id = juce::Uuid().toString();
+    morphed.timestamp = juce::Time::getCurrentTime().toMilliseconds() / 1000.0;
+    
+    return morphed;
+}
+
+std::vector<MusicTheoryEngine::PatternGenome> MusicTheoryEngine::generateVariations(
+    const PatternGenome& basePattern,
+    int numVariations,
+    const GenerationParameters& params)
+{
+    std::vector<PatternGenome> variations;
+    variations.reserve(numVariations);
+    
+    for (int i = 0; i < numVariations; ++i)
+    {
+        // Create variation by applying different levels of mutation
+        GenerationParameters varParams = params;
+        varParams.variation.mutationRate = 0.1f + (i * 0.1f);  // Increasing mutation rate
+        
+        PatternGenome variation = mutatePattern(basePattern, varParams);
+        variation.fitness = calculatePatternFitness(variation, params);
+        variations.push_back(variation);
+    }
+    
+    return variations;
+}
+
+std::vector<MusicTheoryEngine::PatternGenome> MusicTheoryEngine::selectElitePatterns(
+    const std::vector<PatternGenome>& population,
+    int numElite)
+{
+    std::vector<PatternGenome> sorted = population;
+    std::sort(sorted.begin(), sorted.end(), 
+              [](const PatternGenome& a, const PatternGenome& b) {
+                  return a.fitness > b.fitness;
+              });
+    
+    if (sorted.size() <= static_cast<size_t>(numElite))
+        return sorted;
+        
+    return std::vector<PatternGenome>(sorted.begin(), sorted.begin() + numElite);
+}
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::convertToGenome(const MIDIPattern& pattern)
+{
+    PatternGenome genome;
+    genome.notes = pattern.notes;
+    genome.id = juce::Uuid().toString();
+    genome.timestamp = juce::Time::getCurrentTime().toMilliseconds() / 1000.0;
+    genome.generation = 0;
+    return genome;
+}
+
+MIDIPattern MusicTheoryEngine::convertFromGenome(const PatternGenome& genome)
+{
+    MIDIPattern pattern;
+    pattern.notes = genome.notes;
+    return pattern;
+}
+
+//==============================================================================
+// PatternEvolutionEngine Implementation
+
+MusicTheoryEngine::PatternEvolutionEngine::PatternEvolutionEngine(MusicTheoryEngine* engine)
+    : engine(engine), evolutionRng(std::random_device{}())
+{
+}
+
+void MusicTheoryEngine::PatternEvolutionEngine::initializePopulation(
+    const std::vector<MIDIPattern>& seedPatterns,
+    const GenerationParameters& params)
+{
+    currentPopulation.clear();
+    generationHistory.clear();
+    currentGeneration = 0;
+    
+    // Convert seed patterns to genomes
+    for (const auto& pattern : seedPatterns)
+    {
+        PatternGenome genome = engine->convertToGenome(pattern);
+        genome.fitness = engine->calculatePatternFitness(genome, params);
+        currentPopulation.push_back(genome);
+    }
+    
+    // Save initial generation
+    generationHistory.push_back(currentPopulation);
+}
+
+void MusicTheoryEngine::PatternEvolutionEngine::evolveGeneration(const GenerationParameters& params)
+{
+    if (currentPopulation.empty())
+        return;
+        
+    std::vector<PatternGenome> newGeneration;
+    size_t populationSize = currentPopulation.size();
+    
+    // Sort current population by fitness
+    std::sort(currentPopulation.begin(), currentPopulation.end(),
+              [](const PatternGenome& a, const PatternGenome& b) {
+                  return a.fitness > b.fitness;
+              });
+    
+    // Keep elite (top 20%)
+    size_t eliteCount = std::max(1UL, populationSize / 5);
+    for (size_t i = 0; i < eliteCount; ++i)
+    {
+        newGeneration.push_back(currentPopulation[i]);
+    }
+    
+    // Generate offspring to fill rest of population
+    std::uniform_int_distribution<size_t> parentSelector(0, std::min(populationSize, eliteCount * 2) - 1);
+    
+    while (newGeneration.size() < populationSize)
+    {
+        size_t parent1Idx = parentSelector(evolutionRng);
+        size_t parent2Idx = parentSelector(evolutionRng);
+        
+        PatternGenome offspring = engine->evolvePattern(
+            currentPopulation[parent1Idx],
+            currentPopulation[parent2Idx],
+            params
+        );
+        
+        newGeneration.push_back(offspring);
+    }
+    
+    currentPopulation = newGeneration;
+    currentGeneration++;
+    
+    // Maintain diversity
+    maintainDiversity();
+    
+    // Save generation history (limit to prevent memory growth)
+    generationHistory.push_back(currentPopulation);
+    if (generationHistory.size() > static_cast<size_t>(params.variation.generationHistory))
+    {
+        generationHistory.erase(generationHistory.begin());
+    }
+}
+
+std::vector<MusicTheoryEngine::PatternGenome> MusicTheoryEngine::PatternEvolutionEngine::getCurrentElite(int count)
+{
+    return engine->selectElitePatterns(currentPopulation, count);
+}
+
+MusicTheoryEngine::PatternGenome MusicTheoryEngine::PatternEvolutionEngine::getPatternFromHistory(int generation, int index)
+{
+    if (generation < 0 || generation >= static_cast<int>(generationHistory.size()))
+        return {};
+        
+    const auto& genPatterns = generationHistory[generation];
+    if (index < 0 || index >= static_cast<int>(genPatterns.size()))
+        return {};
+        
+    return genPatterns[index];
+}
+
+bool MusicTheoryEngine::PatternEvolutionEngine::revertToGeneration(int targetGeneration)
+{
+    if (targetGeneration < 0 || targetGeneration >= static_cast<int>(generationHistory.size()))
+        return false;
+        
+    currentPopulation = generationHistory[targetGeneration];
+    currentGeneration = targetGeneration;
+    return true;
+}
+
+MusicTheoryEngine::PatternEvolutionEngine::EvolutionStats MusicTheoryEngine::PatternEvolutionEngine::getStats() const
+{
+    EvolutionStats stats;
+    stats.currentGeneration = currentGeneration;
+    stats.populationSize = static_cast<int>(currentPopulation.size());
+    
+    if (!currentPopulation.empty())
+    {
+        float totalFitness = 0.0f;
+        float maxFitness = 0.0f;
+        
+        for (const auto& genome : currentPopulation)
+        {
+            totalFitness += genome.fitness;
+            maxFitness = std::max(maxFitness, genome.fitness);
+        }
+        
+        stats.averageFitness = totalFitness / currentPopulation.size();
+        stats.bestFitness = maxFitness;
+    }
+    
+    // Build fitness history from generation history
+    for (const auto& generation : generationHistory)
+    {
+        if (!generation.empty())
+        {
+            float genBestFitness = 0.0f;
+            for (const auto& genome : generation)
+            {
+                genBestFitness = std::max(genBestFitness, genome.fitness);
+            }
+            stats.fitnessHistory.push_back(genBestFitness);
+        }
+    }
+    
+    return stats;
+}
+
+void MusicTheoryEngine::PatternEvolutionEngine::maintainDiversity()
+{
+    // Remove patterns that are too similar (simplified diversity check)
+    const float similarityThreshold = 0.95f;
+    
+    for (auto it1 = currentPopulation.begin(); it1 != currentPopulation.end(); ++it1)
+    {
+        for (auto it2 = it1 + 1; it2 != currentPopulation.end();)
+        {
+            // Simple similarity check based on note count and average pitch
+            bool similar = false;
+            
+            if (it1->notes.size() == it2->notes.size() && !it1->notes.empty())
+            {
+                float avgPitch1 = 0.0f, avgPitch2 = 0.0f;
+                for (const auto& note : it1->notes) avgPitch1 += note.pitch;
+                for (const auto& note : it2->notes) avgPitch2 += note.pitch;
+                
+                avgPitch1 /= it1->notes.size();
+                avgPitch2 /= it2->notes.size();
+                
+                if (std::abs(avgPitch1 - avgPitch2) < 2.0f)  // Very similar patterns
+                {
+                    similar = true;
+                }
+            }
+            
+            if (similar && it1->fitness > it2->fitness)
+            {
+                it2 = currentPopulation.erase(it2);
+            }
+            else
+            {
+                ++it2;
+            }
+        }
+    }
+}
+
+float MusicTheoryEngine::PatternEvolutionEngine::calculateDiversity() const
+{
+    if (currentPopulation.size() < 2)
+        return 1.0f;
+        
+    float totalDifference = 0.0f;
+    int comparisons = 0;
+    
+    for (size_t i = 0; i < currentPopulation.size(); ++i)
+    {
+        for (size_t j = i + 1; j < currentPopulation.size(); ++j)
+        {
+            // Simple diversity metric based on fitness difference
+            totalDifference += std::abs(currentPopulation[i].fitness - currentPopulation[j].fitness);
+            comparisons++;
+        }
+    }
+    
+    return comparisons > 0 ? totalDifference / comparisons : 0.0f;
+}
+
+//==============================================================================
+// Epic 6 Story 6.3: Advanced Chord Progressions Implementation
+
+juce::String MusicTheoryEngine::AdvancedChord::getName() const
+{
+    juce::String name;
+    
+    // Root note names
+    const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+    name += noteNames[root % 12];
+    
+    // Chord quality
+    switch (type)
+    {
+        case ExtendedChordType::Major: name += ""; break;
+        case ExtendedChordType::Minor: name += "m"; break;
+        case ExtendedChordType::Diminished: name += "dim"; break;
+        case ExtendedChordType::Augmented: name += "aug"; break;
+        case ExtendedChordType::Major7: name += "maj7"; break;
+        case ExtendedChordType::Minor7: name += "m7"; break;
+        case ExtendedChordType::Dominant7: name += "7"; break;
+        case ExtendedChordType::Diminished7: name += "dim7"; break;
+        case ExtendedChordType::HalfDiminished7: name += "m7b5"; break;
+        case ExtendedChordType::Major9: name += "maj9"; break;
+        case ExtendedChordType::Minor9: name += "m9"; break;
+        case ExtendedChordType::Dominant9: name += "9"; break;
+        case ExtendedChordType::Major11: name += "maj11"; break;
+        case ExtendedChordType::Minor11: name += "m11"; break;
+        case ExtendedChordType::Dominant11: name += "11"; break;
+        case ExtendedChordType::Major13: name += "maj13"; break;
+        case ExtendedChordType::Minor13: name += "m13"; break;
+        case ExtendedChordType::Dominant13: name += "13"; break;
+        case ExtendedChordType::Sus2: name += "sus2"; break;
+        case ExtendedChordType::Sus4: name += "sus4"; break;
+        case ExtendedChordType::Add9: name += "add9"; break;
+        default: name += ""; break;
+    }
+    
+    // Alterations
+    if (!alterations.empty())
+    {
+        name += "(";
+        for (size_t i = 0; i < alterations.size(); ++i)
+        {
+            if (i > 0) name += ",";
+            int alt = alterations[i];
+            if (alt > 0) name += "#" + juce::String(alt);
+            else name += "b" + juce::String(-alt);
+        }
+        name += ")";
+    }
+    
+    // Bass note (slash chord)
+    if (bass >= 0 && bass != root)
+    {
+        name += "/" + juce::String(noteNames[bass % 12]);
+    }
+    
+    return name;
+}
+
+juce::String MusicTheoryEngine::AdvancedChord::getRomanNumeral(int key, ScaleType scale) const
+{
+    // Calculate scale degree
+    int scaleDegree = ((root - key) % 12 + 12) % 12;
+    
+    // Roman numerals (uppercase for major, lowercase for minor)
+    const char* majorNumerals[] = { "I", "bII", "II", "bIII", "III", "IV", "bV", "V", "bVI", "VI", "bVII", "VII" };
+    const char* minorNumerals[] = { "i", "bii", "ii", "biii", "iii", "iv", "bv", "v", "bvi", "vi", "bvii", "vii" };
+    
+    juce::String numeral;
+    
+    switch (type)
+    {
+        case ExtendedChordType::Major:
+        case ExtendedChordType::Major7:
+        case ExtendedChordType::Major9:
+        case ExtendedChordType::Major11:
+        case ExtendedChordType::Major13:
+            numeral = majorNumerals[scaleDegree];
+            break;
+            
+        case ExtendedChordType::Minor:
+        case ExtendedChordType::Minor7:
+        case ExtendedChordType::Minor9:
+        case ExtendedChordType::Minor11:
+        case ExtendedChordType::Minor13:
+            numeral = minorNumerals[scaleDegree];
+            break;
+            
+        case ExtendedChordType::Dominant7:
+        case ExtendedChordType::Dominant9:
+        case ExtendedChordType::Dominant11:
+        case ExtendedChordType::Dominant13:
+            numeral = juce::String(majorNumerals[scaleDegree]) + "7";
+            break;
+            
+        case ExtendedChordType::Diminished:
+        case ExtendedChordType::Diminished7:
+            numeral = juce::String(minorNumerals[scaleDegree]) + "°";
+            break;
+            
+        default:
+            numeral = majorNumerals[scaleDegree];
+            break;
+    }
+    
+    return numeral;
+}
+
+MusicTheoryEngine::AdvancedChord MusicTheoryEngine::generateAdvancedChord(
+    int root, ExtendedChordType type, const GenerationParameters& params) const
+{
+    AdvancedChord chord;
+    chord.root = normalizeNote(root);
+    chord.type = type;
+    
+    // Generate base chord tones
+    switch (type)
+    {
+        case ExtendedChordType::Major:
+            chord.notes = {0, 4, 7};
+            break;
+        case ExtendedChordType::Minor:
+            chord.notes = {0, 3, 7};
+            break;
+        case ExtendedChordType::Diminished:
+            chord.notes = {0, 3, 6};
+            break;
+        case ExtendedChordType::Augmented:
+            chord.notes = {0, 4, 8};
+            break;
+        case ExtendedChordType::Major7:
+            chord.notes = {0, 4, 7, 11};
+            break;
+        case ExtendedChordType::Minor7:
+            chord.notes = {0, 3, 7, 10};
+            break;
+        case ExtendedChordType::Dominant7:
+            chord.notes = {0, 4, 7, 10};
+            break;
+        case ExtendedChordType::Diminished7:
+            chord.notes = {0, 3, 6, 9};
+            break;
+        case ExtendedChordType::HalfDiminished7:
+            chord.notes = {0, 3, 6, 10};
+            break;
+        case ExtendedChordType::Major9:
+            chord.notes = {0, 4, 7, 11, 14};
+            break;
+        case ExtendedChordType::Minor9:
+            chord.notes = {0, 3, 7, 10, 14};
+            break;
+        case ExtendedChordType::Dominant9:
+            chord.notes = {0, 4, 7, 10, 14};
+            break;
+        case ExtendedChordType::Sus2:
+            chord.notes = {0, 2, 7};
+            break;
+        case ExtendedChordType::Sus4:
+            chord.notes = {0, 5, 7};
+            break;
+        case ExtendedChordType::Add9:
+            chord.notes = {0, 4, 7, 14};
+            break;
+        default:
+            chord.notes = {0, 4, 7}; // Default to major triad
+            break;
+    }
+    
+    // Convert to absolute pitches
+    for (auto& note : chord.notes)
+    {
+        note = normalizeNote(chord.root + note);
+    }
+    
+    // Calculate tension level
+    chord.tension = calculateChordTension(chord, params.key, static_cast<MusicTheoryEngine::ScaleType>(params.scale));
+    
+    return chord;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generateAdvancedProgression(
+    int key, ScaleType scale, const GenerationParameters& params, int numChords) const
+{
+    std::vector<AdvancedChord> progression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Get scale notes for key
+    auto scaleNotes = getScaleNotes(key, scale);
+    
+    // Generate progression based on style
+    switch (params.harmony.style)
+    {
+        case GenerationParameters::HarmonicSettings::ProgressionStyle::Classical:
+            progression = generateClassicalProgression(key, scale, params, numChords);
+            break;
+            
+        case GenerationParameters::HarmonicSettings::ProgressionStyle::Jazz:
+            progression = generateJazzProgression(key, scale, params, numChords);
+            break;
+            
+        case GenerationParameters::HarmonicSettings::ProgressionStyle::Pop:
+            progression = generatePopProgression(key, scale, params, numChords);
+            break;
+            
+        case GenerationParameters::HarmonicSettings::ProgressionStyle::Electronic:
+            progression = generateElectronicProgression(key, scale, params, numChords);
+            break;
+            
+        default:
+            progression = generatePopProgression(key, scale, params, numChords);
+            break;
+    }
+    
+    // Apply modal interchange if requested
+    if (params.harmony.modalInterchange > 0.0f)
+    {
+        progression = applyModalInterchange(progression, key, scale, params.harmony.modalInterchange);
+    }
+    
+    // Add secondary dominants if requested
+    if (params.harmony.secondaryDominants > 0.0f)
+    {
+        progression = addSecondaryDominants(progression, key, scale, params.harmony.secondaryDominants);
+    }
+    
+    // Optimize voice leading
+    progression = optimizeAdvancedVoiceLeading(progression, params);
+    
+    return progression;
+}
+
+float MusicTheoryEngine::calculateChordTension(const AdvancedChord& chord, int key, MusicTheoryEngine::ScaleType scale) const
+{
+    float tension = 0.0f;
+    
+    // Base tension from chord type
+    switch (chord.type)
+    {
+        case ExtendedChordType::Major:
+        case ExtendedChordType::Minor:
+            tension = 0.1f;
+            break;
+        case ExtendedChordType::Dominant7:
+            tension = 0.6f;
+            break;
+        case ExtendedChordType::Diminished7:
+        case ExtendedChordType::HalfDiminished7:
+            tension = 0.8f;
+            break;
+        case ExtendedChordType::Dominant9:
+        case ExtendedChordType::Dominant11:
+        case ExtendedChordType::Dominant13:
+            tension = 0.7f;
+            break;
+        default:
+            tension = 0.3f;
+            break;
+    }
+    
+    // Add tension for non-diatonic notes
+    auto scaleNotes = getScaleNotes(key, scale);
+    for (int note : chord.notes)
+    {
+        bool inScale = std::find(scaleNotes.begin(), scaleNotes.end(), note % 12) != scaleNotes.end();
+        if (!inScale)
+            tension += 0.2f;
+    }
+    
+    // Add tension for alterations
+    tension += chord.alterations.size() * 0.1f;
+    
+    return std::clamp(tension, 0.0f, 1.0f);
+}
+
+// Helper functions for different progression styles
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generateClassicalProgression(
+    int key, ScaleType scale, const GenerationParameters& params, int numChords) const
+{
+    std::vector<AdvancedChord> progression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Classical I-IV-V-I with embellishments
+    std::vector<int> classicalPattern = {0, 3, 4, 0}; // I-IV-V-I in scale degrees
+    
+    for (int i = 0; i < numChords; ++i)
+    {
+        int scaleDegree = classicalPattern[i % classicalPattern.size()];
+        auto scaleNotes = getScaleNotes(key, scale);
+        int chordRoot = scaleNotes[scaleDegree % scaleNotes.size()];
+        
+        ExtendedChordType chordType = ExtendedChordType::Major;
+        if (scale == ScaleType::NaturalMinor && (scaleDegree == 0 || scaleDegree == 3))
+            chordType = ExtendedChordType::Minor;
+        
+        // Add 7ths occasionally for complexity
+        if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate &&
+            std::uniform_real_distribution<float>(0.0f, 1.0f)(gen) < 0.3f)
+        {
+            chordType = (chordType == ExtendedChordType::Major) ? ExtendedChordType::Major7 : ExtendedChordType::Minor7;
+        }
+        
+        progression.push_back(generateAdvancedChord(chordRoot, chordType, params));
+    }
+    
+    return progression;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generateJazzProgression(
+    int key, ScaleType scale, const GenerationParameters& params, int numChords) const
+{
+    std::vector<AdvancedChord> progression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Jazz ii-V-I progression with extensions
+    std::vector<std::pair<int, ExtendedChordType>> jazzPattern = {
+        {1, ExtendedChordType::Minor7},     // ii7
+        {4, ExtendedChordType::Dominant7},  // V7
+        {0, ExtendedChordType::Major7},     // Imaj7
+        {5, ExtendedChordType::Minor7}      // vi7
+    };
+    
+    auto scaleNotes = getScaleNotes(key, scale);
+    
+    for (int i = 0; i < numChords; ++i)
+    {
+        auto& pattern = jazzPattern[i % jazzPattern.size()];
+        int chordRoot = scaleNotes[pattern.first % scaleNotes.size()];
+        ExtendedChordType chordType = pattern.second;
+        
+        // Upgrade to extensions based on complexity
+        if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Advanced)
+        {
+            if (chordType == ExtendedChordType::Minor7 && std::uniform_real_distribution<float>(0.0f, 1.0f)(gen) < 0.4f)
+                chordType = ExtendedChordType::Minor9;
+            else if (chordType == ExtendedChordType::Dominant7 && std::uniform_real_distribution<float>(0.0f, 1.0f)(gen) < 0.5f)
+                chordType = ExtendedChordType::Dominant9;
+        }
+        
+        progression.push_back(generateAdvancedChord(chordRoot, chordType, params));
+    }
+    
+    return progression;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generatePopProgression(
+    int key, ScaleType scale, const GenerationParameters& params, int numChords) const
+{
+    std::vector<AdvancedChord> progression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Popular vi-IV-I-V progression
+    std::vector<std::pair<int, ExtendedChordType>> popPattern = {
+        {5, ExtendedChordType::Minor},      // vi
+        {3, ExtendedChordType::Major},      // IV
+        {0, ExtendedChordType::Major},      // I
+        {4, ExtendedChordType::Major}       // V
+    };
+    
+    auto scaleNotes = getScaleNotes(key, scale);
+    
+    for (int i = 0; i < numChords; ++i)
+    {
+        auto& pattern = popPattern[i % popPattern.size()];
+        int chordRoot = scaleNotes[pattern.first % scaleNotes.size()];
+        ExtendedChordType chordType = pattern.second;
+        
+        // Add occasional 7ths or sus chords for modern pop sound
+        if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate)
+        {
+            float rand = std::uniform_real_distribution<float>(0.0f, 1.0f)(gen);
+            if (rand < 0.2f && chordType == ExtendedChordType::Major)
+                chordType = ExtendedChordType::Major7;
+            else if (rand < 0.15f)
+                chordType = ExtendedChordType::Sus4;
+        }
+        
+        progression.push_back(generateAdvancedChord(chordRoot, chordType, params));
+    }
+    
+    return progression;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generateElectronicProgression(
+    int key, ScaleType scale, const GenerationParameters& params, int numChords) const
+{
+    std::vector<AdvancedChord> progression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    // Electronic music often uses simpler progressions with emphasis on rhythm
+    std::vector<std::pair<int, ExtendedChordType>> electronicPattern = {
+        {0, ExtendedChordType::Minor},      // i
+        {6, ExtendedChordType::Major},      // bVII
+        {3, ExtendedChordType::Major},      // IV
+        {0, ExtendedChordType::Minor}       // i
+    };
+    
+    auto scaleNotes = getScaleNotes(key, scale);
+    
+    for (int i = 0; i < numChords; ++i)
+    {
+        auto& pattern = electronicPattern[i % electronicPattern.size()];
+        int chordRoot = scaleNotes[pattern.first % scaleNotes.size()];
+        ExtendedChordType chordType = pattern.second;
+        
+        // Add sus chords and add9 for electronic flavor
+        if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate)
+        {
+            float rand = std::uniform_real_distribution<float>(0.0f, 1.0f)(gen);
+            if (rand < 0.3f)
+                chordType = ExtendedChordType::Sus2;
+            else if (rand < 0.2f)
+                chordType = ExtendedChordType::Add9;
+        }
+        
+        progression.push_back(generateAdvancedChord(chordRoot, chordType, params));
+    }
+    
+    return progression;
+}
+
+//==============================================================================
+// AdvancedHarmonyEngine Implementation
+
+MusicTheoryEngine::AdvancedHarmonyEngine::AdvancedHarmonyEngine(MusicTheoryEngine* engine)
+    : engine(engine)
+{
+    initializeProgressionTemplates();
+}
+
+void MusicTheoryEngine::AdvancedHarmonyEngine::initializeProgressionTemplates()
+{
+    // Initialize common progression templates for each style
+    // These are scale degree patterns that can be transposed to any key
+    
+    progressionTemplates[GenerationParameters::HarmonicSettings::ProgressionStyle::Classical] = {
+        {0, 3, 4, 0},           // I-IV-V-I
+        {0, 5, 3, 4, 0},        // I-vi-IV-V-I
+        {0, 1, 4, 0}            // I-ii-V-I
+    };
+    
+    progressionTemplates[GenerationParameters::HarmonicSettings::ProgressionStyle::Jazz] = {
+        {1, 4, 0},              // ii-V-I
+        {0, 5, 1, 4, 0},        // I-vi-ii-V-I
+        {2, 4, 0, 5}            // iii-V-I-vi
+    };
+    
+    progressionTemplates[GenerationParameters::HarmonicSettings::ProgressionStyle::Pop] = {
+        {5, 3, 0, 4},           // vi-IV-I-V
+        {0, 4, 5, 3},           // I-V-vi-IV
+        {5, 3, 4, 4}            // vi-IV-V-V
+    };
+    
+    progressionTemplates[GenerationParameters::HarmonicSettings::ProgressionStyle::Electronic] = {
+        {0, 6, 3, 4},           // i-bVII-IV-V
+        {0, 5, 6, 4},           // i-vi-bVII-V
+        {0, 2, 6, 0}            // i-III-bVII-i
+    };
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::AdvancedHarmonyEngine::generateContextualProgression(
+    int key, ScaleType scale, const GenerationParameters& params)
+{
+    // Use the engine's generateAdvancedProgression method
+    return engine->generateAdvancedProgression(key, scale, params, 8);
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::AdvancedHarmonyEngine::evolveHarmony(
+    const std::vector<AdvancedChord>& seedProgression,
+    const GenerationParameters& params,
+    float evolutionAmount)
+{
+    std::vector<AdvancedChord> evolved = seedProgression;
+    std::mt19937 gen{std::random_device{}()};
+    
+    for (auto& chord : evolved)
+    {
+        // Evolve chord complexity based on evolution amount
+        if (std::uniform_real_distribution<float>(0.0f, 1.0f)(gen) < evolutionAmount)
+        {
+            // Upgrade chord to more complex version
+            switch (chord.type)
+            {
+                case ExtendedChordType::Major:
+                    if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate)
+                        chord = engine->generateAdvancedChord(chord.root, ExtendedChordType::Major7, params);
+                    break;
+                case ExtendedChordType::Minor:
+                    if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate)
+                        chord = engine->generateAdvancedChord(chord.root, ExtendedChordType::Minor7, params);
+                    break;
+                case ExtendedChordType::Major7:
+                    if (params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Advanced)
+                        chord = engine->generateAdvancedChord(chord.root, ExtendedChordType::Major9, params);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    
+    return evolved;
+}
+
+MusicTheoryEngine::AdvancedHarmonyEngine::HarmonicAnalysis MusicTheoryEngine::AdvancedHarmonyEngine::analyzeProgression(
+    const std::vector<AdvancedChord>& progression, int key, ScaleType scale) const
+{
+    HarmonicAnalysis analysis;
+    
+    // Analyze each chord's function and tension
+    for (const auto& chord : progression)
+    {
+        analysis.functions.push_back(analyzeHarmonicFunction(chord, key, scale));
+        analysis.tensions.push_back(engine->calculateChordTension(chord, key, scale));
+    }
+    
+    // Calculate overall coherence
+    float coherence = 0.0f;
+    if (!progression.empty())
+    {
+        // Simple coherence based on diatonic content
+        auto scaleNotes = engine->getScaleNotes(key, scale);
+        int diatonicChords = 0;
+        
+        for (const auto& chord : progression)
+        {
+            bool isDiatonic = std::find(scaleNotes.begin(), scaleNotes.end(), chord.root) != scaleNotes.end();
+            if (isDiatonic) diatonicChords++;
+        }
+        
+        coherence = static_cast<float>(diatonicChords) / progression.size();
+    }
+    
+    analysis.overallCoherence = coherence;
+    
+    // Check for strong cadence (V-I or vii-I)
+    if (progression.size() >= 2)
+    {
+        const auto& penultimate = progression[progression.size() - 2];
+        const auto& final = progression.back();
+        
+        int penultimateScaleDegree = ((penultimate.root - key) % 12 + 12) % 12;
+        int finalScaleDegree = ((final.root - key) % 12 + 12) % 12;
+        
+        // V-I cadence (scale degree 7 to 0) or vii-I (scale degree 11 to 0)
+        if ((penultimateScaleDegree == 7 || penultimateScaleDegree == 11) && finalScaleDegree == 0)
+        {
+            analysis.hasStrongCadence = true;
+        }
+    }
+    
+    // Calculate harmonic rhythm score (based on tension changes)
+    if (analysis.tensions.size() > 1)
+    {
+        float tensionVariation = 0.0f;
+        for (size_t i = 1; i < analysis.tensions.size(); ++i)
+        {
+            tensionVariation += std::abs(analysis.tensions[i] - analysis.tensions[i-1]);
+        }
+        analysis.harmonicRhythmScore = tensionVariation / (analysis.tensions.size() - 1);
+    }
+    
+    return analysis;
+}
+
+std::vector<std::vector<MusicTheoryEngine::AdvancedChord>> MusicTheoryEngine::AdvancedHarmonyEngine::generateProgressionVariations(
+    const std::vector<AdvancedChord>& baseProgression,
+    const GenerationParameters& params,
+    int numVariations)
+{
+    std::vector<std::vector<AdvancedChord>> variations;
+    std::mt19937 gen{std::random_device{}()};
+    
+    for (int v = 0; v < numVariations; ++v)
+    {
+        std::vector<AdvancedChord> variation = baseProgression;
+        
+        // Apply different types of variations
+        for (auto& chord : variation)
+        {
+            float rand = std::uniform_real_distribution<float>(0.0f, 1.0f)(gen);
+            
+            if (rand < 0.3f) // 30% chance to substitute chord
+            {
+                // Generate substitution based on harmonic function
+                auto substitutions = engine->generateSubstitutions(chord, params);
+                if (!substitutions.empty())
+                {
+                    int substIndex = std::uniform_int_distribution<int>(0, substitutions.size() - 1)(gen);
+                    chord = substitutions[substIndex];
+                }
+            }
+            else if (rand < 0.2f) // 20% chance to change complexity
+            {
+                // Upgrade or downgrade chord complexity
+                if (chord.type == ExtendedChordType::Major && params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Intermediate)
+                {
+                    chord = engine->generateAdvancedChord(chord.root, ExtendedChordType::Major7, params);
+                }
+                else if (chord.type == ExtendedChordType::Major7 && params.harmony.complexity >= GenerationParameters::HarmonicSettings::HarmonicComplexity::Advanced)
+                {
+                    chord = engine->generateAdvancedChord(chord.root, ExtendedChordType::Major9, params);
+                }
+            }
+        }
+        
+        variations.push_back(variation);
+    }
+    
+    return variations;
+}
+
+MusicTheoryEngine::AdvancedChord::Function MusicTheoryEngine::AdvancedHarmonyEngine::analyzeHarmonicFunction(
+    const AdvancedChord& chord, int key, ScaleType scale) const
+{
+    int scaleDegree = ((chord.root - key) % 12 + 12) % 12;
+    
+    // Basic functional analysis
+    switch (scaleDegree)
+    {
+        case 0: // I
+        case 5: // vi (relative minor, still tonic function)
+            return AdvancedChord::Function::Tonic;
+            
+        case 3: // IV
+        case 1: // ii (common subdominant substitute)
+            return AdvancedChord::Function::Subdominant;
+            
+        case 7: // V
+        case 11: // vii (leading tone, dominant function)
+            return AdvancedChord::Function::Dominant;
+            
+        default:
+            return AdvancedChord::Function::Other;
+    }
+}
+
+// Stub implementations for missing methods
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::applyModalInterchange(
+    const std::vector<AdvancedChord>& progression, int key, ScaleType scale, float interchangeAmount) const
+{
+    // Simple implementation - return original progression for now
+    return progression;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::addSecondaryDominants(
+    const std::vector<AdvancedChord>& progression, int key, ScaleType scale, float amount) const
+{
+    // Simple implementation - return original progression for now
+    return progression;
+}
+
+std::vector<float> MusicTheoryEngine::calculateTensionCurve(
+    const std::vector<AdvancedChord>& progression, const GenerationParameters& params) const
+{
+    std::vector<float> tensions;
+    for (const auto& chord : progression)
+    {
+        tensions.push_back(calculateChordTension(chord, params.key, static_cast<MusicTheoryEngine::ScaleType>(params.scale)));
+    }
+    return tensions;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::optimizeAdvancedVoiceLeading(
+    const std::vector<AdvancedChord>& progression, const GenerationParameters& params) const
+{
+    // Simple implementation - return original progression for now
+    return progression;
+}
+
+std::vector<MusicTheoryEngine::AdvancedChord> MusicTheoryEngine::generateSubstitutions(
+    const AdvancedChord& originalChord, const GenerationParameters& params) const
+{
+    std::vector<AdvancedChord> substitutions;
+    
+    // Add a few simple substitutions
+    if (originalChord.type == ExtendedChordType::Major)
+    {
+        // Add relative minor
+        int relativeMinor = (originalChord.root + 9) % 12;
+        substitutions.push_back(generateAdvancedChord(relativeMinor, ExtendedChordType::Minor, params));
+    }
+    
+    return substitutions;
+}
