@@ -11,6 +11,7 @@
 */
 
 #include "AudioPreviewEngine.h"
+#include "InstrumentLibraryManager.h"
 #include <cmath>
 
 //==============================================================================
@@ -218,6 +219,18 @@ void AudioPreviewEngine::updateSynthesiserSounds()
             break;
         case SoundType::Bass:
             createBassSound();
+            break;
+        case SoundType::Bell:
+        case SoundType::Brass:
+        case SoundType::Guitar:
+        case SoundType::Keys:
+        case SoundType::Mallet:
+        case SoundType::Organ:
+        case SoundType::Pluck:
+        case SoundType::Strings:
+            // For now, use Piano sound as fallback for new instrument types
+            // Will be expanded with specific sound implementations in Task 9.1.4
+            createPianoSound();
             break;
     }
 }
@@ -440,7 +453,8 @@ void PreviewSynthVoice::startNote(int midiNoteNumber, float velocity, juce::Synt
     switch (previewSound->getSoundType())
     {
         case AudioPreviewEngine::SoundType::Piano:
-            level *= 0.8; // Slightly softer for piano
+        case AudioPreviewEngine::SoundType::Keys:
+            level *= 0.8; // Slightly softer for piano/keys
             break;
         case AudioPreviewEngine::SoundType::Synth:
             level *= 1.0; // Normal level for synth
@@ -451,6 +465,23 @@ void PreviewSynthVoice::startNote(int midiNoteNumber, float velocity, juce::Synt
             {
                 level *= 1.3;
             }
+            break;
+        case AudioPreviewEngine::SoundType::Bell:
+        case AudioPreviewEngine::SoundType::Mallet:
+            level *= 0.9; // Slightly softer for bell/mallet sounds
+            break;
+        case AudioPreviewEngine::SoundType::Brass:
+            level *= 1.1; // Slightly louder for brass
+            break;
+        case AudioPreviewEngine::SoundType::Guitar:
+        case AudioPreviewEngine::SoundType::Pluck:
+            level *= 0.85; // Moderate level for plucked instruments
+            break;
+        case AudioPreviewEngine::SoundType::Organ:
+            level *= 0.95; // Slightly softer for organ
+            break;
+        case AudioPreviewEngine::SoundType::Strings:
+            level *= 0.75; // Softer for strings
             break;
     }
     
@@ -543,4 +574,100 @@ float PreviewSynthVoice::generateSample()
         default:
             return static_cast<float>(std::sin(currentAngle));
     }
+}
+
+//==============================================================================
+// Epic 9 Story 9.1: Instrument Library Integration
+
+void AudioPreviewEngine::setInstrumentLibraryManager(InstrumentLibraryManager* manager)
+{
+    instrumentLibrary = manager;
+    
+    // Auto-load a default preset if available
+    if (instrumentLibrary != nullptr)
+    {
+        auto presets = instrumentLibrary->getPresetsForCategory("Piano");
+        if (!presets.isEmpty())
+        {
+            loadInstrumentPreset(presets.getFirst());
+        }
+    }
+}
+
+void AudioPreviewEngine::loadInstrumentPreset(const InstrumentLibraryManager::PresetData& preset)
+{
+    currentPreset = preset;
+    currentPresetId = preset.presetId;
+    
+    // Update sound type based on preset category
+    if (preset.category == "Piano") setSoundType(SoundType::Piano);
+    else if (preset.category == "Synth") setSoundType(SoundType::Synth);
+    else if (preset.category == "Bass") setSoundType(SoundType::Bass);
+    else if (preset.category == "Bell") setSoundType(SoundType::Bell);
+    else if (preset.category == "Brass") setSoundType(SoundType::Brass);
+    else if (preset.category == "Guitar") setSoundType(SoundType::Guitar);
+    else if (preset.category == "Keys") setSoundType(SoundType::Keys);
+    else if (preset.category == "Mallet") setSoundType(SoundType::Mallet);
+    else if (preset.category == "Organ") setSoundType(SoundType::Organ);
+    else if (preset.category == "Pluck") setSoundType(SoundType::Pluck);
+    else if (preset.category == "Strings") setSoundType(SoundType::Strings);
+    
+    // Apply synthesis parameters from preset (basic implementation for now)
+    // Master volume is handled via existing mechanism, other params will be expanded
+    
+    DBG("Loaded instrument preset: " + preset.name + " (" + preset.category + ")");
+}
+
+void AudioPreviewEngine::autoSelectPreset(GenerationParameters::GenerationType type, 
+                                         const juce::StringArray& styleTags)
+{
+    if (instrumentLibrary == nullptr)
+        return;
+        
+    // Map generation type to instrument category
+    juce::String category;
+    switch (type)
+    {
+        case GenerationParameters::GenerationType::Melody:
+            category = "Piano";
+            break;
+        case GenerationParameters::GenerationType::Chords:
+            category = "Keys";
+            break;
+        case GenerationParameters::GenerationType::Bassline:
+            category = "Bass";
+            break;
+        case GenerationParameters::GenerationType::Drums:
+            category = "Synth"; // Fallback for drums
+            break;
+        default:
+            category = "Piano";
+            break;
+    }
+    
+    // Get presets for category
+    auto presets = instrumentLibrary->getPresetsForCategory(category);
+    if (presets.isEmpty())
+        return;
+        
+    // Try to find preset matching style tags
+    InstrumentLibraryManager::PresetData selectedPreset = presets.getFirst();
+    
+    if (!styleTags.isEmpty())
+    {
+        for (const auto& preset : presets)
+        {
+            for (const auto& tag : styleTags)
+            {
+                if (preset.tags.contains(tag))
+                {
+                    selectedPreset = preset;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Load the selected preset
+    loadInstrumentPreset(selectedPreset);
 }

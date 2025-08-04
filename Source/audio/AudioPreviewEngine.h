@@ -13,12 +13,14 @@
 
 #pragma once
 
-#include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_basics/juce_audio_basics.h>
-#include <juce_core/juce_core.h>
-#include "MIDIPattern.h"
-#include "GenerationParameters.h"
+#include <juce_audio_devices/juce_audio_devices.h> 
+#include <juce_audio_formats/juce_audio_formats.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include "../MIDIPattern.h"
+#include "../GenerationParameters.h"
 #include "LayerEffectsProcessor.h"
+#include "InstrumentLibraryManager.h"
 
 //==============================================================================
 /**
@@ -92,9 +94,20 @@ public:
     
     enum class SoundType
     {
+        // Original basic types
         Piano = 0,
         Synth = 1,
-        Bass = 2
+        Bass = 2,
+        
+        // Epic 9.1: Extended instrument categories
+        Bell = 3,
+        Brass = 4, 
+        Guitar = 5,
+        Keys = 6,
+        Mallet = 7,
+        Organ = 8,
+        Pluck = 9,
+        Strings = 10
     };
     
     /** Set the current sound type */
@@ -104,6 +117,22 @@ public:
     /** Set master volume for preview playback */
     void setMasterVolume(float volume) { masterVolume.store(volume); }
     float getMasterVolume() const { return masterVolume.load(); }
+    
+    //==============================================================================
+    // Epic 9 Story 9.1: Instrument Library Integration
+    
+    /** Set instrument library manager */
+    void setInstrumentLibraryManager(InstrumentLibraryManager* manager);
+    
+    /** Load specific instrument preset */
+    void loadInstrumentPreset(const InstrumentLibraryManager::PresetData& preset);
+    
+    /** Get current loaded preset ID */
+    juce::String getCurrentPresetId() const { return currentPresetId; }
+    
+    /** Auto-select preset based on generation parameters */
+    void autoSelectPreset(GenerationParameters::GenerationType type, 
+                         const juce::StringArray& styleTags = {});
     
     //==============================================================================
     // Epic 8 Story 8.2: ExperimentPad Interface
@@ -179,6 +208,11 @@ private:
     
     // Epic 8 Story 8.2: Per-Layer Effects Processing
     LayerEffectsProcessor layerEffects;
+    
+    // Epic 9 Story 9.1: Instrument Library Integration
+    InstrumentLibraryManager* instrumentLibrary = nullptr;
+    juce::String currentPresetId;
+    InstrumentLibraryManager::PresetData currentPreset;
     
     // Timing
     std::atomic<int64_t> playbackStartSample{0};

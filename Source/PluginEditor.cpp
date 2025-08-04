@@ -25,6 +25,7 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
     setupTransportControls(); // Epic 4 Story 4.2
     setupAIModeStatusIndicators(); // Epic 7 Story 7.6
     setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
+    setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
     
     // Start listening to pattern changes
     audioProcessor.getPatternManager().addChangeListener(this);
@@ -183,6 +184,11 @@ void SpawnCloneAudioProcessorEditor::resized()
     zoomLabel.setBounds(controlsRow.removeFromLeft(45));
     zoomSlider.setBounds(controlsRow.removeFromLeft(110).reduced(3));
     exportButton.setBounds(controlsRow.removeFromLeft(110).reduced(3));
+    
+    // Epic 9 Story 9.1: Preset Browser Component (compact placement)
+    bounds.removeFromTop(margin);
+    auto presetBrowserHeight = 100; // Compact height for preset browser
+    presetBrowser.setBounds(bounds.removeFromTop(presetBrowserHeight).reduced(margin/2));
     
     // Epic 8 Story 8.1: SPAWN-style Experiment Pad (prominent placement)
     bounds.removeFromTop(margin);
@@ -843,6 +849,45 @@ void SpawnCloneAudioProcessorEditor::setupExperimentPad()
         // Future implementation: save pad presets to plugin state
         DBG("Experiment Pad preset saved: " << preset.name);
     });
+}
+
+//==============================================================================
+// Epic 9 Story 9.1: Setup Preset Browser Component
+void SpawnCloneAudioProcessorEditor::setupPresetBrowser()
+{
+    // Make the preset browser visible
+    addAndMakeVisible(presetBrowser);
+    
+    // Connect to the instrument library manager from the audio processor
+    if (auto* instrumentLibrary = audioProcessor.getInstrumentLibraryManager())
+    {
+        presetBrowser.setInstrumentLibraryManager(instrumentLibrary);
+    }
+    
+    // Set up callback for preset selection
+    presetBrowser.onPresetSelected = [this](const InstrumentLibraryManager::PresetData& preset)
+    {
+        DBG("Preset selected: " << preset.name << " (Category: " << preset.category << ")");
+        
+        // TODO: Apply preset to current generation parameters
+        // This will be implemented when we have parameter mapping system
+        
+        // For now, show confirmation in the UI
+        // Could trigger preview or update generation parameters
+        if (auto* instrumentLibrary = audioProcessor.getInstrumentLibraryManager())
+        {
+            // Trigger preview of selected preset if audio engine is available
+            if (auto* audioEngine = audioProcessor.getAudioPreviewEngine())
+            {
+                // audioEngine->previewPreset(preset);
+                DBG("Would preview preset: " << preset.name);
+            }
+        }
+    };
+    
+    // Set up search and filter callbacks for user interaction feedback
+    // Note: These will be handled internally by the PresetBrowserComponent
+    // through its TextEditor::Listener and ComboBox::Listener interfaces
 }
 
 //==============================================================================

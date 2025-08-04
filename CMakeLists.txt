@@ -67,6 +67,8 @@ target_sources(SpawnClone PRIVATE
     Source/ai/GenreSpecialist.h
     Source/audio/AudioPreviewEngine.cpp
     Source/audio/AudioPreviewEngine.h
+    Source/audio/InstrumentLibraryManager.cpp
+    Source/audio/InstrumentLibraryManager.h
     Source/audio/LayerEffectsProcessor.cpp
     Source/audio/LayerEffectsProcessor.h
     Source/audio/RealTimeProcessor.cpp
@@ -78,7 +80,9 @@ target_sources(SpawnClone PRIVATE
     Source/audio/MIDIExporter.cpp
     Source/audio/MIDIExporter.h
     Source/ui/ExperimentPadComponent.cpp
-    Source/ui/ExperimentPadComponent.h)
+    Source/ui/ExperimentPadComponent.h
+    Source/ui/PresetBrowserComponent.cpp
+    Source/ui/PresetBrowserComponent.h)
 
 target_compile_definitions(SpawnClone PRIVATE
     JUCE_WEB_BROWSER=0
@@ -426,6 +430,38 @@ if(GTEST_FOUND)
     target_compile_features(test_ExperimentPadComponent PRIVATE cxx_std_17)
     gtest_discover_tests(test_ExperimentPadComponent)
 endif()
+
+# Epic 9 Story 9.1: Curated Instrument Library Unit Tests
+add_executable(test_Epic9Story91
+    Source/test_epic9_story9_1.cpp
+    Source/audio/InstrumentLibraryManager.cpp
+    Source/audio/AudioPreviewEngine.cpp
+    Source/audio/LayerEffectsProcessor.cpp
+    Source/audio/RealTimeProcessor.cpp
+    Source/MIDIPattern.cpp
+    Source/PatternSerializer.cpp
+)
+
+target_include_directories(test_Epic9Story91 PRIVATE 
+    Source
+    Source/audio
+    Source/ui
+    Source/ai
+)
+
+target_link_libraries(test_Epic9Story91 PRIVATE 
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_dsp
+    juce::juce_gui_basics
+    GTest::gtest
+    GTest::gtest_main
+    GTest::gmock
+)
+
+target_compile_features(test_Epic9Story91 PRIVATE cxx_std_17)
+gtest_discover_tests(test_Epic9Story91)
 
 # Epic 8 Story 8.4 Test: Advanced Real-Time Processing
 add_executable(Epic4_Story4_RealTimeTest

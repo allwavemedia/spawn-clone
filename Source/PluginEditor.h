@@ -15,6 +15,7 @@
 #include "PatternHistoryListBox.h"
 #include "audio/TransportControlsComponent.h"
 #include "ui/ExperimentPadComponent.h"
+#include "ui/PresetBrowserComponent.h"
 
 //==============================================================================
 /**
@@ -51,6 +52,7 @@ private:
     void setupTransportControls(); // Epic 4 Story 4.2
     void setupAIModeStatusIndicators(); // Epic 7 Story 7.6
     void setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
+    void setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
     void updateAIModeStatus(); // Epic 7 Story 7.6
     void updatePerformanceMetrics(double generationTimeMs, int noteCount); // Epic 7 Story 7.6.7
     void updatePatternDisplay();
@@ -128,6 +130,9 @@ private:
     
     // Epic 8 Story 8.1: SPAWN-style Experiment Pad XY Controller
     ExperimentPadComponent experimentPad;
+    
+    // Epic 9 Story 9.1: Preset Browser Component
+    PresetBrowserComponent presetBrowser;
     
     // Epic 3 Story 3.2: Pattern History Panel
     PatternHistoryListBox patternHistoryListBox;

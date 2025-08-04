@@ -32,6 +32,9 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
     
     // Epic 8 Story 8.3: Initialize multi-output manager
     multiOutputManager = std::make_unique<MultiOutputManager>();
+    
+    // Epic 9 Story 9.1: Initialize instrument library manager
+    instrumentLibraryManager = std::make_unique<InstrumentLibraryManager>();
 }
 
 SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
