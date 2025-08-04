@@ -18,6 +18,7 @@
 // AudioPreviewEngine Implementation
 
 AudioPreviewEngine::AudioPreviewEngine()
+    : advancedSynthesisEngine(std::make_unique<AdvancedSynthesisEngine>())
 {
     // Task 2.2.1: Initialize synthesizer
     initializeSynthesiser();
@@ -38,6 +39,9 @@ void AudioPreviewEngine::prepareToPlay(double newSampleRate, int samplesPerBlock
 {
     sampleRate = newSampleRate;
     synthesiser.setCurrentPlaybackSampleRate(sampleRate);
+    
+    // Epic 9.2: Prepare Advanced Synthesis Engine
+    advancedSynthesisEngine->prepareToPlay(sampleRate, samplesPerBlock, 2); // Stereo
     
     // Epic 8 Story 8.2: Prepare LayerEffectsProcessor
     layerEffects.prepareToPlay(sampleRate, samplesPerBlock, 2); // Stereo
@@ -65,8 +69,17 @@ void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         processPatternPlayback(midiMessages, buffer.getNumSamples());
     }
     
-    // Let the synthesizer process the MIDI
-    synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    // Epic 9.2: Route audio through appropriate synthesis engine
+    if (advancedSynthesisEnabled.load() && advancedSynthesisEngine)
+    {
+        // Use advanced synthesis engine
+        advancedSynthesisEngine->processBlock(buffer, midiMessages);
+    }
+    else
+    {
+        // Use legacy JUCE synthesizer
+        synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+    }
     
     // Epic 8 Story 8.2: Apply layer effects processing
     // For now, process the combined output through the melody layer effects
@@ -670,4 +683,70 @@ void AudioPreviewEngine::autoSelectPreset(GenerationParameters::GenerationType t
     
     // Load the selected preset
     loadInstrumentPreset(selectedPreset);
+}
+
+//==============================================================================
+// Epic 9.2: Advanced Synthesis Engine Integration
+
+void AudioPreviewEngine::setAdvancedSynthesisEnabled(bool enabled)
+{
+    advancedSynthesisEnabled.store(enabled);
+    
+    if (enabled && advancedSynthesisEngine)
+    {
+        // Transfer current preset parameters to advanced synthesis engine
+        if (!currentPresetId.isEmpty())
+        {
+            AdvancedSynthesisEngine::SynthesisParameters params;
+            
+            // Map current preset synthesis parameters
+            params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+            params.envelope.attack = currentPreset.synthParams.attack;
+            params.envelope.decay = currentPreset.synthParams.decay;
+            params.envelope.sustain = currentPreset.synthParams.sustain;
+            params.envelope.release = currentPreset.synthParams.release;
+            
+            params.filter.enabled = currentPreset.synthParams.useFilter;
+            params.filter.cutoff = currentPreset.synthParams.filterCutoff * 20000.0f; // Normalize to Hz
+            params.filter.resonance = currentPreset.synthParams.filterResonance;
+            
+            params.modulation.lfoRate = currentPreset.synthParams.lfoRate;
+            params.modulation.lfoDepth = currentPreset.synthParams.lfoDepth;
+            params.modulation.modulationTarget = currentPreset.synthParams.lfoTarget;
+            
+            params.brightness = currentPreset.synthParams.brightness;
+            params.warmth = currentPreset.synthParams.warmth;
+            params.saturation = currentPreset.synthParams.saturation;
+            
+            params.masterVolume = masterVolume.load();
+            
+            advancedSynthesisEngine->setSynthesisParameters(params);
+        }
+    }
+}
+
+void AudioPreviewEngine::setSynthesisParameters(const AdvancedSynthesisEngine::SynthesisParameters& params)
+{
+    if (advancedSynthesisEngine)
+        advancedSynthesisEngine->setSynthesisParameters(params);
+}
+
+const AdvancedSynthesisEngine::SynthesisParameters& AudioPreviewEngine::getSynthesisParameters() const
+{
+    static AdvancedSynthesisEngine::SynthesisParameters defaultParams;
+    return advancedSynthesisEngine ? advancedSynthesisEngine->getSynthesisParameters() : defaultParams;
+}
+
+void AudioPreviewEngine::setSynthesisParameter(const juce::String& paramName, float value)
+{
+    if (advancedSynthesisEngine)
+        advancedSynthesisEngine->setParameter(paramName, value);
+}
+
+juce::String AudioPreviewEngine::getSynthesisEngineInfo() const
+{
+    if (advancedSynthesisEngine)
+        return advancedSynthesisEngine->getEngineInfo();
+    
+    return "Advanced Synthesis Engine not available";
 }

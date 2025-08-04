@@ -67,6 +67,8 @@ target_sources(SpawnClone PRIVATE
     Source/ai/GenreSpecialist.h
     Source/audio/AudioPreviewEngine.cpp
     Source/audio/AudioPreviewEngine.h
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/AdvancedSynthesisEngine.h
     Source/audio/InstrumentLibraryManager.cpp
     Source/audio/InstrumentLibraryManager.h
     Source/audio/LayerEffectsProcessor.cpp
@@ -146,6 +148,10 @@ if(BUILD_TESTS)
     add_executable(test_AudioPreviewEngine
         Source/test_AudioPreviewEngine.cpp
         Source/audio/AudioPreviewEngine.cpp
+        Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/LayerEffectsProcessor.cpp
+        Source/audio/InstrumentLibraryManager.cpp
+        Source/audio/RealTimeProcessor.cpp
         Source/ParameterManager.cpp
         Source/PatternManager.cpp
         Source/PatternHistoryListBox.cpp
@@ -168,6 +174,7 @@ if(BUILD_TESTS)
         juce::juce_audio_devices
         juce::juce_audio_processors
         juce::juce_audio_utils
+        juce::juce_dsp
     )
     
     target_compile_features(test_AudioPreviewEngine PRIVATE cxx_std_17)
@@ -465,7 +472,7 @@ gtest_discover_tests(test_Epic9Story91)
 
 # Epic 8 Story 8.4 Test: Advanced Real-Time Processing
 add_executable(Epic4_Story4_RealTimeTest
-    Epic4_Story4_RealTimeTest.cpp
+    tests/epic4/Epic4_Story4_RealTimeTest.cpp
     Source/audio/RealTimeProcessor.cpp
     Source/audio/LayerEffectsProcessor.cpp
 )
@@ -486,4 +493,56 @@ target_link_libraries(Epic4_Story4_RealTimeTest PRIVATE
 )
 
 target_compile_features(Epic4_Story4_RealTimeTest PRIVATE cxx_std_17)
+
+# Epic 9.2: Advanced Synthesis Engine Unit Tests
+add_executable(test_AdvancedSynthesisEngine
+    tests/unit/test_AdvancedSynthesisEngine.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+)
+
+target_link_libraries(test_AdvancedSynthesisEngine PRIVATE
+    gtest_main
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_dsp
+)
+
+target_compile_features(test_AdvancedSynthesisEngine PRIVATE cxx_std_17)
+target_include_directories(test_AdvancedSynthesisEngine PRIVATE "Source")
+
+include(GoogleTest)
+gtest_discover_tests(test_AdvancedSynthesisEngine)
+
+# Debug synthesis executable
+add_executable(debug_synthesis
+    debug_synthesis.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+)
+
+target_link_libraries(debug_synthesis PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_dsp
+)
+
+target_compile_features(debug_synthesis PRIVATE cxx_std_17)
+target_include_directories(debug_synthesis PRIVATE "Source")
+
+# Minimal debug executable
+add_executable(minimal_debug
+    minimal_debug.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+)
+
+target_link_libraries(minimal_debug PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_dsp
+)
+
+target_compile_features(minimal_debug PRIVATE cxx_std_17)
+target_include_directories(minimal_debug PRIVATE "Source")
 

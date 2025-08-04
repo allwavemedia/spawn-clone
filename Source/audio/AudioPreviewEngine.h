@@ -21,6 +21,7 @@
 #include "../GenerationParameters.h"
 #include "LayerEffectsProcessor.h"
 #include "InstrumentLibraryManager.h"
+#include "AdvancedSynthesisEngine.h"
 
 //==============================================================================
 /**
@@ -133,6 +134,25 @@ public:
     /** Auto-select preset based on generation parameters */
     void autoSelectPreset(GenerationParameters::GenerationType type, 
                          const juce::StringArray& styleTags = {});
+
+    //==============================================================================
+    // Epic 9.2: Advanced Synthesis Engine Integration
+    
+    /** Enable advanced synthesis mode */
+    void setAdvancedSynthesisEnabled(bool enabled);
+    bool isAdvancedSynthesisEnabled() const { return advancedSynthesisEnabled.load(); }
+    
+    /** Set synthesis parameters for advanced synthesis */
+    void setSynthesisParameters(const AdvancedSynthesisEngine::SynthesisParameters& params);
+    
+    /** Get current synthesis parameters */
+    const AdvancedSynthesisEngine::SynthesisParameters& getSynthesisParameters() const;
+    
+    /** Set individual synthesis parameter by name */
+    void setSynthesisParameter(const juce::String& paramName, float value);
+    
+    /** Get synthesis engine performance info */
+    juce::String getSynthesisEngineInfo() const;
     
     //==============================================================================
     // Epic 8 Story 8.2: ExperimentPad Interface
@@ -213,6 +233,10 @@ private:
     InstrumentLibraryManager* instrumentLibrary = nullptr;
     juce::String currentPresetId;
     InstrumentLibraryManager::PresetData currentPreset;
+    
+    // Epic 9.2: Advanced Synthesis Engine Integration
+    std::unique_ptr<AdvancedSynthesisEngine> advancedSynthesisEngine;
+    std::atomic<bool> advancedSynthesisEnabled{false};
     
     // Timing
     std::atomic<int64_t> playbackStartSample{0};
