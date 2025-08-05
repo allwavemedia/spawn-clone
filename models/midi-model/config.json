@@ -1,0 +1,87 @@
+{
+  "architectures": [
+    "MIDIModel"
+  ],
+  "model_type": "midi_model",
+  "n_embd": 1024,
+  "net_config": {
+    "hidden_size": 1024,
+    "intermediate_size": 4096,
+    "max_position_embeddings": 4096,
+    "model_type": "llama",
+    "num_attention_heads": 16,
+    "num_hidden_layers": 12,
+    "num_key_value_heads": 16,
+    "pad_token_id": 0,
+    "use_cache": false,
+    "vocab_size": 3239
+  },
+  "net_token_config": {
+    "hidden_size": 1024,
+    "intermediate_size": 1024,
+    "max_position_embeddings": 4096,
+    "model_type": "llama",
+    "num_attention_heads": 4,
+    "num_hidden_layers": 3,
+    "num_key_value_heads": 4,
+    "pad_token_id": 0,
+    "use_cache": false,
+    "vocab_size": 3239
+  },
+  "tokenizer": {
+    "bos_id": 1,
+    "eos_id": 2,
+    "event_parameters": {
+      "bpm": 256,
+      "channel": 16,
+      "controller": 128,
+      "duration": 2048,
+      "patch": 128,
+      "pitch": 128,
+      "time1": 128,
+      "time2": 16,
+      "track": 128,
+      "value": 128,
+      "velocity": 128
+    },
+    "events": {
+      "control_change": [
+        "time1",
+        "time2",
+        "track",
+        "channel",
+        "controller",
+        "value"
+      ],
+      "note": [
+        "time1",
+        "time2",
+        "track",
+        "duration",
+        "channel",
+        "pitch",
+        "velocity"
+      ],
+      "patch_change": [
+        "time1",
+        "time2",
+        "track",
+        "channel",
+        "patch"
+      ],
+      "set_tempo": [
+        "time1",
+        "time2",
+        "track",
+        "bpm"
+      ]
+    },
+    "max_token_seq": 8,
+    "optimise_midi": false,
+    "pad_id": 0,
+    "version": "v1",
+    "vocab_size": 3239
+  },
+  "torch_dtype": "float32",
+  "transformers_version": "4.44.2"
+}

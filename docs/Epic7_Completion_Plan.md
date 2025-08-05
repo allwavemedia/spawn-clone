@@ -78,32 +78,34 @@ Epic 7: AI Generation Modes is functionally complete with robust Fast Mode imple
    - Implement seamless fallback mechanisms
    - Validate generation quality across genres
 
-### **Phase 2: Cloud Mode Premium Integration (1-2 weeks)**
+### **Phase 2: Cost-Effective Cloud Mode Integration (1-2 weeks)**
 
-#### **API Integration Implementation**
+#### **Hugging Face API Integration (RESEARCH-DRIVEN PIVOT)**
 **Timeline:** 1-2 weeks  
-**Resources Required:** API credentials, backend infrastructure
+**Resources Required:** Hugging Face API credentials, model validation
+**Cost Target:** <$0.01 per generation (90-97% cost reduction vs Pozalabs)
 
 **Implementation Steps:**
 1. **API Credentials Setup (1 day)**
-   - Obtain Pozalabs ARIA API development keys
-   - Configure secure credential storage
-   - Set up API usage monitoring
+   - Create Hugging Face API account and obtain access tokens
+   - Configure secure credential storage in `SecureCredentialManager`
+   - Set up API usage monitoring and cost tracking
 
-2. **Enhanced API Integration (3-4 days)**
-   - Complete Pozalabs ARIA text-to-MIDI implementation
-   - Add retry logic and error handling
-   - Implement request optimization and caching
+2. **Hugging Face API Integration (3-4 days)**
+   - Integrate `skytnt/midi-model` via Hugging Face Inference API
+   - Implement JSON payload structure for MIDI generation
+   - Add base64 MIDI response decoding and error handling
+   - Implement request optimization and intelligent caching
 
-3. **Subscription Backend (3-4 days)**
-   - Design simple subscription validation system
-   - Implement usage tracking and rate limiting
-   - Create user account management basics
+3. **Cost-Effective Backend (2-3 days)**
+   - Remove expensive subscription validation system
+   - Implement simple usage tracking for cost monitoring
+   - Create transparent cost display for users
 
-4. **Premium Features Integration (2-3 days)**
-   - Add Cloud Mode UI enhancements
-   - Implement subscription upgrade prompts
-   - Create premium feature gating
+4. **Enhanced Cloud Features (2-3 days)**
+   - Add Cloud Mode UI with cost transparency
+   - Implement intelligent fallback to local modes
+   - Create clear value proposition messaging
 
 ### **Phase 3: Production Deployment (1 week)**
 
@@ -166,11 +168,13 @@ For immediate Epic 7 closure with future enhancement:
 - **API Services:** Pozalabs ARIA account and credits
 - **Backend Services:** Simple authentication and subscription tracking
 
-### **Budget Estimates**
-- **Custom Model Training:** $500-1000 (GPU compute)
-- **API Credits:** $200-500 (development and testing)
-- **CDN/Hosting:** $50-100/month
-- **Total One-time:** $750-1600
+### **Budget Estimates (UPDATED BASED ON RESEARCH)**
+- **Hugging Face API Credits:** $50-100 (development and testing)
+- **ONNX Model Integration:** $200-500 (development time)
+- **CDN/Hosting:** $20-50/month (model distribution)
+- **Total One-time Investment:** $270-650 (vs $750-1600 original)
+- **Ongoing Monthly Cost:** $30-100 (vs $1,000-5,000 with Pozalabs)
+- **Cost Reduction Achieved:** 90-97% vs original Pozalabs plan
 
 ---
 

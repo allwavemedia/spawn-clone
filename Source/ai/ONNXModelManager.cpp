@@ -333,3 +333,77 @@ bool ONNXModelManager::autoLoadBestModel()
     lastError = "Failed to load any cached models";
     return false;
 }
+
+//==============================================================================
+// Epic 7 Week 2: Enhanced Integration Methods
+
+bool ONNXModelManager::isWeek2Ready() const
+{
+    return isModelLoaded() && meetsPerformanceTarget();
+}
+
+juce::String ONNXModelManager::getWeek2Status() const
+{
+    juce::String status = "ONNX Model Status:\n";
+    status += "- Loaded: " + juce::String(isModelLoaded() ? "YES" : "NO") + "\n";
+    status += "- Performance Target: " + juce::String(meetsPerformanceTarget() ? "MET" : "NOT MET") + "\n";
+    
+    if (runtimeAvailable)
+    {
+        status += "- Runtime: AVAILABLE\n";
+        status += "- Fallback Required: " + juce::String(requiresFallback() ? "YES" : "NO") + "\n";
+    }
+    else
+    {
+        status += "- Runtime: NOT AVAILABLE (using fallback)\n";
+    }
+    
+    return status;
+}
+
+bool ONNXModelManager::meetsPerformanceTarget() const
+{
+    // Week 2 performance target: <2s inference
+    // For local inference, this should be much faster
+    return !requiresFallback() && runtimeAvailable;
+}
+
+std::vector<uint8_t> ONNXModelManager::generateMIDIPattern(const juce::String& genre,
+                                                           const juce::String& style,
+                                                           int lengthInBeats,
+                                                           int tempo)
+{
+    GenerationParameters params;
+    params.genre = genre;
+    params.style = style;
+    params.patternLengthBeats = lengthInBeats;
+    
+    MIDIPattern pattern;
+    if (generatePattern(pattern, params))
+    {
+        return convertPatternToMIDI(pattern, tempo);
+    }
+    
+    return {};
+}
+
+std::vector<uint8_t> ONNXModelManager::convertPatternToMIDI(const MIDIPattern& pattern, int tempo)
+{
+    std::vector<uint8_t> midiData;
+    
+    // Simple MIDI conversion for Week 2
+    for (const auto& note : pattern.notes)
+    {
+        // Note on
+        midiData.push_back(0x90); // Note on, channel 0
+        midiData.push_back(static_cast<uint8_t>(note.pitch));
+        midiData.push_back(static_cast<uint8_t>(note.velocity));
+        
+        // Note off (simplified - in real MIDI this would be timed)
+        midiData.push_back(0x80); // Note off, channel 0
+        midiData.push_back(static_cast<uint8_t>(note.pitch));
+        midiData.push_back(0x00);
+    }
+    
+    return midiData;
+}

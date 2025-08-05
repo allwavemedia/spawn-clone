@@ -16,9 +16,19 @@
 #include <juce_core/juce_core.h>
 #include "../GenerationParameters.h"
 #include "../MIDIPattern.h"
+#include "ONNXModelManager.h"
 #include <memory>
 #include <functional>
 #include <map>
+
+//==============================================================================
+// Epic 7: Hugging Face API Configuration
+#define HF_API_BASE_URL "https://api-inference.huggingface.co/models/"
+#define HF_TARGET_MODEL "skytnt/midi-model"
+#define HF_ESTIMATED_COST_PER_REQUEST 0.005f
+
+// Enable simulation for development (will be replaced with real API in Week 2)
+#define HF_API_SIMULATION
 
 // Forward declaration
 class SecureCredentialManager;
@@ -100,11 +110,44 @@ public:
     //==============================================================================
     // Fallback Management (Task 7.3.5)
     
-    /** Check if cloud mode requires fallback */
+    /** Check if fallback to rule-based generation is required */
     bool requiresFallback() const;
     
-    /** Get last error message */
+    /** Get the last error message */
     juce::String getLastError() const;
+    
+    //==============================================================================
+    // Epic 7: Hugging Face API Integration
+    
+    /** Generate pattern using Hugging Face API (cost-effective alternative) */
+    void generatePatternWithHuggingFace(const GenerationParameters& params, GenerationCallback callback);
+    
+    /** Test connection to Hugging Face API */
+    void testHuggingFaceConnection(std::function<void(bool success, const juce::String& info)> callback);
+    
+    /** Get cost estimate for Hugging Face generation */
+    float getHuggingFaceCostEstimate(const GenerationParameters& params);
+    
+    //==============================================================================
+    // Epic 7 Week 2: Local ONNX Integration
+    
+    /** Initialize ONNX model for local inference */
+    bool initializeONNXModel();
+    
+    /** Generate pattern using local ONNX model (fastest, cheapest) */
+    void generatePatternWithONNX(const GenerationParameters& params, GenerationCallback callback);
+    
+    /** Check if ONNX model is ready for inference */
+    bool isONNXModelReady() const;
+    
+    /** Get ONNX performance metrics */
+    juce::String getONNXStatus() const;
+    
+    /** Hybrid generation: try ONNX first, fallback to cloud */
+    void generatePatternHybrid(const GenerationParameters& params, GenerationCallback callback);
+    
+    /** Week 2 status report */
+    juce::String getWeek2StatusReport() const;
 
 private:
     //==============================================================================
@@ -146,8 +189,45 @@ private:
     /** Parse event-based MIDI responses */
     bool parseEventBasedResponse(const juce::var& apiData, MIDIPattern& pattern, const GenerationParameters& params);
     
-    /** Generate placeholder pattern for development/fallback */
+    /** Generate a simple placeholder pattern when actual parsing isn't available */
     void generatePlaceholderPattern(MIDIPattern& pattern, const GenerationParameters& params);
+    
+    //==============================================================================
+    // Epic 7: Hugging Face Integration Private Methods
+    
+    /** Create Hugging Face API request payload */
+    juce::var createHuggingFacePayload(const GenerationParameters& params);
+    
+    /** Parse Hugging Face API response */
+    bool parseHuggingFaceResponse(const juce::var& response, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Create MIDI prompt from parameters */
+    juce::String createMIDIPromptFromParameters(const GenerationParameters& params);
+    
+    /** Parse MIDI tokens from HF response */
+    bool parseMIDITokensFromHFResponse(const juce::var& tokens, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Parse MIDI text from HF response */
+    bool parseMIDITextFromHFResponse(const juce::String& text, MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Generate enhanced placeholder pattern */
+    void generateEnhancedPlaceholderPattern(MIDIPattern& pattern, const GenerationParameters& params);
+    
+    /** Send HTTP request to Hugging Face API */
+    void sendHuggingFaceRequest(const juce::String& endpoint, const juce::var& payload,
+                               std::function<void(bool, const juce::var&)> callback);
+    
+    /** Update cost tracking for Epic 7 */
+    void updateCostTracking(float cost);
+    
+    /** Generate jazz-style placeholder pattern */
+    void generateJazzPatternPlaceholder(MIDIPattern& pattern, const GenerationParameters& params, int totalTicks);
+    
+    /** Generate classical-style placeholder pattern */
+    void generateClassicalPatternPlaceholder(MIDIPattern& pattern, const GenerationParameters& params, int totalTicks);
+    
+    /** Generate generic placeholder pattern */
+    void generateGenericPatternPlaceholder(MIDIPattern& pattern, const GenerationParameters& params, int totalTicks);
     
     //==============================================================================
     // Member variables
@@ -174,6 +254,9 @@ private:
     // Request management
     std::unique_ptr<juce::URL::DownloadTask> currentRequest;
     GenerationCallback currentCallback;
+    
+    // Epic 7 Week 2: ONNX Integration
+    std::unique_ptr<ONNXModelManager> onnxManager;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CloudAPIManager)
 };

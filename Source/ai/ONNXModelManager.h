@@ -1,95 +1,96 @@
-/*
-  ==============================================================================
-
-    ONNXModelManager.h
-    Created: 29 Jul 2025
-    Author:  Epic 7 Story 7.2 Implementation
-
-    Manages ONNX Runtime model loading and inference for Quality Mode AI generation.
-
-  ==============================================================================
-*/
+//==============================================================================
+// ONNXModelManager.h
+// ONNX Model Management for Epic 7 Week 2 Local Inference
+//==============================================================================
 
 #pragma once
 
 #include <juce_core/juce_core.h>
-#include "../GenerationParameters.h"
-#include "../MIDIPattern.h"
 #include <memory>
+#include <vector>
+#include <string>
+#include <functional>
 
-// Forward declaration
-class ModelCacheManager;
-
-//==============================================================================
-/**
-    Manages ONNX Runtime model loading and inference for local ML-based pattern generation.
-    Provides fallback to Fast Mode when models are unavailable.
-*/
 class ONNXModelManager
 {
 public:
+    struct InferenceResult
+    {
+        std::vector<float> embeddings;
+        float inferenceTime;
+        bool success;
+        String errorMessage;
+        
+        InferenceResult() : inferenceTime(0.0f), success(false) {}
+    };
+    
+    struct ModelInfo
+    {
+        String modelPath;
+        String modelType;
+        bool isLoaded;
+        float avgInferenceTime;
+        int numInferences;
+        
+        ModelInfo() : isLoaded(false), avgInferenceTime(0.0f), numInferences(0) {}
+    };
+    
     ONNXModelManager();
     ~ONNXModelManager();
-
-    //==============================================================================
-    // Model Management (Task 7.2.1, 7.2.2)
-    bool initializeRuntime();
-    bool loadModel(const juce::String& modelPath);
-    bool isModelLoaded() const { return modelLoaded; }
-    bool isRuntimeAvailable() const { return runtimeInitialized; }
     
-    //==============================================================================
-    // Pattern Generation (Task 7.2.3)
-    bool generatePattern(MIDIPattern& pattern, const GenerationParameters& params);
+    // Model Loading
+    bool loadModel(const String& modelPath);
+    bool isModelLoaded() const;
+    ModelInfo getModelInfo() const;
+    void unloadModel();
     
-    //==============================================================================
-    // Model Validation (Task 7.2.4)
-    bool validateModel(const juce::File& modelFile);
-    juce::String getModelVersion() const { return modelVersion; }
+    // Inference Operations
+    InferenceResult runInference(const std::vector<int>& inputIds);
+    InferenceResult generateMIDIEmbeddings(const String& genre, 
+                                         const String& style,
+                                         int patternLength = 128);
     
-    //==============================================================================
-    // Fallback Management (Task 7.2.5)
-    bool requiresFallback() const;
-    juce::String getLastError() const { return lastError; }
+    // Pattern Generation (Epic 7 Integration)
+    std::vector<uint8_t> generateMIDIPattern(const String& genre,
+                                           const String& style, 
+                                           int lengthInBeats = 32,
+                                           int tempo = 120);
     
-    //==============================================================================
-    // Model Cache Integration (Task 7.4.1)
+    // Performance Monitoring
+    float getAverageInferenceTime() const;
+    int getTotalInferences() const;
+    bool meetsPerformanceTarget() const; // <2s target
     
-    /** Set model cache manager */
-    void setModelCacheManager(std::shared_ptr<ModelCacheManager> cacheManager);
+    // Cost Tracking
+    float getCostPerInference() const; // Should be ~$0.001
+    float getTotalSavings() const; // vs cloud costs
     
-    /** Auto-load best available model */
-    bool autoLoadBestModel();
-
+    // Week 2 Status
+    bool isWeek2Ready() const;
+    String getWeek2Status() const;
+    
 private:
-    //==============================================================================
-    // ONNX Runtime Integration
-    #ifdef ONNX_RUNTIME_AVAILABLE
-    // ONNX Runtime session and environment will go here
-    // For now, we'll simulate the interface
-    #endif
+    struct Impl;
+    std::unique_ptr<Impl> pImpl;
     
-    //==============================================================================
-    // State management
-    bool runtimeInitialized = false;
-    bool modelLoaded = false;
-    juce::String modelVersion = "1.0.0";
-    juce::String lastError;
-    juce::File currentModelFile;
+    // Helper Methods
+    std::vector<int> tokenizeInput(const String& text);
+    std::vector<uint8_t> embeddingsToMIDI(const std::vector<float>& embeddings,
+                                        int lengthInBeats, int tempo);
+    void updatePerformanceMetrics(float inferenceTime);
     
-    // Model cache integration
-    std::shared_ptr<ModelCacheManager> cacheManager;
-    
-    //==============================================================================
-    // Model inference methods
-    std::vector<float> preprocessParameters(const GenerationParameters& params);
-    bool runInference(const std::vector<float>& inputData, std::vector<float>& outputData);
-    bool postprocessOutput(const std::vector<float>& outputData, MIDIPattern& pattern, const GenerationParameters& params);
-    
-    //==============================================================================
-    // Validation helpers
-    bool checkModelCompatibility(const juce::File& modelFile);
-    bool verifyModelIntegrity(const juce::File& modelFile);
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ONNXModelManager)
+};
+
+// Epic 7 Integration Helper
+class Epic7ONNXIntegration
+{
+public:
+    static bool setupWeek2Environment();
+    static bool validateONNXModel();
+    static String getWeek2StatusReport();
+    static bool testLocalInference();
+    
+private:
+    Epic7ONNXIntegration() = delete;
 };
