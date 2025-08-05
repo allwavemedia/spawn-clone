@@ -18,7 +18,7 @@
 // AudioPreviewEngine Implementation
 
 AudioPreviewEngine::AudioPreviewEngine()
-    : advancedSynthesisEngine(std::make_unique<AdvancedSynthesisEngine>())
+    : advancedSynthesisEngine(std::make_unique<spawnclone::audio::AdvancedSynthesisEngine>())
 {
     // Task 2.2.1: Initialize synthesizer
     initializeSynthesiser();
@@ -697,10 +697,10 @@ void AudioPreviewEngine::setAdvancedSynthesisEnabled(bool enabled)
         // Transfer current preset parameters to advanced synthesis engine
         if (!currentPresetId.isEmpty())
         {
-            AdvancedSynthesisEngine::SynthesisParameters params;
+            spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters params;
             
             // Map current preset synthesis parameters
-            params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+            params.synthesisType = spawnclone::audio::AdvancedSynthesisEngine::SynthesisType::Wavetable;
             params.envelope.attack = currentPreset.synthParams.attack;
             params.envelope.decay = currentPreset.synthParams.decay;
             params.envelope.sustain = currentPreset.synthParams.sustain;
@@ -725,15 +725,15 @@ void AudioPreviewEngine::setAdvancedSynthesisEnabled(bool enabled)
     }
 }
 
-void AudioPreviewEngine::setSynthesisParameters(const AdvancedSynthesisEngine::SynthesisParameters& params)
+void AudioPreviewEngine::setSynthesisParameters(const spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters& params)
 {
     if (advancedSynthesisEngine)
         advancedSynthesisEngine->setSynthesisParameters(params);
 }
 
-const AdvancedSynthesisEngine::SynthesisParameters& AudioPreviewEngine::getSynthesisParameters() const
+const spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters& AudioPreviewEngine::getSynthesisParameters() const
 {
-    static AdvancedSynthesisEngine::SynthesisParameters defaultParams;
+    static spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters defaultParams;
     return advancedSynthesisEngine ? advancedSynthesisEngine->getSynthesisParameters() : defaultParams;
 }
 

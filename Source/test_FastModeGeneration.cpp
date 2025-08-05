@@ -44,13 +44,14 @@ protected:
 
     void setupDefaultParameters()
     {
-        params.complexity = 0.5f;
+        params.rhythmicComplexity = 0.5f;
         params.tempo = 120.0f;
-        params.keySignature = "C Major";
-        params.generationType = "Melody";
-        params.patternLength = 4; // 4 bars
-        params.aiMode = 0; // Fast Mode
-        params.seed = 12345; // Deterministic for testing
+        params.key = 0; // C
+        params.scale = GenerationParameters::ScaleType::Major;
+        params.generationType = GenerationParameters::GenerationType::Melody;
+        params.patternLengthBeats = 16.0f; // 4 bars * 4 beats/bar
+        params.aiMode = GenerationParameters::AIMode::Fast;
+        params.generationSeed = 12345; // Deterministic for testing
     }
 
     std::unique_ptr<ThreadManager> threadManager;
@@ -76,7 +77,7 @@ TEST_F(FastModeGenerationTest, GenerationTimingUnder2Seconds)
     const int maxWaitMs = 3000; // 3 second timeout
     const int checkIntervalMs = 10;
     
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < maxWaitMs)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < maxWaitMs)
     {
         juce::Thread::sleep(checkIntervalMs);
         waitCount += checkIntervalMs;
@@ -89,7 +90,8 @@ TEST_F(FastModeGenerationTest, GenerationTimingUnder2Seconds)
     EXPECT_LT(duration.count(), 2000) << "Fast Mode generation took " << duration.count() << "ms, exceeding 2-second target";
     
     // Verify pattern was generated
-    EXPECT_FALSE(patternManager->getCurrentPattern().notes.empty()) << "No pattern was generated";
+    EXPECT_TRUE(patternManager->getCurrentPattern().has_value()) << "No pattern was generated";
+    EXPECT_FALSE(patternManager->getCurrentPattern()->notes.empty()) << "No pattern was generated";
 }
 
 TEST_F(FastModeGenerationTest, ConsistentTimingAcrossComplexity)
@@ -101,15 +103,15 @@ TEST_F(FastModeGenerationTest, ConsistentTimingAcrossComplexity)
     
     for (float complexity : complexityLevels)
     {
-        params.complexity = complexity;
-        patternManager->clearCurrentPattern(); // Reset for next test
+        params.rhythmicComplexity = complexity;
+        patternManager->clear(); // Reset for next test
         
         auto startTime = std::chrono::high_resolution_clock::now();
         aiEngine->generatePattern(params);
         
         // Wait for completion
         int waitCount = 0;
-        while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2500)
+        while (!patternManager->getCurrentPattern().has_value() && waitCount < 2500)
         {
             juce::Thread::sleep(10);
             waitCount += 10;
@@ -138,13 +140,15 @@ TEST_F(FastModeGenerationTest, GeneratedPatternStructure)
     
     // Wait for generation
     int waitCount = 0;
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
     {
         juce::Thread::sleep(10);
         waitCount += 10;
     }
     
-    const auto& pattern = patternManager->getCurrentPattern();
+    const auto& patternOpt = patternManager->getCurrentPattern();
+    ASSERT_TRUE(patternOpt.has_value());
+    const auto& pattern = *patternOpt;
     
     // Verify basic pattern structure
     EXPECT_FALSE(pattern.notes.empty()) << "Pattern should contain notes";
@@ -166,30 +170,37 @@ TEST_F(FastModeGenerationTest, GeneratedPatternStructure)
 TEST_F(FastModeGenerationTest, GenreSpecificPatterns)
 {
     // Test genre-specific pattern generation
-    std::vector<juce::String> genres = {"Hip Hop", "Pop", "Dance", "EDM", "R&B"};
+    std::vector<GenerationParameters::GenerationType> genres = {
+        GenerationParameters::GenerationType::Melody,
+        GenerationParameters::GenerationType::Chords,
+        GenerationParameters::GenerationType::Bassline,
+        GenerationParameters::GenerationType::Drums
+    };
     
     for (const auto& genre : genres)
     {
         params.generationType = genre;
-        patternManager->clearCurrentPattern();
+        patternManager->clear();
         
         aiEngine->generatePattern(params);
         
         // Wait for generation
         int waitCount = 0;
-        while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+        while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
         {
             juce::Thread::sleep(10);
             waitCount += 10;
         }
         
-        const auto& pattern = patternManager->getCurrentPattern();
+        const auto& patternOpt = patternManager->getCurrentPattern();
+        ASSERT_TRUE(patternOpt.has_value());
+        const auto& pattern = *patternOpt;
         
-        EXPECT_FALSE(pattern.notes.empty()) << "Genre " << genre << " should generate valid pattern";
+        EXPECT_FALSE(pattern.notes.empty()) << "Genre " << (int)genre << " should generate valid pattern";
         
         // Genre-specific validation could be added here
         // For now, verify basic structure
-        EXPECT_GT(pattern.notes.size(), 2) << "Genre " << genre << " should generate sufficient notes";
+        EXPECT_GT(pattern.notes.size(), 2) << "Genre " << (int)genre << " should generate sufficient notes";
     }
 }
 
@@ -199,43 +210,44 @@ TEST_F(FastModeGenerationTest, DeterministicGeneration)
     
     // Generate first pattern
     aiEngine->generatePattern(params);
-    
     int waitCount = 0;
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
     {
         juce::Thread::sleep(10);
         waitCount += 10;
     }
+    ASSERT_TRUE(patternManager->getCurrentPattern().has_value());
+    auto firstPattern = *patternManager->getCurrentPattern();
     
-    auto firstPattern = patternManager->getCurrentPattern();
-    
-    // Clear and generate again with same parameters
-    patternManager->clearCurrentPattern();
+    // Generate second pattern with same seed
+    patternManager->clear();
     aiEngine->generatePattern(params);
-    
     waitCount = 0;
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
     {
         juce::Thread::sleep(10);
         waitCount += 10;
     }
-    
-    auto secondPattern = patternManager->getCurrentPattern();
+    ASSERT_TRUE(patternManager->getCurrentPattern().has_value());
+    auto secondPattern = *patternManager->getCurrentPattern();
     
     // Verify patterns are identical
     EXPECT_EQ(firstPattern.notes.size(), secondPattern.notes.size()) 
-        << "Deterministic generation should produce identical note counts";
-    
-    // Check first few notes for deterministic behavior
-    size_t checkCount = std::min(firstPattern.notes.size(), secondPattern.notes.size());
-    checkCount = std::min(checkCount, size_t(10)); // Check first 10 notes
-    
-    for (size_t i = 0; i < checkCount; ++i)
+        << "Patterns generated with the same seed should have the same number of notes.";
+
+    if (firstPattern.notes.size() == secondPattern.notes.size())
     {
-        EXPECT_FLOAT_EQ(firstPattern.notes[i].startTime, secondPattern.notes[i].startTime)
-            << "Note " << i << " start time should be deterministic";
-        EXPECT_EQ(firstPattern.notes[i].pitch, secondPattern.notes[i].pitch)
-            << "Note " << i << " pitch should be deterministic";
+        for (size_t i = 0; i < firstPattern.notes.size(); ++i)
+        {
+            EXPECT_FLOAT_EQ(firstPattern.notes[i].startTime, secondPattern.notes[i].startTime)
+                << "Note " << i << " start time mismatch.";
+            EXPECT_FLOAT_EQ(firstPattern.notes[i].duration, secondPattern.notes[i].duration)
+                << "Note " << i << " duration mismatch.";
+            EXPECT_EQ(firstPattern.notes[i].pitch, secondPattern.notes[i].pitch)
+                << "Note " << i << " pitch mismatch.";
+            EXPECT_EQ(firstPattern.notes[i].velocity, secondPattern.notes[i].velocity)
+                << "Note " << i << " velocity mismatch.";
+        }
     }
 }
 
@@ -244,32 +256,34 @@ TEST_F(FastModeGenerationTest, ComplexityScaling)
     // Test that complexity parameter affects pattern generation
     
     // Low complexity
-    params.complexity = 0.1f;
+    params.rhythmicComplexity = 0.1f;
     aiEngine->generatePattern(params);
     
     int waitCount = 0;
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
     {
         juce::Thread::sleep(10);
         waitCount += 10;
     }
     
-    auto lowComplexityPattern = patternManager->getCurrentPattern();
+    ASSERT_TRUE(patternManager->getCurrentPattern().has_value());
+    auto lowComplexityPattern = *patternManager->getCurrentPattern();
     
     // High complexity
-    params.complexity = 0.9f;
-    params.seed = 12346; // Different seed to avoid identical patterns
-    patternManager->clearCurrentPattern();
+    params.rhythmicComplexity = 0.9f;
+    params.generationSeed = 12346; // Different seed to avoid identical patterns
+    patternManager->clear();
     aiEngine->generatePattern(params);
     
     waitCount = 0;
-    while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2000)
+    while (!patternManager->getCurrentPattern().has_value() && waitCount < 2000)
     {
         juce::Thread::sleep(10);
         waitCount += 10;
     }
     
-    auto highComplexityPattern = patternManager->getCurrentPattern();
+    ASSERT_TRUE(patternManager->getCurrentPattern().has_value());
+    auto highComplexityPattern = *patternManager->getCurrentPattern();
     
     // Verify both patterns exist
     EXPECT_FALSE(lowComplexityPattern.notes.empty()) << "Low complexity should generate pattern";
@@ -292,14 +306,14 @@ TEST_F(FastModeGenerationTest, PerformanceBenchmark)
     
     for (int i = 0; i < iterations; ++i)
     {
-        params.seed = 10000 + i; // Vary seed
-        patternManager->clearCurrentPattern();
+        params.generationSeed = 10000 + i; // Vary seed
+        patternManager->clear();
         
         auto startTime = std::chrono::high_resolution_clock::now();
         aiEngine->generatePattern(params);
         
         int waitCount = 0;
-        while (patternManager->getCurrentPattern().notes.empty() && waitCount < 2500)
+        while (!patternManager->getCurrentPattern().has_value() && waitCount < 2500)
         {
             juce::Thread::sleep(10);
             waitCount += 10;

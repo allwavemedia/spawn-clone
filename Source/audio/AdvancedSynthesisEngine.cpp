@@ -1,5 +1,11 @@
+#include "SynthVoice.h"
 #include "AdvancedSynthesisEngine.h"
+#include "SampleCache.h"
+#include "AsyncSampleLoader.h"
 #include <cmath>
+
+namespace spawnclone::audio
+{
 
 //==============================================================================
 class AdvancedSynthesisEngine::WavetableOscillator
@@ -227,6 +233,14 @@ private:
                 b1 = -2.0f * cos_omega;
                 b2 = 1.0f;
                 break;
+                
+            // Note: MoogLadder and StateVariable are handled by separate filter classes
+            default:
+                // Default to low-pass for unknown types
+                b0 = (1.0f - cos_omega) / 2.0f;
+                b1 = 1.0f - cos_omega;
+                b2 = (1.0f - cos_omega) / 2.0f;
+                break;
         }
         
         float norm = 1.0f + alpha;
@@ -236,6 +250,315 @@ private:
         a1 = -2.0f * cos_omega / norm;
         a2 = (1.0f - alpha) / norm;
     }
+};
+
+//==============================================================================
+class AdvancedSynthesisEngine::MoogLadderFilter
+{
+public:
+    MoogLadderFilter()
+    {
+        reset();
+    }
+    
+    void setSampleRate(double sampleRate)
+    {
+        this->sampleRate = sampleRate;
+        updateCoefficients();
+    }
+    
+    void setCutoff(float cutoff)
+    {
+        this->cutoff = juce::jlimit(20.0f, 20000.0f, cutoff);
+        updateCoefficients();
+    }
+    
+    void setResonance(float resonance)
+    {
+        this->resonance = juce::jlimit(0.0f, 1.0f, resonance);
+        updateCoefficients();
+    }
+    
+    void setSelfOscillation(bool enabled)
+    {
+        selfOscillation = enabled;
+        updateCoefficients();
+    }
+    
+    void reset()
+    {
+        stage1 = stage2 = stage3 = stage4 = 0.0f;
+        cutoff = 1000.0f;
+        resonance = 0.1f;
+        selfOscillation = false;
+        updateCoefficients();
+    }
+    
+    float processSample(float input)
+    {
+        // Apply resonance feedback
+        float feedback = (stage4 * 4.0f * resonanceAmount);
+        if (selfOscillation)
+            feedback *= 1.2f; // Allow self-oscillation
+        
+        float modifiedInput = input - feedback;
+        
+        // 4-stage ladder filter (each stage is a simple RC low-pass)
+        stage1 += (modifiedInput - stage1) * cutoffCoeff;
+        stage2 += (stage1 - stage2) * cutoffCoeff;
+        stage3 += (stage2 - stage3) * cutoffCoeff;
+        stage4 += (stage3 - stage4) * cutoffCoeff;
+        
+        // Apply soft saturation for analog character
+        return std::tanh(stage4 * 0.7f);
+    }
+
+private:
+    double sampleRate = 44100.0;
+    float cutoff = 1000.0f;
+    float resonance = 0.1f;
+    bool selfOscillation = false;
+    
+    float stage1 = 0.0f, stage2 = 0.0f, stage3 = 0.0f, stage4 = 0.0f;
+    float cutoffCoeff = 0.1f;
+    float resonanceAmount = 0.0f;
+    
+    void updateCoefficients()
+    {
+        if (sampleRate <= 0.0)
+            return;
+        
+        // Calculate cutoff coefficient (0.0 to 1.0)
+        float normalizedCutoff = cutoff / (static_cast<float>(sampleRate) * 0.5f);
+        cutoffCoeff = juce::jlimit(0.001f, 0.99f, normalizedCutoff);
+        
+        // Calculate resonance amount (0.0 to 0.95 to prevent instability)
+        resonanceAmount = resonance * (selfOscillation ? 0.95f : 0.85f);
+    }
+};
+
+//==============================================================================
+class AdvancedSynthesisEngine::StateVariableFilter
+{
+public:
+    StateVariableFilter()
+    {
+        reset();
+    }
+    
+    void setSampleRate(double sampleRate)
+    {
+        this->sampleRate = sampleRate;
+        updateCoefficients();
+    }
+    
+    void setCutoff(float cutoff)
+    {
+        this->cutoff = juce::jlimit(20.0f, 20000.0f, cutoff);
+        updateCoefficients();
+    }
+    
+    void setResonance(float resonance)
+    {
+        this->resonance = juce::jlimit(0.0f, 1.0f, resonance);
+        updateCoefficients();
+    }
+    
+    void reset()
+    {
+        low = band = high = 0.0f;
+        cutoff = 1000.0f;
+        resonance = 0.1f;
+        updateCoefficients();
+    }
+    
+    float processLowPass(float input)
+    {
+        processInternal(input);
+        return low;
+    }
+    
+    float processHighPass(float input)
+    {
+        processInternal(input);
+        return high;
+    }
+    
+    float processBandPass(float input)
+    {
+        processInternal(input);
+        return band;
+    }
+    
+    float processNotch(float input)
+    {
+        processInternal(input);
+        return low + high; // Notch = low + high
+    }
+
+private:
+    double sampleRate = 44100.0;
+    float cutoff = 1000.0f;
+    float resonance = 0.1f;
+    
+    float low = 0.0f, band = 0.0f, high = 0.0f;
+    float f = 0.1f, q = 0.5f;
+    
+    void updateCoefficients()
+    {
+        if (sampleRate <= 0.0)
+            return;
+        
+        f = 2.0f * std::sin(juce::MathConstants<float>::pi * cutoff / static_cast<float>(sampleRate));
+        q = 1.0f - resonance * 0.99f; // Invert for SVF (lower q = higher resonance)
+    }
+    
+    void processInternal(float input)
+    {
+        low += f * band;
+        high = input - low - q * band;
+        band += f * high;
+        
+        // Prevent numerical instability
+        if (std::abs(low) > 10.0f) low = 0.0f;
+        if (std::abs(band) > 10.0f) band = 0.0f;
+        if (std::abs(high) > 10.0f) high = 0.0f;
+    }
+};
+
+//==============================================================================
+class AdvancedSynthesisEngine::MultiFilter
+{
+public:
+    MultiFilter()
+    {
+        reset();
+    }
+    
+    void setSampleRate(double sampleRate)
+    {
+        this->sampleRate = sampleRate;
+        biquadFilter.setSampleRate(sampleRate);
+        moogFilter.setSampleRate(sampleRate);
+        svFilter.setSampleRate(sampleRate);
+        secondaryBiquad.setSampleRate(sampleRate);
+    }
+    
+    void setFilterParams(const FilterParams& params)
+    {
+        filterParams = params;
+        
+        // Configure primary filter
+        switch (params.filterType)
+        {
+            case FilterParams::MoogLadder:
+                moogFilter.setCutoff(params.cutoff);
+                moogFilter.setResonance(params.resonance);
+                moogFilter.setSelfOscillation(params.selfOscillation);
+                break;
+                
+            case FilterParams::StateVariable:
+                svFilter.setCutoff(params.cutoff);
+                svFilter.setResonance(params.resonance);
+                break;
+                
+            default:
+                biquadFilter.setType(params.filterType);
+                biquadFilter.setCutoff(params.cutoff);
+                biquadFilter.setResonance(params.resonance);
+                break;
+        }
+        
+        // Configure secondary filter for dual routing
+        if (params.routing != FilterParams::Serial)
+        {
+            secondaryBiquad.setType(params.secondaryFilterType);
+            secondaryBiquad.setCutoff(params.secondaryCutoff);
+            secondaryBiquad.setResonance(params.secondaryResonance);
+        }
+    }
+    
+    void reset()
+    {
+        biquadFilter.reset();
+        moogFilter.reset();
+        svFilter.reset();
+        secondaryBiquad.reset();
+        filterParams = FilterParams{};
+    }
+    
+    float processSample(float input, int midiNote = 60, float velocity = 1.0f)
+    {
+        if (!filterParams.enabled)
+            return input;
+        
+        // Apply key tracking
+        float keyTrackingAmount = (midiNote - 60) * filterParams.keyTracking * 10.0f; // 10Hz per semitone
+        float adjustedCutoff = filterParams.cutoff + keyTrackingAmount;
+        adjustedCutoff = juce::jlimit(20.0f, 20000.0f, adjustedCutoff);
+        
+        // Apply velocity tracking
+        float velocityAmount = velocity * filterParams.velocityTracking;
+        adjustedCutoff *= (1.0f + velocityAmount);
+        adjustedCutoff = juce::jlimit(20.0f, 20000.0f, adjustedCutoff);
+        
+        float primaryOutput = 0.0f;
+        float secondaryOutput = 0.0f;
+        
+        // Process primary filter
+        switch (filterParams.filterType)
+        {
+            case FilterParams::MoogLadder:
+                moogFilter.setCutoff(adjustedCutoff);
+                primaryOutput = moogFilter.processSample(input);
+                break;
+                
+            case FilterParams::StateVariable:
+                svFilter.setCutoff(adjustedCutoff);
+                primaryOutput = svFilter.processLowPass(input); // Default to low-pass for SVF
+                break;
+                
+            default:
+                biquadFilter.setCutoff(adjustedCutoff);
+                primaryOutput = biquadFilter.processSample(input);
+                break;
+        }
+        
+        // Handle filter routing
+        switch (filterParams.routing)
+        {
+            case FilterParams::Serial:
+                return primaryOutput;
+                
+            case FilterParams::Parallel:
+                secondaryBiquad.setCutoff(filterParams.secondaryCutoff + keyTrackingAmount);
+                secondaryOutput = secondaryBiquad.processSample(input);
+                return primaryOutput * (1.0f - filterParams.filterBalance) + 
+                       secondaryOutput * filterParams.filterBalance;
+                
+            case FilterParams::Split:
+                // Split based on frequency - low frequencies go to primary, high to secondary
+                float splitPoint = (filterParams.cutoff + filterParams.secondaryCutoff) * 0.5f;
+                if (adjustedCutoff < splitPoint)
+                    return primaryOutput;
+                else
+                {
+                    secondaryBiquad.setCutoff(filterParams.secondaryCutoff + keyTrackingAmount);
+                    return secondaryBiquad.processSample(input);
+                }
+        }
+        
+        return primaryOutput;
+    }
+
+private:
+    double sampleRate = 44100.0;
+    FilterParams filterParams;
+    
+    AdvancedFilter biquadFilter;
+    MoogLadderFilter moogFilter;
+    StateVariableFilter svFilter;
+    AdvancedFilter secondaryBiquad; // For dual filter routing
 };
 
 //==============================================================================
@@ -346,192 +669,498 @@ private:
 };
 
 //==============================================================================
-class AdvancedSynthesisEngine::SynthVoice
+class AdvancedSynthesisEngine::ModulationMatrix
 {
 public:
-    SynthVoice()
+    ModulationMatrix()
     {
-        envelope.reset();
-        oscillator.reset();
-        filter.reset();
-        lfo.reset();
-        
-        // Set default ADSR parameters (optimized for immediate response)
-        juce::ADSR::Parameters defaultParams;
-        defaultParams.attack = 0.001f;  // Very fast attack for immediate audio response
-        defaultParams.decay = 0.1f;
-        defaultParams.sustain = 1.0f;   // Full sustain for consistent audio output
-        defaultParams.release = 0.3f;
-        envelope.setParameters(defaultParams);
+        reset();
     }
     
     void setSampleRate(double sampleRate)
     {
         this->sampleRate = sampleRate;
-        oscillator.setSampleRate(sampleRate);
-        filter.setSampleRate(sampleRate);
-        lfo.setSampleRate(sampleRate);
-        envelope.setSampleRate(sampleRate);
-        
-        // Ensure envelope has valid parameters after sample rate change (optimized defaults)
-        juce::ADSR::Parameters params;
-        params.attack = 0.001f;   // Fast attack for immediate response
-        params.decay = 0.1f;
-        params.sustain = 1.0f;    // Full sustain for consistent output
-        params.release = 0.3f;
-        envelope.setParameters(params);
-        
-        // Ensure filter has proper coefficients after sample rate change
-        filter.setCutoff(1000.0f);
-        filter.setResonance(0.1f);
+        lfo1.setSampleRate(sampleRate);
+        lfo2.setSampleRate(sampleRate);
+        envelope2.setSampleRate(sampleRate);
     }
     
-    void noteOn(int midiNote, float velocity, const SynthesisParameters& params)
+    void setModulationParams(const ModulationParams& params)
     {
-        isActive = true;
-        currentNote = midiNote;
-        currentVelocity = velocity;
+        modParams = params;
         
-        // Set oscillator frequency
-        float frequency = 440.0f * std::pow(2.0f, (midiNote - 69) / 12.0f);
-        oscillator.setFrequency(frequency);
+        // Configure LFO1
+        lfo1.setRate(params.lfoRate);
+        lfo1.setDepth(params.lfoDepth);
+        lfo1.setWaveform(params.lfoWaveform);
+        lfo1.setBipolar(params.bipolar);
         
-        // Apply synthesis parameters
-        applySynthesisParameters(params);
+        // Configure LFO2
+        lfo2.setRate(params.lfo2Rate);
+        lfo2.setDepth(params.lfo2Depth);
+        lfo2.setWaveform(params.lfo2Waveform);
+        lfo2.setBipolar(params.lfo2Bipolar);
         
-        // Trigger envelope
-        envelope.noteOn();
+        // Configure Envelope 2
+        juce::ADSR::Parameters env2Params;
+        env2Params.attack = params.env2Attack;
+        env2Params.decay = params.env2Decay;
+        env2Params.sustain = params.env2Sustain;
+        env2Params.release = params.env2Release;
+        envelope2.setParameters(env2Params);
+    }
+    
+    void noteOn()
+    {
+        envelope2.noteOn();
     }
     
     void noteOff()
     {
-        envelope.noteOff();
+        envelope2.noteOff();
     }
-    
-    bool isVoiceActive() const
-    {
-        return isActive && envelope.isActive();
-    }
-    
-    float getNextSample(const SynthesisParameters& params)
-    {
-        if (!isActive)
-            return 0.0f;
-        
-        // Get modulation values
-        float lfoValue = lfo.getNextValue();
-        float envValue = envelope.getNextSample();
-        
-        // Apply modulation to wavetable position
-        float modulatedPosition = params.wavetable.wavetablePosition;
-        if (params.modulation.modulationTarget == 4) // Wavetable position
-        {
-            modulatedPosition += lfoValue * params.modulation.lfoDepth;
-            modulatedPosition = juce::jlimit(0.0f, 1.0f, modulatedPosition);
-        }
-        oscillator.setWavetablePosition(modulatedPosition);
-        
-        // Generate oscillator sample
-        float sample = oscillator.getNextSample();
-        
-        // Apply filter if enabled
-        if (params.filter.enabled)
-        {
-            float modulatedCutoff = params.filter.cutoff;
-            if (params.modulation.modulationTarget == 2) // Filter cutoff
-            {
-                modulatedCutoff *= (1.0f + lfoValue * params.modulation.lfoDepth);
-                modulatedCutoff = juce::jlimit(20.0f, 20000.0f, modulatedCutoff);
-            }
-            filter.setCutoff(modulatedCutoff);
-            sample = filter.processSample(sample);
-        }
-        
-        // Apply envelope
-        sample *= envValue * currentVelocity * params.masterVolume;
-        
-        // Check if voice should be deactivated
-        if (!envelope.isActive())
-            isActive = false;
-        
-        return sample;
-    }
-    
-    void setWavetable(const juce::AudioBuffer<float>* wavetable)
-    {
-        oscillator.setWavetable(wavetable);
-    }
-    
-    int getCurrentNote() const { return currentNote; }
     
     void reset()
     {
-        isActive = false;
-        currentNote = -1;
-        currentVelocity = 0.0f;
-        envelope.reset();
-        oscillator.reset();
-        filter.reset();
-        lfo.reset();
+        lfo1.reset();
+        lfo2.reset();
+        envelope2.reset();
+        modParams = ModulationParams{};
+    }
+    
+    struct ModulationValues
+    {
+        float lfo1Value = 0.0f;
+        float lfo2Value = 0.0f;
+        float envelope2Value = 0.0f;
+        float pitchMod = 0.0f;
+        float filterMod = 0.0f;
+        float amplitudeMod = 0.0f;
+        float wavetableMod = 0.0f;
+    };
+    
+    ModulationValues getModulationValues(float velocity = 1.0f)
+    {
+        ModulationValues values;
+        
+        // Get raw modulation source values
+        float lfo1Raw = lfo1.getNextValue();
+        float lfo2Raw = lfo2.getNextValue();
+        
+        // Apply cross-modulation (LFO1 modulates LFO2 rate)
+        if (modParams.enableCrossModulation)
+        {
+            float modulatedRate = modParams.lfo2Rate * (1.0f + lfo1Raw * modParams.crossModAmount);
+            lfo2.setRate(juce::jlimit(0.01f, 20.0f, modulatedRate));
+        }
+        
+        values.lfo1Value = lfo1Raw;
+        values.lfo2Value = lfo2Raw;
+        values.envelope2Value = envelope2.getNextSample();
+        
+        // Apply velocity following to envelope
+        if (modParams.enableEnvFollowing)
+        {
+            values.envelope2Value *= (1.0f + (velocity - 1.0f) * modParams.envFollowAmount);
+        }
+        
+        // Route modulation to targets
+        switch (modParams.modulationTarget)
+        {
+            case 1: // Pitch
+                values.pitchMod = lfo1Raw;
+                break;
+            case 2: // Filter
+                values.filterMod = lfo1Raw + values.envelope2Value * modParams.env2Amount;
+                break;
+            case 3: // Amplitude
+                values.amplitudeMod = lfo1Raw;
+                break;
+            case 4: // Wavetable Position
+                values.wavetableMod = lfo1Raw;
+                break;
+        }
+        
+        // Route LFO2 to secondary target
+        switch (modParams.lfo2Target)
+        {
+            case 1: // Pitch
+                values.pitchMod += values.lfo2Value * 0.5f; // Half depth for secondary
+                break;
+            case 2: // Filter
+                values.filterMod += values.lfo2Value * 0.5f;
+                break;
+            case 3: // Amplitude
+                values.amplitudeMod += values.lfo2Value * 0.5f;
+                break;
+            case 4: // Wavetable Position
+                values.wavetableMod += values.lfo2Value * 0.5f;
+                break;
+        }
+        
+        return values;
     }
 
 private:
-    bool isActive = false;
-    int currentNote = -1;
-    float currentVelocity = 0.0f;
     double sampleRate = 44100.0;
+    ModulationParams modParams;
     
-    WavetableOscillator oscillator;
-    AdvancedFilter filter;
-    ModulationSource lfo;
-    juce::ADSR envelope;
-    
-    void applySynthesisParameters(const SynthesisParameters& params)
+    ModulationSource lfo1;
+    ModulationSource lfo2;
+    juce::ADSR envelope2;
+};
+
+//==============================================================================
+class AdvancedSynthesisEngine::PitchShifter
+{
+public:
+    PitchShifter() { reset(); }
+
+    void setPitchShift(float semitones)
     {
-        // Set LFO parameters
-        lfo.setRate(params.modulation.lfoRate);
-        lfo.setDepth(params.modulation.lfoDepth);
-        lfo.setWaveform(params.modulation.lfoWaveform);
-        lfo.setBipolar(params.modulation.bipolar);
-        
-        // Set filter parameters
-        filter.setType(params.filter.filterType);
-        filter.setCutoff(params.filter.cutoff);
-        filter.setResonance(params.filter.resonance);
-        
-        // Set envelope parameters
-        juce::ADSR::Parameters envParams;
-        envParams.attack = params.envelope.attack;
-        envParams.decay = params.envelope.decay;
-        envParams.sustain = params.envelope.sustain;
-        envParams.release = params.envelope.release;
-        envelope.setParameters(envParams);
+        pitchRatio = std::pow(2.0f, semitones / 12.0f);
     }
+
+    void reset()
+    {
+        pitchRatio = 1.0f;
+    }
+
+    float getPitchRatio() const
+    {
+        return pitchRatio;
+    }
+
+private:
+    float pitchRatio = 1.0f;
+};
+
+//==============================================================================
+class AdvancedSynthesisEngine::LoopManager
+{
+public:
+    LoopManager()
+    {
+        reset();
+    }
+
+    void setLoopPoints(int start, int end, int sampleLength)
+    {
+        if (end < 0 || end >= sampleLength)
+            end = sampleLength - 1;
+
+        loopStart = juce::jlimit(0, sampleLength - 1, start);
+        loopEnd = juce::jlimit(loopStart, sampleLength - 1, end);
+        loopLength = loopEnd - loopStart;
+    }
+
+    void setLoopMode(SampleParams::LoopMode mode)
+    {
+        loopMode = mode;
+    }
+
+    void reset()
+    {
+        loopStart = 0;
+        loopEnd = 0;
+        loopLength = 0;
+        loopMode = SampleParams::LoopMode::Forward;
+    }
+
+    double getNextPosition(double currentPosition, float increment, bool isReversed, int& playDirection)
+    {
+        if (loopLength <= 0)
+        {
+            return currentPosition + (increment * (isReversed ? -1.0f : 1.0f));
+        }
+
+        double nextPosition = currentPosition + (increment * playDirection);
+
+        if (loopMode == SampleParams::LoopMode::Forward)
+        {
+            if (isReversed) // Reverse looping
+            {
+                if (nextPosition < loopStart)
+                {
+                    nextPosition += loopLength;
+                }
+            }
+            else // Forward looping
+            {
+                if (nextPosition >= loopEnd)
+                {
+                    nextPosition -= loopLength;
+                }
+            }
+        }
+        else if (loopMode == SampleParams::LoopMode::PingPong)
+        {
+            if (nextPosition >= loopEnd)
+            {
+                nextPosition = loopEnd - (nextPosition - loopEnd);
+                playDirection = -1;
+            }
+            else if (nextPosition < loopStart)
+            {
+                nextPosition = loopStart + (loopStart - nextPosition);
+                playDirection = 1;
+            }
+        }
+        
+        return nextPosition;
+    }
+
+private:
+    int loopStart = 0;
+    int loopEnd = 0;
+    int loopLength = 0;
+    SampleParams::LoopMode loopMode = SampleParams::LoopMode::Forward;
+};
+
+
+//==============================================================================
+class AdvancedSynthesisEngine::SampleEngine
+{
+public:
+    SampleEngine()
+    {
+        reset();
+    }
+    
+    void setSampleRate(double rate)
+    {
+        sampleRate = rate;
+    }
+
+    void setSampleMap(const std::vector<juce::AudioBuffer<float>>* samples)
+    {
+        allSamples = samples;
+    }
+      
+    void setSampleParams(const SampleParams& params)
+    {
+        sampleParams = params;
+    }
+      
+    // Inject shared SampleCache (non-owning pointer, RT-safe reads only)
+    void setSampleCache(const spawnclone::audio::SampleCache* ptr) noexcept
+    {
+        cache = ptr;
+    }
+    
+    void reset()
+    {
+        playbackPosition = 0.0f;
+        isActive = false;
+        currentSample = nullptr;
+        nextSample = nullptr;
+        pitchShifter.reset();
+        loopManager.reset();
+        playDirection = 1;
+    }
+    
+    void noteOn(int midiNote, float velocity)
+    {
+        if (!allSamples || allSamples->empty())
+        {
+            isActive = false;
+            return;
+        }
+
+        currentNote = midiNote;
+        currentVelocity = velocity;
+        velocityCrossfade = 0.0f;
+        nextSample = nullptr;
+
+        // 1. Determine which sample(s) to use based on velocity
+        if (sampleParams.enableVelocityLayers && !sampleParams.sampleMap.empty())
+        {
+            int noteVelocity = static_cast<int>(velocity * 127.0f);
+            
+            const SampleMapEntry* bestFit = nullptr;
+            // Find the correct layer for the given velocity
+            for(const auto& entry : sampleParams.sampleMap)
+            {
+                if (noteVelocity >= entry.minVelocity && noteVelocity <= entry.maxVelocity)
+                {
+                    bestFit = &entry;
+                    break;
+                }
+            }
+
+            if (bestFit)
+            {
+                currentSample = &(*allSamples)[bestFit->sampleIndex];
+
+                // Find the iterator to the current entry to check for the next one
+                auto it = std::find_if(sampleParams.sampleMap.begin(), sampleParams.sampleMap.end(), 
+                                       [&](const auto& entry){ return &entry == bestFit; });
+                
+                if (it != sampleParams.sampleMap.end()) {
+                    auto nextIt = std::next(it);
+                    // Check if there is a next layer to crossfade with
+                    if (nextIt != sampleParams.sampleMap.end())
+                    {
+                        float fadeStart = nextIt->minVelocity - sampleParams.velocityCrossfadeWidth;
+                        if (noteVelocity > fadeStart && sampleParams.velocityCrossfadeWidth > 0)
+                        {
+                            velocityCrossfade = juce::jmap(static_cast<float>(noteVelocity), fadeStart, static_cast<float>(nextIt->minVelocity), 0.0f, 1.0f);
+                            nextSample = &(*allSamples)[nextIt->sampleIndex];
+                        }
+                    }
+                }
+            }
+            else // Fallback if no layer matches (e.g., gaps in velocity map)
+            {
+                currentSample = &(*allSamples)[sampleParams.sampleMap.front().sampleIndex];
+            }
+        } else {
+            // Default to the first sample if velocity layers are disabled
+            currentSample = &(*allSamples)[0];
+        }
+
+        if (!currentSample || currentSample->getNumSamples() == 0)
+        {
+            isActive = false;
+            return;
+        }
+        
+        sampleLength = currentSample->getNumSamples();
+        
+        // 2. Set initial playback position
+        if (sampleParams.reversePlayback)
+        {
+            playbackPosition = (sampleLength - 1) - (sampleParams.startOffset * (sampleLength - 1));
+            playDirection = -1;
+        }
+        else
+        {
+            playbackPosition = sampleParams.startOffset * (sampleLength - 1);
+            playDirection = 1;
+        }
+
+        // 3. Configure Pitch Shifter
+        pitchShiftSemitones = (midiNote - sampleParams.rootNote);
+        pitchShiftSemitones = juce::jlimit(-sampleParams.pitchShiftRange, 
+                                          sampleParams.pitchShiftRange, 
+                                          pitchShiftSemitones);
+        pitchShifter.setPitchShift(pitchShiftSemitones);
+        
+        // 4. Configure Loop Manager
+        loopManager.setLoopPoints(sampleParams.loopStart, sampleParams.loopEnd, sampleLength);
+        loopManager.setLoopMode(sampleParams.loopMode);
+
+        isActive = true;
+    }
+    
+    void noteOff()
+    {
+        if (sampleParams.loopMode != SampleParams::LoopMode::OneShot)
+        {
+             isActive = false;
+        }
+    }
+    
+    bool isPlaying() const
+    {
+        return isActive && playbackPosition >= 0 && playbackPosition < sampleLength;
+    }
+    
+    float getNextSample()
+    {
+        if (!isPlaying())
+            return 0.0f;
+
+        // --- 1. Get interpolated value at current position from the main sample ---
+        float mainValue = getInterpolatedSample(currentSample, sampleLength, playbackPosition);
+
+        // --- 2. Get value from the crossfade sample if active ---
+        float finalValue = mainValue;
+        if (nextSample && velocityCrossfade > 0.0f)
+        {
+            double scaledPosition = playbackPosition * ((double)nextSample->getNumSamples() / sampleLength);
+            float nextValue = getInterpolatedSample(nextSample, nextSample->getNumSamples(), scaledPosition);
+            finalValue = mainValue * (1.0f - velocityCrossfade) + nextValue * velocityCrossfade;
+        }
+
+        // --- 3. Calculate playback increment for next frame ---
+        float pitchRatio = pitchShifter.getPitchRatio();
+        float playbackIncrement = pitchRatio * sampleParams.playbackSpeed;
+
+        // --- 4. Update playback position for the next call ---
+        if (sampleParams.enableLooping)
+        {
+            playbackPosition = loopManager.getNextPosition(playbackPosition, playbackIncrement, sampleParams.reversePlayback, playDirection);
+        }
+        else
+        {
+            playbackPosition += playbackIncrement * (sampleParams.reversePlayback ? -1.0f : 1.0f);
+        }
+
+        // --- 5. Check if playback has ended after position update ---
+        if (!isPlaying())
+        {
+            isActive = false;
+        }
+
+        return finalValue;
+    }
+
+private:
+    float getInterpolatedSample(const juce::AudioBuffer<float>* sampleBuffer, int bufferLength, double position)
+    {
+        if (!sampleBuffer || bufferLength <= 1) return 0.0f;
+
+        const float* data = sampleBuffer->getReadPointer(0);
+        
+        double pos0_double = std::floor(position);
+        int pos0 = static_cast<int>(pos0_double);
+        double frac = position - pos0_double;
+
+        int pos1 = pos0 + 1;
+
+        if (pos0 < 0 || pos0 >= bufferLength) return 0.0f;
+        if (pos1 >= bufferLength) return data[pos0];
+
+        float val0 = data[pos0];
+        float val1 = data[pos1];
+        
+        return val0 + frac * (val1 - val0);
+    }
+
+    double sampleRate = 44100.0;
+    const juce::AudioBuffer<float>* currentSample = nullptr;
+    const juce::AudioBuffer<float>* nextSample = nullptr;
+    const std::vector<juce::AudioBuffer<float>>* allSamples = nullptr;
+    const spawnclone::audio::SampleCache* cache = nullptr;
+    SampleParams sampleParams;
+    
+    int sampleLength = 0;
+    double playbackPosition = 0.0f;
+    bool isActive = false;
+    int currentNote = 60;
+    float currentVelocity = 1.0f;
+    float pitchShiftSemitones = 0.0f;
+    float velocityCrossfade = 0.0f;
+    int playDirection = 1; // 1 for forward, -1 for backward
+    
+    PitchShifter pitchShifter;
+    LoopManager loopManager;
 };
 
 //==============================================================================
 AdvancedSynthesisEngine::AdvancedSynthesisEngine()
 {
-    // Generate built-in wavetables FIRST
-    generateBuiltinWavetables();
-    
-    // Initialize voices AFTER wavetables are ready
-    for (auto& voice : voices)
-        voice = std::make_unique<SynthVoice>();
-    
-    // Initialize synthesis parameters with defaults
-    currentParams = SynthesisParameters{}; // Use struct's default member initializers
-    
-    // Set default wavetable for all voices IMMEDIATELY
-    if (!wavetables.empty())
+    sampleCache = std::make_unique<spawnclone::audio::SampleCache>();
+    asyncSampleLoader = std::make_unique<spawnclone::audio::AsyncSampleLoader>(*sampleCache);
+
+    for (int i = 0; i < voices.size(); ++i)
     {
-        const auto* defaultWavetable = &wavetables[0]; // Use sine wave as default
-        for (auto& voice : voices)
-        {
-            if (voice)
-                voice->setWavetable(defaultWavetable);
-        }
+        voices[i] = std::make_unique<SynthVoice>(*sampleCache);
     }
+
+    initializeWavetables();
+    initializeSamples();
 }
 
 AdvancedSynthesisEngine::~AdvancedSynthesisEngine()
@@ -551,7 +1180,7 @@ void AdvancedSynthesisEngine::prepareToPlay(double newSampleRate, int newSamples
     
     // Prepare all voices with the correct sample rate
     for (auto& voice : voices)
-        if(voice) voice->setSampleRate(newSampleRate);
+        if(voice) voice->prepareToPlay(newSampleRate, newSamplesPerBlock);
     
     // Initialize synthesis parameters properly after sample rate is set
     // This ensures all components (especially filters) have correct coefficients
@@ -566,7 +1195,7 @@ void AdvancedSynthesisEngine::releaseResources()
 void AdvancedSynthesisEngine::reset()
 {
     for (auto& voice : voices)
-        if (voice) voice->reset();
+        if (voice) voice->releaseResources();
     
     activeVoices.store(0);
     cpuUsage.store(0.0f);
@@ -581,31 +1210,24 @@ void AdvancedSynthesisEngine::setSynthesisParameters(const SynthesisParameters& 
     currentParams.wavetable.morphRate = juce::jlimit(0.01f, 10.0f, params.wavetable.morphRate);
     currentParams.wavetable.wavetableIndex = juce::jlimit(0, (int)wavetables.size() - 1, params.wavetable.wavetableIndex);
     
+    // Validate sample parameters
+    currentParams.sample.sampleIndex = juce::jlimit(0, (int)samples.size() - 1, params.sample.sampleIndex);
+    currentParams.sample.rootNote = juce::jlimit(0.0f, 127.0f, params.sample.rootNote);
+    currentParams.sample.pitchShiftRange = juce::jlimit(1.0f, 48.0f, params.sample.pitchShiftRange);
+    currentParams.sample.loopCrossfade = juce::jlimit(1.0f, 100.0f, params.sample.loopCrossfade);
+    
     // Update all voices with new wavetable if changed
-    if (params.synthesisType == SynthesisType::Wavetable && 
-        currentParams.wavetable.wavetableIndex >= 0 && 
-        currentParams.wavetable.wavetableIndex < wavetables.size())
+    // TODO: Implement wavetable setting when SynthVoice supports it
+    if (params.synthesisType == SynthesisType::Wavetable || params.synthesisType == SynthesisType::Hybrid)
     {
-        const auto* wavetable = &wavetables[currentParams.wavetable.wavetableIndex];
-        
-        for (auto& voice : voices)
-        {
-            if (voice)
-                voice->setWavetable(wavetable);
-        }
+        // Wavetable setting will be implemented when SynthVoice API supports it
     }
-    else
+    
+    // Update all voices with new sample if changed  
+    // TODO: Implement sample map setting when SynthVoice supports it
+    if (params.synthesisType == SynthesisType::Sample || params.synthesisType == SynthesisType::Hybrid)
     {
-        // Default to first wavetable if available
-        if (!wavetables.empty())
-        {
-            const auto* wavetable = &wavetables[0];
-            for (auto& voice : voices)
-            {
-                if (voice)
-                    voice->setWavetable(wavetable);
-            }
-        }
+        // Sample map setting will be implemented when SynthVoice API supports it
     }
 }
 
@@ -632,7 +1254,7 @@ void AdvancedSynthesisEngine::noteOn(int midiNoteNumber, float velocity)
     
     if (voice)
     {
-        voice->noteOn(midiNoteNumber, velocity, currentParams);
+        voice->startNote(midiNoteNumber, velocity, currentParams.synthesisType, currentParams.sample, samples);
         
         // Update active voice count by counting currently active voices
         int count = 0;
@@ -649,9 +1271,9 @@ void AdvancedSynthesisEngine::noteOff(int midiNoteNumber)
 {
     for (auto& voice : voices)
     {
-        if (voice && voice->getCurrentNote() == midiNoteNumber)
+        if (voice && voice->isPlayingNote(midiNoteNumber))
         {
-            voice->noteOff();
+            voice->stopNote(0.0f, true);
             // Update active voice count by counting currently active voices
             int count = 0;
             for (auto& v : voices)
@@ -683,38 +1305,21 @@ void AdvancedSynthesisEngine::processBlock(juce::AudioBuffer<float>& buffer, juc
     }
     
     // Generate audio samples
-    int currentActiveVoices = 0;
-    for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+    juce::AudioBuffer<float> voiceBuffer(buffer.getNumChannels(), buffer.getNumSamples());
+    
+    for (auto& voice : voices)
     {
-        float mixedSample = 0.0f;
-        
-        // Sum all active voices and count them
-        if (sample == 0) // Only count on first sample to avoid overhead
+        if (voice && voice->isVoiceActive())
         {
-            currentActiveVoices = 0;
-            for (auto& voice : voices)
+            voiceBuffer.clear();
+            voice->renderNextBlock(voiceBuffer, 0, buffer.getNumSamples());
+            
+            // Mix into main buffer
+            for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
             {
-                if (voice->isVoiceActive())
-                {
-                    currentActiveVoices++;
-                    mixedSample += voice->getNextSample(currentParams);
-                }
-            }
-            activeVoices.store(currentActiveVoices);
-        }
-        else
-        {
-            // Just process samples without counting
-            for (auto& voice : voices)
-            {
-                if (voice->isVoiceActive())
-                    mixedSample += voice->getNextSample(currentParams);
+                buffer.addFrom(channel, 0, voiceBuffer, channel, 0, buffer.getNumSamples());
             }
         }
-        
-        // Apply to all channels
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
-            buffer.setSample(channel, sample, mixedSample);
     }
     
     // Update performance statistics
@@ -791,7 +1396,7 @@ void AdvancedSynthesisEngine::generateBuiltinWavetables()
     }
 }
 
-AdvancedSynthesisEngine::SynthVoice* AdvancedSynthesisEngine::findAvailableVoice()
+SynthVoice* AdvancedSynthesisEngine::findAvailableVoice()
 {
     // First, look for an inactive voice
     for (auto& voice : voices)
@@ -800,7 +1405,7 @@ AdvancedSynthesisEngine::SynthVoice* AdvancedSynthesisEngine::findAvailableVoice
             return voice.get();
     }
     
-    // If no inactive voice, use round-robin selection
+    // If no inactive voice, use round-robin selection to steal a voice
     auto* voice = voices[currentVoiceIndex].get();
     currentVoiceIndex = (currentVoiceIndex + 1) % voices.size();
     return voice;
@@ -809,6 +1414,11 @@ AdvancedSynthesisEngine::SynthVoice* AdvancedSynthesisEngine::findAvailableVoice
 void AdvancedSynthesisEngine::initializeWavetables()
 {
     generateBuiltinWavetables();
+}
+
+void AdvancedSynthesisEngine::initializeSamples()
+{
+    generateBuiltinSamples();
 }
 
 void AdvancedSynthesisEngine::createBasicWavetable(int index, const juce::String& name)
@@ -830,6 +1440,7 @@ juce::String AdvancedSynthesisEngine::getEngineInfo() const
     info << "Active Voices: " << activeVoices.load() << "/16\n";
     info << "CPU Usage: " << juce::String(cpuUsage.load(), 1) << "%\n";
     info << "Wavetables: " << wavetables.size() << " loaded\n";
+    info << "Samples: " << samples.size() << " loaded\n";
     info << "Synthesis Type: ";
     
     switch (currentParams.synthesisType)
@@ -842,3 +1453,130 @@ juce::String AdvancedSynthesisEngine::getEngineInfo() const
     
     return info;
 }
+
+//==============================================================================
+// Sample Management Implementation
+
+bool AdvancedSynthesisEngine::loadSample(int index, const juce::AudioBuffer<float>& sampleData)
+{
+    if (index < 0 || index >= MAX_SAMPLES)
+        return false;
+    
+    if (sampleData.getNumSamples() == 0 || sampleData.getNumChannels() == 0)
+        return false;
+    
+    // Ensure we have enough storage
+    if (samples.size() <= index)
+    {
+        samples.resize(index + 1);
+        sampleParameters.resize(index + 1);
+    }
+    
+    // Copy sample data (convert to mono if stereo)
+    int numSamples = juce::jmin(sampleData.getNumSamples(), MAX_SAMPLE_SIZE);
+    samples[index].setSize(1, numSamples);
+    
+    if (sampleData.getNumChannels() == 1)
+    {
+        samples[index].copyFrom(0, 0, sampleData, 0, 0, numSamples);
+    }
+    else
+    {
+        // Mix down stereo to mono
+        samples[index].clear();
+        for (int ch = 0; ch < sampleData.getNumChannels(); ++ch)
+        {
+            samples[index].addFrom(0, 0, sampleData, ch, 0, numSamples, 1.0f / sampleData.getNumChannels());
+        }
+    }
+    
+    // Initialize default sample parameters
+    sampleParameters[index] = SampleParams();
+    
+    // Auto-detect loop points
+    autoDetectLoopPoints(index);
+    
+    return true;
+}
+
+void AdvancedSynthesisEngine::generateBuiltinSamples()
+{
+    // Generate basic synthetic samples for testing
+    const double sampleRate = 44100.0;
+    const int sampleLength = static_cast<int>(sampleRate * 2.0); // 2 seconds
+    
+    // Sample 0: Sine wave pad
+    {
+        juce::AudioBuffer<float> sineBuffer(1, sampleLength);
+        for (int i = 0; i < sampleLength; ++i)
+        {
+            float phase = static_cast<float>(i) / sampleRate * 2.0f * juce::MathConstants<float>::pi;
+            sineBuffer.setSample(0, i, std::sin(phase * 220.0f) * 0.7f); // A3
+        }
+        loadSample(0, sineBuffer);
+    }
+    
+    // Sample 1: Sawtooth bass
+    {
+        juce::AudioBuffer<float> sawBuffer(1, sampleLength);
+        for (int i = 0; i < sampleLength; ++i)
+        {
+            float phase = std::fmod(static_cast<float>(i) / sampleRate * 110.0f, 1.0f); // A2
+            sawBuffer.setSample(0, i, (phase * 2.0f - 1.0f) * 0.6f);
+        }
+        loadSample(1, sawBuffer);
+    }
+    
+    // Sample 2: Pluck sound
+    {
+        juce::AudioBuffer<float> pluckBuffer(1, sampleLength);
+        juce::Random random;
+        
+        for (int i = 0; i < sampleLength; ++i)
+        {
+            float envelope = std::exp(-static_cast<float>(i) / sampleRate * 3.0f); // Decay envelope
+            float noise = (random.nextFloat() * 2.0f - 1.0f) * 0.1f;
+            float tone = std::sin(static_cast<float>(i) / sampleRate * 2.0f * juce::MathConstants<float>::pi * 440.0f); // A4
+            pluckBuffer.setSample(0, i, (tone + noise) * envelope * 0.8f);
+        }
+        loadSample(2, pluckBuffer);
+    }
+}
+
+bool AdvancedSynthesisEngine::setSampleLoopPoints(int sampleIndex, int loopStart, int loopEnd)
+{
+    if (sampleIndex < 0 || sampleIndex >= static_cast<int>(sampleParameters.size()))
+        return false;
+    
+    if (sampleIndex >= static_cast<int>(samples.size()) || samples[sampleIndex].getNumSamples() == 0)
+        return false;
+    
+    int numSamples = samples[sampleIndex].getNumSamples();
+    
+    // Validate loop points
+    loopStart = juce::jlimit(0, numSamples - 1, loopStart);
+    loopEnd = (loopEnd == -1) ? numSamples - 1 : juce::jlimit(loopStart + 1, numSamples - 1, loopEnd);
+    
+    sampleParameters[sampleIndex].loopStart = loopStart;
+    sampleParameters[sampleIndex].loopEnd = loopEnd;
+    
+    return true;
+}
+
+bool AdvancedSynthesisEngine::autoDetectLoopPoints(int sampleIndex)
+{
+    if (sampleIndex < 0 || sampleIndex >= static_cast<int>(samples.size()))
+        return false;
+    
+    if (samples[sampleIndex].getNumSamples() == 0)
+        return false;
+    
+    // Simple auto-detection: use last 25% of sample for loop
+    int numSamples = samples[sampleIndex].getNumSamples();
+    int loopStart = static_cast<int>(numSamples * 0.75f);
+    int loopEnd = numSamples - 1;
+    
+    return setSampleLoopPoints(sampleIndex, loopStart, loopEnd);
+}
+
+} // namespace spawnclone::audio

@@ -1,16 +1,19 @@
-version: 4.33.0
-installed_at: '2025-07-28T05:22:45.120Z'
+version: 4.35.0
+installed_at: '2025-08-05T01:07:02.509Z'
 install_type: full
 agent: null
 ides_setup:
-  - github-copilot
+  - roo
 expansion_packs: []
 files:
   - path: .bmad-core/working-in-the-brownfield.md
     hash: 03b4f11efa5abeb5
     modified: false
   - path: .bmad-core/user-guide.md
-    hash: a816f42bb2a1a405
+    hash: 76403bbc48b4c389
+    modified: false
+  - path: .bmad-core/install-manifest.yaml
+    hash: c52f5f9a23965ba9
     modified: false
   - path: .bmad-core/enhanced-ide-development-workflow.md
     hash: 3c3a2383d7772089
@@ -178,7 +181,7 @@ files:
     hash: cac5a913038cd7d6
     modified: false
   - path: .bmad-core/agents/dev.md
-    hash: 3e643e994f464ee3
+    hash: 12611c39d7115f89
     modified: false
   - path: .bmad-core/agents/bmad-orchestrator.md
     hash: d9c116ea35f53e04

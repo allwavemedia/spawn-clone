@@ -7,7 +7,7 @@
 
 int main()
 {
-    AdvancedSynthesisEngine engine;
+    spawnclone::audio::AdvancedSynthesisEngine engine;
     engine.prepareToPlay(44100.0, 512, 2);
     
     std::cout << "Testing with default parameters (no explicit setSynthesisParameters)" << std::endl;

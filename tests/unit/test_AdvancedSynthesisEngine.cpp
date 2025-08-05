@@ -19,7 +19,7 @@ class AdvancedSynthesisEngineTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        engine = std::make_unique<AdvancedSynthesisEngine>();
+        engine = std::make_unique<spawnclone::audio::AdvancedSynthesisEngine>();
         sampleRate = 44100.0;
         blockSize = 512;
         numChannels = 2;
@@ -34,7 +34,7 @@ protected:
         engine.reset();
     }
     
-    std::unique_ptr<AdvancedSynthesisEngine> engine;
+    std::unique_ptr<spawnclone::audio::AdvancedSynthesisEngine> engine;
     double sampleRate;
     int blockSize;
     int numChannels;
@@ -54,7 +54,7 @@ TEST_F(AdvancedSynthesisEngineTest, SynthesisParametersDefaults)
 {
     auto params = engine->getSynthesisParameters();
     
-    EXPECT_EQ(params.synthesisType, AdvancedSynthesisEngine::SynthesisType::Wavetable);
+    EXPECT_EQ(params.synthesisType, spawnclone::audio::SynthesisType::Wavetable);
     EXPECT_FLOAT_EQ(params.wavetable.wavetablePosition, 0.5f);
     EXPECT_FLOAT_EQ(params.envelope.attack, 0.001f);    // Optimized for immediate response
     EXPECT_FLOAT_EQ(params.envelope.sustain, 1.0f);     // Full sustain for consistent output
@@ -352,6 +352,150 @@ TEST_F(AdvancedSynthesisEngineTest, AudioQualityBasic)
     // Should have reasonable output level (not clipping, not too quiet)
     EXPECT_GT(maxAmplitude, 0.01f);  // Not too quiet
     EXPECT_LT(maxAmplitude, 1.0f);   // Not clipping
+}
+
+//==============================================================================
+// Story 9.2.2: Subtractive Synthesis Enhancement Tests
+
+TEST_F(AdvancedSynthesisEngineTest, MoogLadderFilterTest)
+{
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Subtractive;
+    params.filter.enabled = true;
+    params.filter.filterType = AdvancedSynthesisEngine::FilterParams::MoogLadder;
+    params.filter.cutoff = 800.0f;
+    params.filter.resonance = 0.7f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Test that Moog ladder filter parameters are accepted
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_EQ(retrievedParams.filter.filterType, AdvancedSynthesisEngine::FilterParams::MoogLadder);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.cutoff, 800.0f);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.resonance, 0.7f);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, DualFilterRoutingTest)
+{
+    auto params = engine->getSynthesisParameters();
+    params.filter.enabled = true;
+    params.filter.routing = AdvancedSynthesisEngine::FilterParams::Parallel;
+    params.filter.filterType = AdvancedSynthesisEngine::FilterParams::LowPass;
+    params.filter.secondaryFilterType = AdvancedSynthesisEngine::FilterParams::HighPass;
+    params.filter.cutoff = 1000.0f;
+    params.filter.secondaryCutoff = 3000.0f;
+    params.filter.filterBalance = 0.5f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify parallel routing parameters
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_EQ(retrievedParams.filter.routing, AdvancedSynthesisEngine::FilterParams::Parallel);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.secondaryCutoff, 3000.0f);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.filterBalance, 0.5f);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, AdvancedModulationMatrixTest)
+{
+    auto params = engine->getSynthesisParameters();
+    
+    // Set up dual LFO modulation
+    params.modulation.lfoRate = 3.0f;
+    params.modulation.lfoDepth = 0.5f;
+    params.modulation.lfo2Rate = 0.2f;
+    params.modulation.lfo2Depth = 0.3f;
+    params.modulation.lfo2Target = 2; // Filter modulation
+    params.modulation.enableCrossModulation = true;
+    params.modulation.crossModAmount = 0.4f;
+    
+    // Set up filter envelope
+    params.modulation.env2Attack = 0.05f;
+    params.modulation.env2Decay = 0.2f;
+    params.modulation.env2Sustain = 0.6f;
+    params.modulation.env2Release = 0.8f;
+    params.modulation.env2Amount = 0.7f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify modulation parameters
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_FLOAT_EQ(retrievedParams.modulation.lfo2Rate, 0.2f);
+    EXPECT_FLOAT_EQ(retrievedParams.modulation.env2Amount, 0.7f);
+    EXPECT_TRUE(retrievedParams.modulation.enableCrossModulation);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, FilterKeyTrackingTest)
+{
+    auto params = engine->getSynthesisParameters();
+    params.filter.enabled = true;
+    params.filter.keyTracking = 0.8f;
+    params.filter.velocityTracking = 0.6f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Test key tracking parameter acceptance
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_FLOAT_EQ(retrievedParams.filter.keyTracking, 0.8f);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.velocityTracking, 0.6f);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, StateVariableFilterTest)
+{
+    auto params = engine->getSynthesisParameters();
+    params.filter.enabled = true;
+    params.filter.filterType = AdvancedSynthesisEngine::FilterParams::StateVariable;
+    params.filter.cutoff = 1500.0f;
+    params.filter.resonance = 0.4f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify state variable filter parameters
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_EQ(retrievedParams.filter.filterType, AdvancedSynthesisEngine::FilterParams::StateVariable);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, SubtractiveSynthesisAudioGeneration)
+{
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Subtractive;
+    params.filter.enabled = true;
+    params.filter.filterType = AdvancedSynthesisEngine::FilterParams::MoogLadder;
+    params.filter.cutoff = 600.0f;
+    params.filter.resonance = 0.8f;
+    params.modulation.lfoRate = 4.0f;
+    params.modulation.lfoDepth = 0.6f;
+    params.modulation.modulationTarget = 2; // Filter modulation
+    
+    engine->setSynthesisParameters(params);
+    
+    // Generate audio with subtractive synthesis
+    juce::AudioBuffer<float> buffer(numChannels, blockSize);
+    juce::MidiBuffer midiBuffer;
+    
+    // Add note on
+    juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, 60, 0.8f);
+    midiBuffer.addEvent(noteOn, 0);
+    
+    engine->processBlock(buffer, midiBuffer);
+    
+    // Check audio generation
+    bool hasAudio = false;
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* channelData = buffer.getReadPointer(channel);
+        for (int sample = 0; sample < blockSize; ++sample)
+        {
+            if (std::abs(channelData[sample]) > 0.001f)
+            {
+                hasAudio = true;
+                break;
+            }
+        }
+        if (hasAudio) break;
+    }
+    
+    EXPECT_TRUE(hasAudio) << "Subtractive synthesis should generate audio";
+    EXPECT_GT(engine->getCurrentVoiceCount(), 0) << "Should have active voices";
 }
 
 //==============================================================================

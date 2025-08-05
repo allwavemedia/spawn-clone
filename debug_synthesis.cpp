@@ -11,7 +11,7 @@ int main()
     std::cout << "=== Advanced Synthesis Engine Debug ===" << std::endl;
     
     // Create engine
-    AdvancedSynthesisEngine engine;
+    spawnclone::audio::AdvancedSynthesisEngine engine;
     
     // Setup audio parameters
     double sampleRate = 44100.0;

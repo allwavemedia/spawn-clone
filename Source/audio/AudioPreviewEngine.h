@@ -143,10 +143,10 @@ public:
     bool isAdvancedSynthesisEnabled() const { return advancedSynthesisEnabled.load(); }
     
     /** Set synthesis parameters for advanced synthesis */
-    void setSynthesisParameters(const AdvancedSynthesisEngine::SynthesisParameters& params);
+    void setSynthesisParameters(const spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters& params);
     
     /** Get current synthesis parameters */
-    const AdvancedSynthesisEngine::SynthesisParameters& getSynthesisParameters() const;
+    const spawnclone::audio::AdvancedSynthesisEngine::SynthesisParameters& getSynthesisParameters() const;
     
     /** Set individual synthesis parameter by name */
     void setSynthesisParameter(const juce::String& paramName, float value);
@@ -235,7 +235,7 @@ private:
     InstrumentLibraryManager::PresetData currentPreset;
     
     // Epic 9.2: Advanced Synthesis Engine Integration
-    std::unique_ptr<AdvancedSynthesisEngine> advancedSynthesisEngine;
+    std::unique_ptr<spawnclone::audio::AdvancedSynthesisEngine> advancedSynthesisEngine;
     std::atomic<bool> advancedSynthesisEnabled{false};
     
     // Timing

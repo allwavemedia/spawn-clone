@@ -4,6 +4,14 @@
 #include <juce_dsp/juce_dsp.h>
 #include <juce_core/juce_core.h>
 #include <memory>
+#include "SampleCache.h"
+#include "AsyncSampleLoader.h"
+#include "SynthesisTypes.h"
+
+namespace spawnclone::audio
+{
+    // Forward declaration
+    class SynthVoice;
 
 //==============================================================================
 /**
@@ -16,15 +24,6 @@ class AdvancedSynthesisEngine
 {
 public:
     //==============================================================================
-    enum class SynthesisType
-    {
-        Wavetable = 0,
-        Subtractive = 1,
-        Sample = 2,
-        Hybrid = 3
-    };
-    
-    //==============================================================================
     struct WavetableParams
     {
         float wavetablePosition = 0.5f;    // 0.0 to 1.0 (position in wavetable)
@@ -36,24 +35,60 @@ public:
     
     struct FilterParams
     {
-        enum Type { LowPass = 0, HighPass = 1, BandPass = 2, Notch = 3 };
+        enum Type { LowPass = 0, HighPass = 1, BandPass = 2, Notch = 3, MoogLadder = 4, StateVariable = 5 };
+        enum Routing { Serial = 0, Parallel = 1, Split = 2 };
+        
         Type filterType = LowPass;
+        Routing routing = Serial;
         float cutoff = 1000.0f;            // 20Hz to 20kHz
         float resonance = 0.1f;            // 0.0 to 1.0
-        float keyTracking = 0.5f;          // 0.0 to 1.0
+        float keyTracking = 0.5f;          // 0.0 to 1.0 (keyboard follow)
+        float velocityTracking = 0.0f;     // 0.0 to 1.0 (velocity sensitivity)
         bool selfOscillation = false;      // Enable filter self-oscillation
         bool enabled = false;              // Filter enabled/disabled (start disabled for safety)
+        
+        // Dual filter parameters (for parallel/split routing)
+        Type secondaryFilterType = HighPass;
+        float secondaryCutoff = 5000.0f;   // Secondary filter cutoff
+        float secondaryResonance = 0.1f;   // Secondary filter resonance
+        float filterBalance = 0.5f;        // 0.0=primary only, 1.0=secondary only
     };
     
     struct ModulationParams
     {
+        // LFO 1 Parameters
         float lfoRate = 2.0f;              // 0.01 to 20.0 Hz
         float lfoDepth = 0.0f;             // 0.0 to 1.0
         int lfoWaveform = 0;               // 0=Sine, 1=Triangle, 2=Sawtooth, 3=Square, 4=Random
         int modulationTarget = 0;          // 0=None, 1=Pitch, 2=Filter, 3=Amplitude, 4=Wavetable Position
         bool bipolar = false;              // Bipolar (-1 to +1) vs unipolar (0 to +1) modulation
+        
+        // LFO 2 Parameters (additional modulation source)
+        float lfo2Rate = 0.5f;             // 0.01 to 20.0 Hz
+        float lfo2Depth = 0.0f;            // 0.0 to 1.0
+        int lfo2Waveform = 1;              // Triangle by default
+        int lfo2Target = 0;                // Secondary modulation target
+        bool lfo2Bipolar = true;           // LFO2 bipolar by default
+        
+        // Envelope 2 Parameters (filter envelope)
+        float env2Attack = 0.01f;          // 0.001 to 5.0 seconds
+        float env2Decay = 0.3f;            // 0.001 to 5.0 seconds
+        float env2Sustain = 0.3f;          // 0.0 to 1.0 level
+        float env2Release = 0.5f;          // 0.001 to 10.0 seconds
+        float env2Amount = 0.0f;           // -1.0 to 1.0 (filter envelope amount)
+        
+        // Modulation Matrix
+        bool enableCrossModulation = false; // LFO1 modulates LFO2 rate
+        float crossModAmount = 0.0f;       // 0.0 to 1.0
+        bool enableEnvFollowing = false;   // Envelope follows note velocity
+        float envFollowAmount = 0.5f;      // 0.0 to 1.0
     };
     
+    // Make SynthesisType available to this class scope and set up type aliases
+    using SynthesisType = spawnclone::audio::SynthesisType;
+    using SampleParams = spawnclone::audio::SampleParams;
+    using SampleMapEntry = spawnclone::audio::SampleParams::SampleMapEntry;
+
     struct EnvelopeParams
     {
         float attack = 0.001f;             // 0.001 to 5.0 seconds (faster default for immediate response)
@@ -63,6 +98,7 @@ public:
         float velocity = 1.0f;             // 0.0 to 2.0 velocity sensitivity
     };
     
+    
     //==============================================================================
     struct SynthesisParameters
     {
@@ -71,6 +107,7 @@ public:
         FilterParams filter;
         ModulationParams modulation;
         EnvelopeParams envelope;
+        SampleParams sample;
         
         // Global parameters
         float masterVolume = 0.7f;         // 0.0 to 1.0
@@ -136,6 +173,24 @@ public:
     void generateBuiltinWavetables();
     
     //==============================================================================
+    // Sample Management
+    
+    /** Load sample from audio buffer */
+    bool loadSample(int index, const juce::AudioBuffer<float>& sampleData);
+    
+    /** Get number of available samples */
+    int getNumSamples() const { return samples.size(); }
+    
+    /** Generate built-in sample library */
+    void generateBuiltinSamples();
+    
+    /** Set sample loop points */
+    bool setSampleLoopPoints(int sampleIndex, int loopStart, int loopEnd);
+    
+    /** Auto-detect loop points in sample */
+    bool autoDetectLoopPoints(int sampleIndex);
+    
+    //==============================================================================
     // Performance Monitoring
     
     /** Get current CPU usage percentage */
@@ -153,8 +208,14 @@ private:
     
     class WavetableOscillator;
     class AdvancedFilter;
+    class MoogLadderFilter;
+    class StateVariableFilter;
+    class MultiFilter;
     class ModulationSource;
-    class SynthVoice;
+    class ModulationMatrix;
+    class SampleEngine;
+    class PitchShifter;
+    class LoopManager;
     
     //==============================================================================
     // Internal Methods
@@ -164,6 +225,9 @@ private:
     
     /** Initialize built-in wavetables */
     void initializeWavetables();
+
+    /** Initialize built-in samples */
+    void initializeSamples();
     
     /** Create basic wavetable shapes */
     void createBasicWavetable(int index, const juce::String& name);
@@ -187,15 +251,27 @@ private:
     
     static constexpr int MAX_WAVETABLES = 64;
     static constexpr int WAVETABLE_SIZE = 2048;
+    static constexpr int MAX_SAMPLES = 128;
+    static constexpr int MAX_SAMPLE_SIZE = 44100 * 10; // 10 seconds at 44.1kHz
     
     // Wavetable storage
     std::vector<juce::AudioBuffer<float>> wavetables;
     
+    // Sample storage
+    std::vector<juce::AudioBuffer<float>> samples;
+    std::vector<SampleParams> sampleParameters;
+    
     // Voice management
     std::array<std::unique_ptr<SynthVoice>, 16> voices;
+    
+    // Sample caching
+    std::unique_ptr<spawnclone::audio::SampleCache> sampleCache;
+    std::unique_ptr<spawnclone::audio::AsyncSampleLoader> asyncSampleLoader;
     
     // Performance monitoring
     juce::Time lastCPUMeasurement;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AdvancedSynthesisEngine)
 };
+
+} // namespace spawnclone::audio

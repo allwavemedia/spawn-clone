@@ -69,6 +69,18 @@ target_sources(SpawnClone PRIVATE
     Source/audio/AudioPreviewEngine.h
     Source/audio/AdvancedSynthesisEngine.cpp
     Source/audio/AdvancedSynthesisEngine.h
+    Source/audio/SampleCache.cpp
+    Source/audio/SampleCache.h
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/AsyncSampleLoader.h
+    Source/audio/SynthVoice.h
+    Source/audio/SynthVoice.cpp
+    Source/audio/synthesis/SampleEngine.h
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.h
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.h
+    Source/audio/synthesis/LoopManager.cpp
     Source/audio/InstrumentLibraryManager.cpp
     Source/audio/InstrumentLibraryManager.h
     Source/audio/LayerEffectsProcessor.cpp
@@ -192,6 +204,10 @@ if(BUILD_TESTS)
         Source/PatternSerializer.cpp
         Source/ai/MusicTheoryEngine.cpp
         Source/ai/GenreSpecialist_Fixed.cpp
+        Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/LayerEffectsProcessor.cpp
+        Source/audio/InstrumentLibraryManager.cpp
+        Source/audio/RealTimeProcessor.cpp
     )
 
     target_include_directories(test_TransportControls PRIVATE 
@@ -208,6 +224,7 @@ if(BUILD_TESTS)
         juce::juce_audio_processors
         juce::juce_audio_utils
         juce::juce_gui_basics
+        juce::juce_dsp
     )
     
     target_compile_features(test_TransportControls PRIVATE cxx_std_17)
@@ -259,6 +276,10 @@ if(BUILD_TESTS)
         Source/PatternSerializer.cpp
         Source/ai/MusicTheoryEngine.cpp
         Source/ai/GenreSpecialist_Fixed.cpp
+        Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/LayerEffectsProcessor.cpp
+        Source/audio/InstrumentLibraryManager.cpp
+        Source/audio/RealTimeProcessor.cpp
     )
 
     target_include_directories(test_Performance PRIVATE 
@@ -276,6 +297,7 @@ if(BUILD_TESTS)
         juce::juce_audio_utils
         juce::juce_gui_basics
         juce::juce_data_structures
+        juce::juce_dsp
     )
     
     target_compile_features(test_Performance PRIVATE cxx_std_17)
@@ -374,6 +396,8 @@ if(BUILD_TESTS)
         Source/ai/ThreadManager.cpp
         Source/MIDIPattern.cpp
         Source/ParameterManager.cpp
+        Source/PatternSerializer.cpp
+        Source/ai/GenreSpecialist_Extended.cpp
     )
     
     target_include_directories(test_FastModeGeneration PRIVATE 
@@ -395,6 +419,59 @@ if(BUILD_TESTS)
     
     target_compile_features(test_FastModeGeneration PRIVATE cxx_std_17)
     gtest_discover_tests(test_FastModeGeneration)
+    # Epic 9 Story 9.2.3: SampleCache Unit Tests
+    add_executable(test_SampleCache
+        tests/unit/test_SampleCache.cpp
+        Source/audio/SampleCache.cpp
+    )
+
+    target_include_directories(test_SampleCache PRIVATE 
+        Source 
+        Source/audio
+    )
+
+    target_link_libraries(test_SampleCache PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+    )
+
+    target_compile_features(test_SampleCache PRIVATE cxx_std_17)
+    gtest_discover_tests(test_SampleCache)
+
+    # Epic 9 Story 9.2.3: Sample-Based Synthesis Integration Tests
+    add_executable(test_SampleBasedSynthesis
+        Source/test_SampleBasedSynthesis.cpp
+        Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/AdvancedSynthesisEngine.h
+        Source/audio/SynthVoice.cpp
+        Source/audio/SynthVoice.h
+        Source/audio/synthesis/SampleEngine.cpp
+        Source/audio/synthesis/SampleEngine.h
+        Source/audio/synthesis/PitchShifter.cpp
+        Source/audio/synthesis/PitchShifter.h
+        Source/audio/synthesis/LoopManager.cpp
+        Source/audio/synthesis/LoopManager.h
+        Source/audio/SampleCache.cpp
+        Source/audio/SampleCache.h
+        Source/audio/AsyncSampleLoader.cpp
+        Source/audio/AsyncSampleLoader.h
+    )
+
+    target_include_directories(test_SampleBasedSynthesis PRIVATE
+        Source
+    )
+
+    target_link_libraries(test_SampleBasedSynthesis PRIVATE
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_dsp
+    )
+
+    target_compile_features(test_SampleBasedSynthesis PRIVATE cxx_std_17)
+    gtest_discover_tests(test_SampleBasedSynthesis)
 endif()
 
 # Epic 4 Story 4.2 Test Executable
