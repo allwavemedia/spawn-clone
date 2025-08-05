@@ -47,14 +47,21 @@ namespace spawnclone::audio
         void selectSample(float velocity,
                           const SampleParams& params,
                           const std::vector<juce::AudioBuffer<float>>& samplePool);
+        
+        float getSampleAtPosition(const float* sampleData, int numFrames, double position) const;
 
         SampleCache& sampleCache;
         PitchShifter pitchShifter;
         LoopManager loopManager;
 
         const juce::AudioBuffer<float>* currentSampleBuffer = nullptr;
+        const juce::AudioBuffer<float>* secondarySampleBuffer = nullptr;
+        float velocityBlendAmount = 0.0f;
+        SampleParams currentParams;
         double currentPlaybackPosition = 0.0;
         double pitchRatio = 1.0;
+        double playbackSpeed = 1.0;
+        double effectivePlaybackRate = 1.0;
         bool isPlaying = false;
         float noteVelocity = 0.0f;
 

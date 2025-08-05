@@ -42,6 +42,7 @@ public:
         Routing routing = Serial;
         float cutoff = 1000.0f;            // 20Hz to 20kHz
         float resonance = 0.1f;            // 0.0 to 1.0
+        float drive = 1.0f;                // 0.0 to 3.0 (filter drive/saturation)
         float keyTracking = 0.5f;          // 0.0 to 1.0 (keyboard follow)
         float velocityTracking = 0.0f;     // 0.0 to 1.0 (velocity sensitivity)
         bool selfOscillation = false;      // Enable filter self-oscillation
@@ -51,6 +52,7 @@ public:
         Type secondaryFilterType = HighPass;
         float secondaryCutoff = 5000.0f;   // Secondary filter cutoff
         float secondaryResonance = 0.1f;   // Secondary filter resonance
+        float secondaryDrive = 1.0f;       // Secondary filter drive
         float filterBalance = 0.5f;        // 0.0=primary only, 1.0=secondary only
     };
     

@@ -377,6 +377,56 @@ TEST_F(AdvancedSynthesisEngineTest, MoogLadderFilterTest)
     EXPECT_FLOAT_EQ(retrievedParams.filter.resonance, 0.7f);
 }
 
+// Epic 9.2 Story 9.2.2: Enhanced MoogLadderFilter Drive Test
+TEST_F(AdvancedSynthesisEngineTest, EnhancedMoogLadderFilterDriveTest)
+{
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Subtractive;
+    params.filter.enabled = true;
+    params.filter.filterType = AdvancedSynthesisEngine::FilterParams::MoogLadder;
+    params.filter.cutoff = 1200.0f;
+    params.filter.resonance = 0.8f;
+    params.filter.drive = 2.5f;  // Test enhanced drive parameter
+    params.filter.selfOscillation = true;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify enhanced parameters are stored correctly
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_EQ(retrievedParams.filter.filterType, AdvancedSynthesisEngine::FilterParams::MoogLadder);
+    EXPECT_FLOAT_EQ(retrievedParams.filter.drive, 2.5f);
+    EXPECT_TRUE(retrievedParams.filter.selfOscillation);
+    
+    // Test audio processing with enhanced Moog filter
+    juce::AudioBuffer<float> buffer(numChannels, blockSize);
+    juce::MidiBuffer midiBuffer;
+    
+    // Add note-on message
+    auto noteOnMsg = juce::MidiMessage::noteOn(1, 60, 0.9f);
+    midiBuffer.addEvent(noteOnMsg, 0);
+    
+    // Process audio block
+    buffer.clear();
+    engine->processBlock(buffer, midiBuffer);
+    
+    // Verify audio was generated (enhanced filter should produce output)
+    bool hasAudio = false;
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* samples = buffer.getReadPointer(channel);
+        for (int i = 0; i < blockSize; ++i)
+        {
+            if (std::abs(samples[i]) > 0.001f)
+            {
+                hasAudio = true;
+                break;
+            }
+        }
+        if (hasAudio) break;
+    }
+    EXPECT_TRUE(hasAudio);
+}
+
 TEST_F(AdvancedSynthesisEngineTest, DualFilterRoutingTest)
 {
     auto params = engine->getSynthesisParameters();

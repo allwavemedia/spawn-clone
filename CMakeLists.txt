@@ -483,6 +483,11 @@ if(BUILD_TESTS)
         Source/audio/SampleCache.h
         Source/audio/AsyncSampleLoader.cpp
         Source/audio/AsyncSampleLoader.h
+        Source/audio/EffectsChain.cpp
+        Source/audio/EffectProcessor.cpp
+        Source/audio/ReverbEngine.cpp
+        Source/audio/DelayEngine.cpp
+        Source/audio/ModulationEngine.cpp
     )
 
     target_include_directories(test_SampleBasedSynthesis PRIVATE
@@ -605,6 +610,11 @@ add_executable(test_AdvancedSynthesisEngine
     Source/audio/SynthVoice.cpp
     Source/audio/SampleCache.cpp
     Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
     Source/audio/synthesis/SampleEngine.cpp
     Source/audio/synthesis/PitchShifter.cpp
     Source/audio/synthesis/LoopManager.cpp
@@ -783,3 +793,143 @@ target_link_libraries(epic8_story8_4_realtime_demo PRIVATE
 
 target_compile_features(epic8_story8_4_realtime_demo PRIVATE cxx_std_17)
 target_include_directories(epic8_story8_4_realtime_demo PRIVATE "Source")
+
+# Epic 9.2 Story 9.2.2: Enhanced MoogLadderFilter Demo
+add_executable(epic9_2_story9_2_2_moog_demo
+    epic9_2_story9_2_2_moog_demo.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
+)
+
+target_link_libraries(epic9_2_story9_2_2_moog_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic9_2_story9_2_2_moog_demo PRIVATE cxx_std_17)
+target_include_directories(epic9_2_story9_2_2_moog_demo PRIVATE "Source")
+
+# Epic 9.2 Story 9.2.3: Reverse Playback Debug Demo
+add_executable(epic9_2_story9_2_3_reverse_debug
+    epic9_2_story9_2_3_reverse_debug.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
+)
+
+target_link_libraries(epic9_2_story9_2_3_reverse_debug PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic9_2_story9_2_3_reverse_debug PRIVATE cxx_std_17)
+target_include_directories(epic9_2_story9_2_3_reverse_debug PRIVATE "Source")
+
+# Epic 9.2 Story 9.2.3: Crossfade Debug Demo
+add_executable(epic9_2_story9_2_3_crossfade_debug
+    epic9_2_story9_2_3_crossfade_debug.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
+)
+
+target_link_libraries(epic9_2_story9_2_3_crossfade_debug PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic9_2_story9_2_3_crossfade_debug PRIVATE cxx_std_17)
+target_include_directories(epic9_2_story9_2_3_crossfade_debug PRIVATE "Source")
+
+# Epic 9.2 Story 9.2.3: Final Debug Demo
+add_executable(epic9_2_story9_2_3_final_debug
+    epic9_2_story9_2_3_final_debug.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
+)
+
+target_link_libraries(epic9_2_story9_2_3_final_debug PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic9_2_story9_2_3_final_debug PRIVATE cxx_std_17)
+target_include_directories(epic9_2_story9_2_3_final_debug PRIVATE "Source")
+
+# Epic 9.2 Story 9.2.3: Velocity Layer Debug Demo
+add_executable(epic9_2_story9_2_3_velocity_debug
+    epic9_2_story9_2_3_velocity_debug.cpp
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
+)
+
+target_link_libraries(epic9_2_story9_2_3_velocity_debug PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic9_2_story9_2_3_velocity_debug PRIVATE cxx_std_17)
+target_include_directories(epic9_2_story9_2_3_velocity_debug PRIVATE "Source")
