@@ -14,6 +14,8 @@
 #include "../Source/audio/AdvancedSynthesisEngine.h"
 #include <juce_audio_basics/juce_audio_basics.h>
 
+using namespace spawnclone::audio;
+
 class AdvancedSynthesisEngineTest : public ::testing::Test
 {
 protected:
@@ -496,6 +498,139 @@ TEST_F(AdvancedSynthesisEngineTest, SubtractiveSynthesisAudioGeneration)
     
     EXPECT_TRUE(hasAudio) << "Subtractive synthesis should generate audio";
     EXPECT_GT(engine->getCurrentVoiceCount(), 0) << "Should have active voices";
+}
+
+TEST_F(AdvancedSynthesisEngineTest, WavetableSwitching)
+{
+    // Test that different wavetables produce different audio
+    juce::AudioBuffer<float> buffer1(numChannels, blockSize);
+    juce::AudioBuffer<float> buffer2(numChannels, blockSize);
+    juce::MidiBuffer midiBuffer;
+    
+    // Test with sine wave (wavetable 0)
+    auto params1 = engine->getSynthesisParameters();
+    params1.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params1.wavetable.wavetableIndex = 0; // Sine wave
+    engine->setSynthesisParameters(params1);
+    
+    juce::MidiMessage noteOn1 = juce::MidiMessage::noteOn(1, 60, 0.8f);
+    midiBuffer.addEvent(noteOn1, 0);
+    
+    buffer1.clear();
+    engine->processBlock(buffer1, midiBuffer);
+    
+    // Stop the note and wait
+    juce::MidiMessage noteOff1 = juce::MidiMessage::noteOff(1, 60);
+    midiBuffer.clear();
+    midiBuffer.addEvent(noteOff1, 0);
+    engine->processBlock(buffer1, midiBuffer);
+    
+    // Test with sawtooth wave (wavetable 1)
+    auto params2 = engine->getSynthesisParameters();
+    params2.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params2.wavetable.wavetableIndex = 1; // Sawtooth wave
+    engine->setSynthesisParameters(params2);
+    
+    juce::MidiMessage noteOn2 = juce::MidiMessage::noteOn(1, 60, 0.8f);
+    midiBuffer.clear();
+    midiBuffer.addEvent(noteOn2, 0);
+    
+    buffer2.clear();
+    engine->processBlock(buffer2, midiBuffer);
+    
+    // Compare the outputs - they should be different
+    bool buffersDifferent = false;
+    for (int channel = 0; channel < numChannels && !buffersDifferent; ++channel)
+    {
+        auto* data1 = buffer1.getReadPointer(channel);
+        auto* data2 = buffer2.getReadPointer(channel);
+        
+        for (int sample = 0; sample < blockSize; ++sample)
+        {
+            if (std::abs(data1[sample] - data2[sample]) > 0.001f)
+            {
+                buffersDifferent = true;
+                break;
+            }
+        }
+    }
+    
+    EXPECT_TRUE(buffersDifferent) << "Different wavetables should produce different audio";
+}
+
+TEST_F(AdvancedSynthesisEngineTest, LFOModulation)
+{
+    // Test that LFO modulation affects audio output
+    juce::AudioBuffer<float> buffer1(numChannels, blockSize * 2); // Longer buffer for modulation to be noticeable
+    juce::AudioBuffer<float> buffer2(numChannels, blockSize * 2);
+    juce::MidiBuffer midiBuffer;
+    
+    // Test without modulation
+    auto params1 = engine->getSynthesisParameters();
+    params1.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params1.modulation.lfoDepth = 0.0f; // No modulation
+    params1.modulation.modulationTarget = 1; // Pitch modulation
+    engine->setSynthesisParameters(params1);
+    
+    juce::MidiMessage noteOn1 = juce::MidiMessage::noteOn(1, 60, 0.8f);
+    midiBuffer.addEvent(noteOn1, 0);
+    
+    buffer1.clear();
+    for (int i = 0; i < 2; ++i) // Process multiple blocks
+    {
+        engine->processBlock(buffer1, midiBuffer);
+        midiBuffer.clear(); // Only first block has note-on
+    }
+    
+    // Stop and reset
+    juce::MidiMessage noteOff1 = juce::MidiMessage::noteOff(1, 60);
+    midiBuffer.clear();
+    midiBuffer.addEvent(noteOff1, 0);
+    engine->processBlock(buffer1, midiBuffer);
+    
+    // Test with pitch modulation
+    auto params2 = engine->getSynthesisParameters();
+    params2.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params2.modulation.lfoDepth = 0.5f; // Strong modulation
+    params2.modulation.lfoRate = 4.0f;  // 4 Hz LFO
+    params2.modulation.modulationTarget = 1; // Pitch modulation
+    params2.modulation.bipolar = true;
+    engine->setSynthesisParameters(params2);
+    
+    juce::MidiMessage noteOn2 = juce::MidiMessage::noteOn(1, 60, 0.8f);
+    midiBuffer.clear();
+    midiBuffer.addEvent(noteOn2, 0);
+    
+    buffer2.clear();
+    for (int i = 0; i < 2; ++i) // Process multiple blocks
+    {
+        engine->processBlock(buffer2, midiBuffer);
+        midiBuffer.clear(); // Only first block has note-on
+    }
+    
+    // Compare the outputs - they should be different due to modulation
+    bool modulationDetected = false;
+    float maxDifference = 0.0f;
+    
+    for (int channel = 0; channel < numChannels && !modulationDetected; ++channel)
+    {
+        auto* data1 = buffer1.getReadPointer(channel);
+        auto* data2 = buffer2.getReadPointer(channel);
+        
+        for (int sample = 0; sample < buffer1.getNumSamples(); ++sample)
+        {
+            float difference = std::abs(data1[sample] - data2[sample]);
+            maxDifference = std::max(maxDifference, difference);
+            
+            if (difference > 0.01f) // Significant difference due to modulation
+            {
+                modulationDetected = true;
+                break;
+            }
+        }
+    }
+    
+    EXPECT_TRUE(modulationDetected) << "LFO modulation should affect audio output. Max difference: " << maxDifference;
 }
 
 //==============================================================================

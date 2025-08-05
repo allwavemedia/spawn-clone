@@ -1180,7 +1180,17 @@ void AdvancedSynthesisEngine::prepareToPlay(double newSampleRate, int newSamples
     
     // Prepare all voices with the correct sample rate
     for (auto& voice : voices)
-        if(voice) voice->prepareToPlay(newSampleRate, newSamplesPerBlock);
+    {
+        if(voice) 
+        {
+            voice->prepareToPlay(newSampleRate, newSamplesPerBlock);
+            // Set default wavetable (sine wave - index 0)
+            if (!wavetables.empty())
+                voice->setWavetable(&wavetables[0]);
+            // Set initial modulation parameters
+            voice->setModulationParameters(currentParams.modulation);
+        }
+    }
     
     // Initialize synthesis parameters properly after sample rate is set
     // This ensures all components (especially filters) have correct coefficients
@@ -1217,10 +1227,17 @@ void AdvancedSynthesisEngine::setSynthesisParameters(const SynthesisParameters& 
     currentParams.sample.loopCrossfade = juce::jlimit(1.0f, 100.0f, params.sample.loopCrossfade);
     
     // Update all voices with new wavetable if changed
-    // TODO: Implement wavetable setting when SynthVoice supports it
     if (params.synthesisType == SynthesisType::Wavetable || params.synthesisType == SynthesisType::Hybrid)
     {
-        // Wavetable setting will be implemented when SynthVoice API supports it
+        int wavetableIndex = currentParams.wavetable.wavetableIndex;
+        if (wavetableIndex >= 0 && wavetableIndex < wavetables.size())
+        {
+            for (auto& voice : voices)
+            {
+                if (voice)
+                    voice->setWavetable(&wavetables[wavetableIndex]);
+            }
+        }
     }
     
     // Update all voices with new sample if changed  
@@ -1228,6 +1245,13 @@ void AdvancedSynthesisEngine::setSynthesisParameters(const SynthesisParameters& 
     if (params.synthesisType == SynthesisType::Sample || params.synthesisType == SynthesisType::Hybrid)
     {
         // Sample map setting will be implemented when SynthVoice API supports it
+    }
+    
+    // Update all voices with new modulation parameters
+    for (auto& voice : voices)
+    {
+        if (voice)
+            voice->setModulationParameters(currentParams.modulation);
     }
 }
 

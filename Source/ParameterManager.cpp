@@ -58,11 +58,16 @@ GenerationParameters ParameterManager::getCurrentParameters() const
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createParameterLayout()
 {
-    return juce::AudioProcessorValueTreeState::ParameterLayout
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    
+    // Create parameter group with versioning for VST3 compatibility
+    auto mainGroup = std::make_unique<juce::AudioProcessorParameterGroup>
     (
+        "main", "Main", "|",
+        
         // Key parameter (0-11 for C to B)
         std::make_unique<juce::AudioParameterChoice>(
-            KEY_PARAM_ID,
+            juce::ParameterID(KEY_PARAM_ID, 1),
             "Key",
             juce::StringArray { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" },
             0  // Default to C
@@ -70,7 +75,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
         
         // Scale parameter
         std::make_unique<juce::AudioParameterChoice>(
-            SCALE_PARAM_ID,
+            juce::ParameterID(SCALE_PARAM_ID, 1),
             "Scale",
             juce::StringArray { "Major", "Minor", "Pentatonic", "Blues", "Dorian", "Mixolydian" },
             0  // Default to Major
@@ -78,55 +83,68 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
         
         // Tempo parameter (60-200 BPM)
         std::make_unique<juce::AudioParameterFloat>(
-            TEMPO_PARAM_ID,
+            juce::ParameterID(TEMPO_PARAM_ID, 1),
             "Tempo",
             juce::NormalisableRange<float>(60.0f, 200.0f, 1.0f),
-            120.0f,  // Default tempo
-            "BPM"
+            120.0f  // Default to 120 BPM
         ),
         
-        // Rhythmic complexity (0.0 to 1.0)
+        // Complexity parameter (0.0-1.0)
         std::make_unique<juce::AudioParameterFloat>(
-            COMPLEXITY_PARAM_ID,
+            juce::ParameterID(COMPLEXITY_PARAM_ID, 1),
             "Complexity",
             juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-            0.5f  // Default complexity
+            0.5f  // Default to 50%
         ),
         
-        // Generation type
+        // Generation Type parameter
         std::make_unique<juce::AudioParameterChoice>(
-            GENERATION_TYPE_PARAM_ID,
+            juce::ParameterID(GENERATION_TYPE_PARAM_ID, 1),
             "Generation Type",
-            juce::StringArray { "Melody", "Chord", "Bass", "Drum" },
+            juce::StringArray { "Melody", "Chords", "Bassline", "Drums" },
             0  // Default to Melody
         ),
         
-        // Pattern length (4-32 beats)
+        // Pattern Length parameter (1-32 beats)
         std::make_unique<juce::AudioParameterFloat>(
-            PATTERN_LENGTH_PARAM_ID,
+            juce::ParameterID(PATTERN_LENGTH_PARAM_ID, 1),
             "Pattern Length",
-            juce::NormalisableRange<float>(4.0f, 32.0f, 4.0f),
-            16.0f,  // Default to 16 beats
-            "beats"
+            juce::NormalisableRange<float>(1.0f, 32.0f, 0.25f),
+            16.0f  // Default to 16 beats
         ),
         
-        // AI Mode parameter (Fast/Quality/Cloud)
+        // AI Mode parameter
         std::make_unique<juce::AudioParameterChoice>(
-            AI_MODE_PARAM_ID,
+            juce::ParameterID(AI_MODE_PARAM_ID, 1),
             "AI Mode",
-            juce::StringArray { "Fast", "Quality", "Cloud" },
-            0  // Default to Fast
+            juce::StringArray { "Fast", "Balanced", "Quality" },
+            1  // Default to Balanced
         ),
         
-        // Generation seed parameter (0-10000)
+        // Generation Seed parameter
         std::make_unique<juce::AudioParameterInt>(
-            GENERATION_SEED_PARAM_ID,
+            juce::ParameterID(GENERATION_SEED_PARAM_ID, 1),
             "Generation Seed",
-            0,
-            10000,
-            0  // Default seed
+            0, 9999, 0  // Default to 0 for random
+        ),
+        
+        // Epic 6 Feature: Instrument Mode
+        std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID(INSTRUMENT_MODE_PARAM_ID, 1),
+            "Instrument Mode",
+            false  // Default to false
+        ),
+        
+        // Epic 6 Feature: Auto-play on Generate
+        std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID(AUTO_PLAY_PARAM_ID, 1),
+            "Auto Play on Generate",
+            true  // Default to true
         )
     );
+    
+    layout.add(std::move(mainGroup));
+    return layout;
 }
 
 //==============================================================================

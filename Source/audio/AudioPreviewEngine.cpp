@@ -19,6 +19,7 @@
 
 AudioPreviewEngine::AudioPreviewEngine()
     : advancedSynthesisEngine(std::make_unique<spawnclone::audio::AdvancedSynthesisEngine>())
+    , synthesisParameterMapper(std::make_unique<spawnclone::audio::SynthesisParameterMapper>())
 {
     // Task 2.2.1: Initialize synthesizer
     initializeSynthesiser();
@@ -749,4 +750,58 @@ juce::String AudioPreviewEngine::getSynthesisEngineInfo() const
         return advancedSynthesisEngine->getEngineInfo();
     
     return "Advanced Synthesis Engine not available";
+}
+
+//==============================================================================
+// Phase 1B & 1C: AI Parameter Mapping Integration
+
+void AudioPreviewEngine::applyAIGenerationParameters(const GenerationParameters& aiParams)
+{
+    if (!advancedSynthesisEngine || !synthesisParameterMapper || !advancedSynthesisEnabled.load())
+        return;
+    
+    // Use parameter mapper to convert AI parameters to synthesis parameters
+    auto synthParams = synthesisParameterMapper->mapAIToSynthesis(aiParams);
+    
+    // Apply the mapped parameters to the synthesis engine
+    advancedSynthesisEngine->setSynthesisParameters(synthParams);
+    
+    DBG("Applied AI parameters to synthesis engine: Style=" << 
+        static_cast<int>(aiParams.harmony.style) << ", Type=" << 
+        static_cast<int>(aiParams.generationType) << ", Tempo=" << aiParams.tempo);
+}
+
+void AudioPreviewEngine::updateSynthesisParameter(const juce::String& parameterName, float value, bool shouldInterpolate)
+{
+    if (!synthesisParameterMapper || !advancedSynthesisEngine)
+        return;
+    
+    synthesisParameterMapper->updateRealTimeParameters(
+        advancedSynthesisEngine.get(), 
+        parameterName, 
+        value, 
+        shouldInterpolate
+    );
+}
+
+void AudioPreviewEngine::batchUpdateSynthesisParameters(const juce::StringPairArray& parameterUpdates)
+{
+    if (!synthesisParameterMapper || !advancedSynthesisEngine)
+        return;
+    
+    synthesisParameterMapper->batchUpdateParameters(
+        advancedSynthesisEngine.get(), 
+        parameterUpdates
+    );
+}
+
+float AudioPreviewEngine::getSynthesisParameterValue(const juce::String& parameterName) const
+{
+    if (!synthesisParameterMapper || !advancedSynthesisEngine)
+        return 0.0f;
+    
+    return synthesisParameterMapper->getSynthesisParameterValue(
+        advancedSynthesisEngine.get(), 
+        parameterName
+    );
 }

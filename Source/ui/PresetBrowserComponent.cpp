@@ -36,7 +36,7 @@ void PresetBrowserComponent::paint(juce::Graphics& g)
     g.fillRect(headerArea);
     
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(16.0f, juce::Font::bold));
+    g.setFont(juce::FontOptions(16.0f, juce::Font::bold));
     g.drawText("Instrument Presets", headerArea, juce::Justification::centred);
     
     // Subtle borders
@@ -291,7 +291,7 @@ void PresetBrowserComponent::initializeComponents()
 {
     // Search components
     searchLabel = std::make_unique<juce::Label>("searchLabel", "Search:");
-    searchLabel->setFont(juce::Font(14.0f));
+    searchLabel->setFont(juce::FontOptions(14.0f));
     searchLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(*searchLabel);
     
@@ -302,7 +302,7 @@ void PresetBrowserComponent::initializeComponents()
     
     // Category filter
     categoryLabel = std::make_unique<juce::Label>("categoryLabel", "Category:");
-    categoryLabel->setFont(juce::Font(14.0f));
+    categoryLabel->setFont(juce::FontOptions(14.0f));
     categoryLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(*categoryLabel);
     
@@ -312,7 +312,7 @@ void PresetBrowserComponent::initializeComponents()
     
     // Tag filter
     tagLabel = std::make_unique<juce::Label>("tagLabel", "Tag:");
-    tagLabel->setFont(juce::Font(14.0f));
+    tagLabel->setFont(juce::FontOptions(14.0f));
     tagLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(*tagLabel);
     
@@ -327,7 +327,7 @@ void PresetBrowserComponent::initializeComponents()
     
     // Preset list
     presetListLabel = std::make_unique<juce::Label>("presetListLabel", "Presets:");
-    presetListLabel->setFont(juce::Font(14.0f, juce::Font::bold));
+    presetListLabel->setFont(juce::FontOptions(14.0f, juce::Font::bold));
     presetListLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(*presetListLabel);
     
@@ -347,22 +347,22 @@ void PresetBrowserComponent::initializeComponents()
     
     // Detail labels
     presetNameLabel = std::make_unique<juce::Label>("presetNameLabel", "No preset selected");
-    presetNameLabel->setFont(juce::Font(16.0f, juce::Font::bold));
+    presetNameLabel->setFont(juce::FontOptions(16.0f, juce::Font::bold));
     presetNameLabel->setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(*presetNameLabel);
     
     presetCategoryLabel = std::make_unique<juce::Label>("presetCategoryLabel", "");
-    presetCategoryLabel->setFont(juce::Font(14.0f));
+    presetCategoryLabel->setFont(juce::FontOptions(14.0f));
     presetCategoryLabel->setColour(juce::Label::textColourId, juce::Colour(0xffaaaaaa));
     addAndMakeVisible(*presetCategoryLabel);
     
     presetTagsLabel = std::make_unique<juce::Label>("presetTagsLabel", "");
-    presetTagsLabel->setFont(juce::Font(12.0f));
+    presetTagsLabel->setFont(juce::FontOptions(12.0f));
     presetTagsLabel->setColour(juce::Label::textColourId, juce::Colour(0xff888888));
     addAndMakeVisible(*presetTagsLabel);
     
     presetDescriptionLabel = std::make_unique<juce::Label>("presetDescriptionLabel", "");
-    presetDescriptionLabel->setFont(juce::Font(13.0f));
+    presetDescriptionLabel->setFont(juce::FontOptions(13.0f));
     presetDescriptionLabel->setColour(juce::Label::textColourId, juce::Colours::lightgrey);
     presetDescriptionLabel->setJustificationType(juce::Justification::topLeft);
     addAndMakeVisible(*presetDescriptionLabel);
@@ -560,12 +560,12 @@ void PresetListBoxModel::paintListBoxItem(int rowNumber, juce::Graphics& g,
     auto textArea = juce::Rectangle<int>(4, 0, width - 8, height);
     
     // Preset name (main text)
-    g.setFont(juce::Font(14.0f, juce::Font::bold));
+    g.setFont(juce::FontOptions(14.0f, juce::Font::bold));
     auto nameArea = textArea.removeFromTop(height / 2);
     g.drawText(preset.name, nameArea, juce::Justification::centredLeft, true);
     
     // Category and tags (smaller text)
-    g.setFont(juce::Font(11.0f));
+    g.setFont(juce::FontOptions(11.0f));
     g.setColour(rowIsSelected ? juce::Colour(0xffcccccc) : juce::Colour(0xff888888));
     
     juce::String subtitleText = preset.category;

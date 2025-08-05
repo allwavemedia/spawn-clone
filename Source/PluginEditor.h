@@ -16,6 +16,7 @@
 #include "audio/TransportControlsComponent.h"
 #include "ui/ExperimentPadComponent.h"
 #include "ui/PresetBrowserComponent.h"
+#include "ui/SynthesisControlPanel.h"
 
 //==============================================================================
 /**
@@ -53,6 +54,7 @@ private:
     void setupAIModeStatusIndicators(); // Epic 7 Story 7.6
     void setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
     void setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
+    void setupSynthesisControls(); // Phase 1B & 1C: Advanced synthesis controls
     void updateAIModeStatus(); // Epic 7 Story 7.6
     void updatePerformanceMetrics(double generationTimeMs, int noteCount); // Epic 7 Story 7.6.7
     void updatePatternDisplay();
@@ -143,6 +145,11 @@ private:
     juce::Slider zoomSlider;
     juce::Label zoomLabel;
     juce::TextButton exportButton;  // Epic 8 Story 8.3: Export functionality
+    
+        // Phase 1B/1C: AI Synthesis Parameter Control
+    std::unique_ptr<SynthesisControlPanel> synthesisControlPanel;
+    std::unique_ptr<juce::TextButton> synthesisExpandButton;
+    bool synthesisControlsExpanded = false;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessorEditor)

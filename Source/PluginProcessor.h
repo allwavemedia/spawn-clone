@@ -86,6 +86,13 @@ public:
     void generateNewPattern();
     
     //==============================================================================
+    // Synthesis Parameter Control (Epic 4)
+    void updateSynthesisParameter(const juce::String& paramName, float value, bool interpolate);
+    void batchUpdateSynthesisParameters(const juce::StringPairArray& newParams);
+    void applyAIGenerationParameters(const GenerationParameters& aiParams);
+    float getSynthesisParameterValue(const juce::String& paramName) const;
+
+    //==============================================================================
     // Epic 2 Story 2.1: Host DAW Communication (Task 2.1.1-2.1.4)
     
     /** Get current host transport state and tempo */

@@ -15,7 +15,7 @@ juce_add_plugin(SpawnClone
     PLUGIN_VERSION ${PROJECT_VERSION}
     PLUGIN_MANUFACTURER_CODE "SPWN"
     PLUGIN_CODE "SCLN"
-    FORMATS VST3 AU Standalone
+    FORMATS AU VST3 Standalone
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT TRUE
@@ -26,7 +26,33 @@ juce_add_plugin(SpawnClone
     PLUGIN_MANUFACTURER_WEBSITE "https://spawnclone.com"
     PLUGIN_DESCRIPTION "AI-Powered MIDI Pattern Generator"
     # Epic 8 Story 8.3: Multi-Output Configuration
-    PLUGIN_NUM_OUTPUT_CHANNELS 6)
+    PLUGIN_NUM_OUTPUT_CHANNELS 6
+    VST3_AUTO_MANIFEST TRUE
+    VST3_CATEGORIES "Instrument|Generator"
+)
+
+target_link_libraries(SpawnClone PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+    juce::juce_dsp
+)
+
+# VST3 Parameter Compatibility Configuration
+target_compile_definitions(SpawnClone PRIVATE
+    JUCE_VST3_CAN_REPLACE_VST2=1
+    JUCE_FORCE_USE_LEGACY_PARAM_IDS=0
+    JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS=1
+    JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
+)
 
 target_sources(SpawnClone PRIVATE
     Source/PluginProcessor.cpp
@@ -69,6 +95,8 @@ target_sources(SpawnClone PRIVATE
     Source/audio/AudioPreviewEngine.h
     Source/audio/AdvancedSynthesisEngine.cpp
     Source/audio/AdvancedSynthesisEngine.h
+    Source/audio/SynthesisParameterMapper.cpp
+    Source/audio/SynthesisParameterMapper.h
     Source/audio/SampleCache.cpp
     Source/audio/SampleCache.h
     Source/audio/AsyncSampleLoader.cpp
@@ -96,33 +124,13 @@ target_sources(SpawnClone PRIVATE
     Source/ui/ExperimentPadComponent.cpp
     Source/ui/ExperimentPadComponent.h
     Source/ui/PresetBrowserComponent.cpp
-    Source/ui/PresetBrowserComponent.h)
-
-target_compile_definitions(SpawnClone PRIVATE
-    JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0
-    CLOUD_API_SIMULATION=1)
-
-# Link JUCE modules
-target_link_libraries(SpawnClone PUBLIC
-    juce::juce_audio_basics
-    juce::juce_audio_devices
-    juce::juce_audio_formats
-    juce::juce_audio_plugin_client
-    juce::juce_audio_processors
-    juce::juce_audio_utils
-    juce::juce_core
-    juce::juce_data_structures
-    juce::juce_dsp
-    juce::juce_events
-    juce::juce_graphics
-    juce::juce_gui_basics
-    juce::juce_gui_extra
+    Source/ui/PresetBrowserComponent.h
+    Source/ui/SynthesisControlPanel.cpp
+    Source/ui/SynthesisControlPanel.h
 )
 
-# Target Include Directories
-target_include_directories(SpawnClone PUBLIC "Source")
+target_include_directories(SpawnClone PRIVATE
+    Source)
 
 # Optional ONNX Runtime Integration
 option(USE_ONNX_RUNTIME "Enable ONNX Runtime for Quality Mode" OFF)
@@ -161,6 +169,7 @@ if(BUILD_TESTS)
         Source/test_AudioPreviewEngine.cpp
         Source/audio/AudioPreviewEngine.cpp
         Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/SynthesisParameterMapper.cpp
         Source/audio/LayerEffectsProcessor.cpp
         Source/audio/InstrumentLibraryManager.cpp
         Source/audio/RealTimeProcessor.cpp
@@ -280,12 +289,14 @@ if(BUILD_TESTS)
         Source/audio/LayerEffectsProcessor.cpp
         Source/audio/InstrumentLibraryManager.cpp
         Source/audio/RealTimeProcessor.cpp
+        Source/ui/SynthesisControlPanel.cpp
     )
 
     target_include_directories(test_Performance PRIVATE 
         Source 
         Source/ai
         Source/audio
+        Source/ui
     )
     
     target_link_libraries(test_Performance PRIVATE 
@@ -575,6 +586,12 @@ target_compile_features(Epic4_Story4_RealTimeTest PRIVATE cxx_std_17)
 add_executable(test_AdvancedSynthesisEngine
     tests/unit/test_AdvancedSynthesisEngine.cpp
     Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/PitchShifter.cpp
+    Source/audio/synthesis/LoopManager.cpp
 )
 
 target_link_libraries(test_AdvancedSynthesisEngine PRIVATE
@@ -611,6 +628,7 @@ target_include_directories(debug_synthesis PRIVATE "Source")
 add_executable(minimal_debug
     minimal_debug.cpp
     Source/audio/AdvancedSynthesisEngine.cpp
+    Source/ui/SynthesisControlPanel.cpp
 )
 
 target_link_libraries(minimal_debug PRIVATE
@@ -621,5 +639,5 @@ target_link_libraries(minimal_debug PRIVATE
 )
 
 target_compile_features(minimal_debug PRIVATE cxx_std_17)
-target_include_directories(minimal_debug PRIVATE "Source")
+target_include_directories(minimal_debug PRIVATE "Source" "Source/ui")
 

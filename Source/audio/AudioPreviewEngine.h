@@ -22,6 +22,7 @@
 #include "LayerEffectsProcessor.h"
 #include "InstrumentLibraryManager.h"
 #include "AdvancedSynthesisEngine.h"
+#include "SynthesisParameterMapper.h"
 
 //==============================================================================
 /**
@@ -154,6 +155,25 @@ public:
     /** Get synthesis engine performance info */
     juce::String getSynthesisEngineInfo() const;
     
+    /** Get direct access to the advanced synthesis engine */
+    spawnclone::audio::AdvancedSynthesisEngine* getAdvancedSynthesisEngine() { return advancedSynthesisEngine.get(); }
+    const spawnclone::audio::AdvancedSynthesisEngine* getAdvancedSynthesisEngine() const { return advancedSynthesisEngine.get(); }
+    
+    //==============================================================================
+    // Phase 1B & 1C: AI Parameter Mapping Integration
+    
+    /** Apply AI generation parameters to synthesis engine through parameter mapping */
+    void applyAIGenerationParameters(const GenerationParameters& aiParams);
+    
+    /** Update synthesis parameter in real-time with smooth interpolation */
+    void updateSynthesisParameter(const juce::String& parameterName, float value, bool shouldInterpolate = true);
+    
+    /** Batch update multiple synthesis parameters for efficiency */
+    void batchUpdateSynthesisParameters(const juce::StringPairArray& parameterUpdates);
+    
+    /** Get current value of a synthesis parameter */
+    float getSynthesisParameterValue(const juce::String& parameterName) const;
+    
     //==============================================================================
     // Epic 8 Story 8.2: ExperimentPad Interface
     
@@ -237,6 +257,9 @@ private:
     // Epic 9.2: Advanced Synthesis Engine Integration
     std::unique_ptr<spawnclone::audio::AdvancedSynthesisEngine> advancedSynthesisEngine;
     std::atomic<bool> advancedSynthesisEnabled{false};
+    
+    // Phase 1B & 1C: AI Parameter Mapping System
+    std::unique_ptr<spawnclone::audio::SynthesisParameterMapper> synthesisParameterMapper;
     
     // Timing
     std::atomic<int64_t> playbackStartSample{0};

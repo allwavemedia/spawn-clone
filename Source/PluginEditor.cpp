@@ -26,6 +26,7 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
     setupAIModeStatusIndicators(); // Epic 7 Story 7.6
     setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
     setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
+    setupSynthesisControls(); // Phase 1B/1C: AI synthesis parameter control
     
     // Start listening to pattern changes
     audioProcessor.getPatternManager().addChangeListener(this);
@@ -58,9 +59,9 @@ void SpawnCloneAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillRect(headerBounds);
     
     // Title text with professional styling
-    g.setColour(juce::Colour(0xffeeeeee));
+    g.setColour(juce::Colours::white);
     g.setFont(juce::FontOptions("Arial", "Bold", 18.0f));
-    g.drawFittedText("SpawnClone AI MIDI Generator", headerBounds.reduced(10, 0), 
+    g.drawFittedText("SpawnClone", headerBounds.reduced(10, 0), 
                      juce::Justification::centredLeft, 1);
     
     // Version/status indicator
@@ -149,6 +150,14 @@ void SpawnCloneAudioProcessorEditor::resized()
     auto seedRow = bounds.removeFromTop(paramHeight);
     generationSeedLabel.setBounds(seedRow.removeFromLeft(80));
     generationSeedSlider.setBounds(seedRow.removeFromLeft(220).reduced(3));
+
+    // Phase 1B/1C: Synthesis Controls Section
+    bounds.removeFromTop(margin / 2);
+    synthesisExpandButton->setBounds(bounds.removeFromTop(25).reduced(margin, 0));
+    if (synthesisControlsExpanded)
+    {
+        synthesisControlPanel->setBounds(bounds.removeFromTop(220).reduced(margin, 0));
+    }
     
     // Generate button with enhanced styling
     bounds.removeFromTop(margin);
@@ -904,4 +913,31 @@ void SpawnCloneAudioProcessorEditor::timerCallback()
         patternVisualization.setPlaybackMode(isPlaying);
         patternVisualization.setPlaybackPosition(playbackPosition);
     }
+}
+
+//==============================================================================
+// Phase 1B/1C: AI Synthesis Parameter Control
+void SpawnCloneAudioProcessorEditor::setupSynthesisControls()
+{
+    // Initialize synthesis control panel
+    synthesisControlPanel = std::make_unique<SynthesisControlPanel>(audioProcessor);
+    addAndMakeVisible(*synthesisControlPanel);
+    
+    // Initialize expand/collapse button for synthesis controls
+    synthesisExpandButton = std::make_unique<juce::TextButton>("Synthesis");
+    synthesisExpandButton->setButtonText("Synthesis ▼");
+    synthesisExpandButton->setColour(juce::TextButton::buttonColourId, juce::Colour(0xff404040));
+    synthesisExpandButton->setColour(juce::TextButton::textColourOffId, juce::Colour(0xffcccccc));
+    synthesisExpandButton->onClick = [this]()
+    {
+        synthesisControlsExpanded = !synthesisControlsExpanded;
+        synthesisExpandButton->setButtonText(synthesisControlsExpanded ? "Synthesis ▲" : "Synthesis ▼");
+        synthesisControlPanel->setVisible(synthesisControlsExpanded);
+        resized(); // Update layout
+    };
+    addAndMakeVisible(*synthesisExpandButton);
+    
+    // Start collapsed by default to save screen space
+    synthesisControlsExpanded = false;
+    synthesisControlPanel->setVisible(false);
 }

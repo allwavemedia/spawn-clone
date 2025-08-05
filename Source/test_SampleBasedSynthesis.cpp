@@ -10,6 +10,8 @@
 #include <juce_dsp/juce_dsp.h>
 #include "audio/AdvancedSynthesisEngine.h"
 
+using namespace spawnclone::audio;
+
 class SampleBasedSynthesisTest : public ::testing::Test
 {
 protected:

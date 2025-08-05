@@ -1,8 +1,4 @@
-//=========================    void SampleEngine::startNote(int midiNoteNumber,
-                           void SampleEngine::selectSample(float velocity,
-                                   const SampleParams& params, void SampleEngine::selectSample(float velocity,
-                                   const SampleParams& params,        float velocity,
-                                const SampleParams& params,==================================================
+//==============================================================================
 /*
   SampleEngine.cpp
   Author:  BMad Dev Agent
@@ -31,7 +27,7 @@ namespace spawnclone::audio
 
     void SampleEngine::startNote(int midiNoteNumber,
                                float velocity,
-                               const AdvancedSynthesisEngine::SampleParams& params,
+                               const SampleParams& params,
                                const std::vector<juce::AudioBuffer<float>>& samplePool)
     {
         noteVelocity = velocity;
@@ -68,8 +64,6 @@ namespace spawnclone::audio
 
         for (int i = 0; i < numSamples; ++i)
         {
-            currentPlaybackPosition = loopManager.handleLooping(currentPlaybackPosition);
-
             // Simple linear interpolation for now
             auto pos = currentPlaybackPosition;
             auto index1 = static_cast<int>(pos);
@@ -78,9 +72,9 @@ namespace spawnclone::audio
 
             if (index2 >= numSampleFrames)
             {
-                if (loopManager.getCrossfadeGain(pos) > 0.0f)
-                    index2 = loopManager.handleLooping(index2);
-                else
+                // Simple wrap for now - TODO: implement proper looping
+                index2 = 0;
+                if (index1 >= numSampleFrames) 
                 {
                     isPlaying = false;
                     break;
@@ -91,7 +85,7 @@ namespace spawnclone::audio
             auto sample2 = sampleData[index2];
             auto currentSample = sample1 + frac * (sample2 - sample1);
 
-            channelData[i] += currentSample * noteVelocity * loopManager.getCrossfadeGain(currentPlaybackPosition);
+            channelData[i] += currentSample * noteVelocity;
 
             currentPlaybackPosition += pitchRatio;
         }
@@ -103,7 +97,7 @@ namespace spawnclone::audio
     }
 
     void SampleEngine::selectSample(float velocity,
-                                  const AdvancedSynthesisEngine::SampleParams& params,
+                                  const SampleParams& params,
                                   const std::vector<juce::AudioBuffer<float>>& samplePool)
     {
         if (params.enableVelocityLayers && !params.sampleMap.empty())

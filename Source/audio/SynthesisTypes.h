@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 namespace spawnclone::audio
 {
     // Forward declaration for synthesis type
