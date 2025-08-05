@@ -121,6 +121,22 @@ target_sources(SpawnClone PRIVATE
     Source/audio/TransportControlsComponent.h
     Source/audio/MIDIExporter.cpp
     Source/audio/MIDIExporter.h
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectProcessor.h
+    Source/audio/EffectsChain.cpp
+    Source/audio/EffectsChain.h
+    Source/audio/ReverbEngine.cpp
+    Source/audio/ReverbEngine.h
+    Source/audio/DelayEngine.cpp
+    Source/audio/DelayEngine.h
+    Source/audio/ModulationEngine.cpp
+    Source/audio/ModulationEngine.h
+    Source/audio/DelayXYController.cpp
+    Source/audio/DelayXYController.h
+    Source/audio/ModulationXYController.cpp
+    Source/audio/ModulationXYController.h
+    Source/ui/ReverbXYController.cpp
+    Source/ui/ReverbXYController.h
     Source/ui/ExperimentPadComponent.cpp
     Source/ui/ExperimentPadComponent.h
     Source/ui/PresetBrowserComponent.cpp
@@ -647,6 +663,7 @@ add_executable(epic6_reverb_demo
     Source/audio/EffectProcessor.cpp
     Source/audio/EffectsChain.cpp
     Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
 )
 
 target_link_libraries(epic6_reverb_demo PRIVATE
@@ -680,3 +697,89 @@ target_link_libraries(epic6_xy_demo PRIVATE
 target_compile_features(epic6_xy_demo PRIVATE cxx_std_17)
 target_include_directories(epic6_xy_demo PRIVATE "Source")
 
+# Epic 6 Story 6.9: Professional DelayEngine Demo
+add_executable(epic6_delay_demo
+    epic6_delay_demo.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+)
+
+target_link_libraries(epic6_delay_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic6_delay_demo PRIVATE cxx_std_17)
+target_include_directories(epic6_delay_demo PRIVATE "Source")
+
+# Epic 6 Story 6.10: Professional ModulationEngine Demo
+add_executable(epic6_modulation_demo
+    epic6_modulation_demo.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+)
+
+target_link_libraries(epic6_modulation_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic6_modulation_demo PRIVATE cxx_std_17)
+target_include_directories(epic6_modulation_demo PRIVATE "Source")
+
+# Epic 6 Story 6.11: XY Controllers Integration Demo
+add_executable(epic6_xy_controllers_demo
+    epic6_xy_controllers_demo.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/DelayXYController.cpp
+    Source/audio/ModulationXYController.cpp
+)
+
+target_link_libraries(epic6_xy_controllers_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic6_xy_controllers_demo PRIVATE cxx_std_17)
+target_include_directories(epic6_xy_controllers_demo PRIVATE "Source")
+
+# Epic 8 Story 8.4: Advanced Real-Time Processing Demo
+add_executable(epic8_story8_4_realtime_demo
+    epic8_story8_4_realtime_demo.cpp
+    Source/audio/RealTimeProcessor.cpp
+    Source/audio/LayerEffectsProcessor.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+)
+
+target_link_libraries(epic8_story8_4_realtime_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic8_story8_4_realtime_demo PRIVATE cxx_std_17)
+target_include_directories(epic8_story8_4_realtime_demo PRIVATE "Source")

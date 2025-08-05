@@ -8,7 +8,9 @@
 //==============================================================================
 
 #include "EffectsChain.h"
-#include "ReverbEngine.h"  // Epic 6 Story 6.2
+#include "ReverbEngine.h"     // Epic 6 Story 6.2
+#include "DelayEngine.h"      // Epic 6 Story 6.9
+#include "ModulationEngine.h" // Epic 6 Story 6.10
 
 namespace spawnclone::audio
 {
@@ -326,11 +328,20 @@ namespace spawnclone::audio
             return std::make_unique<ReverbEngine>();
         }
         
-        // Additional effects will be added here as they're implemented
         if (effectName.equalsIgnoreCase("Delay"))
         {
-            // return std::make_unique<DelayEngine>(); // Coming in Story 6.3
+            return std::make_unique<DelayEngine>(); // Epic 6 Story 6.9 - COMPLETE
         }
+        
+        if (effectName.equalsIgnoreCase("Modulation") || 
+            effectName.equalsIgnoreCase("Chorus") ||
+            effectName.equalsIgnoreCase("Flanger") ||
+            effectName.equalsIgnoreCase("Phaser"))
+        {
+            return std::make_unique<ModulationEngine>(); // Epic 6 Story 6.10 - COMPLETE
+        }
+        
+        // Additional effects will be added here as they're implemented
         
         return nullptr; // Effect type not yet implemented
     }
@@ -341,12 +352,14 @@ namespace spawnclone::audio
         return juce::StringArray{
             "Reverb",
             "Delay", 
-            "Chorus",
+            "Modulation", // Epic 6 Story 6.10 - ModulationEngine with Chorus/Flanger/Phaser/etc
+            "Chorus",     // Alias for ModulationEngine
+            "Flanger",    // Alias for ModulationEngine
+            "Phaser",     // Alias for ModulationEngine
             "Distortion",
             "Filter",
             "Compressor",
-            "EQ",
-            "Phaser"
+            "EQ"
         };
     }
 
