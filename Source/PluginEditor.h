@@ -17,6 +17,7 @@
 #include "ui/ExperimentPadComponent.h"
 #include "ui/PresetBrowserComponent.h"
 #include "ui/SynthesisControlPanel.h"
+#include "ui/ReverbXYController.h"  // Epic 6 Phase 2: Professional Reverb Control
 
 //==============================================================================
 /**
@@ -53,6 +54,7 @@ private:
     void setupTransportControls(); // Epic 4 Story 4.2
     void setupAIModeStatusIndicators(); // Epic 7 Story 7.6
     void setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
+    void setupProfessionalReverbControl(); // Epic 6 Phase 2: Professional Reverb XY integration
     void setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
     void setupSynthesisControls(); // Phase 1B & 1C: Advanced synthesis controls
     void updateAIModeStatus(); // Epic 7 Story 7.6
@@ -132,6 +134,9 @@ private:
     
     // Epic 8 Story 8.1: SPAWN-style Experiment Pad XY Controller
     ExperimentPadComponent experimentPad;
+    
+    // Epic 6 Phase 2: Professional Reverb XY Controller Integration
+    std::unique_ptr<spawnclone::ui::ReverbXYController> reverbXYController;
     
     // Epic 9 Story 9.1: Preset Browser Component
     PresetBrowserComponent presetBrowser;

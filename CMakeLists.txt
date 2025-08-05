@@ -641,3 +641,42 @@ target_link_libraries(minimal_debug PRIVATE
 target_compile_features(minimal_debug PRIVATE cxx_std_17)
 target_include_directories(minimal_debug PRIVATE "Source" "Source/ui")
 
+# Epic 6 Phase 1: Professional Reverb Demo
+add_executable(epic6_reverb_demo
+    epic6_reverb_demo.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+)
+
+target_link_libraries(epic6_reverb_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic6_reverb_demo PRIVATE cxx_std_17)
+target_include_directories(epic6_reverb_demo PRIVATE "Source")
+
+# Epic 6 Phase 2: Professional Reverb XY Controller Demo
+add_executable(epic6_xy_demo
+    epic6_xy_demo.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/ui/ReverbXYController.cpp
+)
+
+target_link_libraries(epic6_xy_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_dsp
+)
+
+target_compile_features(epic6_xy_demo PRIVATE cxx_std_17)
+target_include_directories(epic6_xy_demo PRIVATE "Source")
+

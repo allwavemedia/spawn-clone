@@ -22,6 +22,7 @@ namespace spawnclone::audio
 {
     // Forward declarations for types defined in AdvancedSynthesisEngine.h
     struct ModulationParams;
+    class EffectsChain;  // Epic 6: Forward declaration for effects chain
 
     class SynthVoice
     {
@@ -50,6 +51,13 @@ namespace spawnclone::audio
         
         // Advanced envelope support
         void setEnvelopeParameters(const AdvancedSynthesisEngine::EnvelopeParams& envParams);
+        
+        // Epic 6: Effects chain control
+        EffectsChain* getEffectsChain() const { return effectsChain.get(); }
+        void setEffectParameter(int slotIndex, const juce::String& paramName, float value);
+        void insertEffect(int slotIndex, const juce::String& effectType);
+        void removeEffect(int slotIndex);
+        void setEffectsChainEnabled(bool enabled);
 
         bool isVoiceActive() const;
         bool isPlayingNote(int midiNoteNumber) const;
@@ -86,6 +94,9 @@ namespace spawnclone::audio
         // Forward declaration - Advanced envelope with curve shapes
         class AdvancedEnvelope;
         std::unique_ptr<AdvancedEnvelope> advancedEnvelope;
+        
+        // Epic 6: Professional effects chain
+        std::unique_ptr<EffectsChain> effectsChain;
 
         SynthesisType currentSynthesisType;
         AdvancedSynthesisEngine::ModulationParams currentModulationParams;

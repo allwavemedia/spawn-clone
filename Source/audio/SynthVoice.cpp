@@ -7,6 +7,7 @@
 
 #include "SynthVoice.h"
 #include "AdvancedSynthesisEngine.h"  // For complete SynthesisParameters definition
+#include "EffectsChain.h"  // Epic 6: Professional effects processing
 #include <cmath>
 
 namespace spawnclone::audio
@@ -422,6 +423,9 @@ namespace spawnclone::audio
         filter = std::make_unique<StateVariableFilter>();
         advancedEnvelope = std::make_unique<AdvancedEnvelope>();
         
+        // Epic 6: Initialize professional effects chain
+        effectsChain = std::make_unique<EffectsChain>();
+        
         // Initialize unison oscillators
         for (int i = 0; i < MAX_UNISON_VOICES; ++i)
         {
@@ -450,6 +454,9 @@ namespace spawnclone::audio
         filter->setSampleRate(sampleRate);
         advancedEnvelope->setSampleRate(sampleRate);
         
+        // Epic 6: Prepare effects chain
+        effectsChain->prepareToPlay(sampleRate, samplesPerBlock);
+        
         // Initialize unison oscillators
         for (int i = 0; i < MAX_UNISON_VOICES; ++i)
         {
@@ -460,6 +467,12 @@ namespace spawnclone::audio
     void SynthVoice::releaseResources()
     {
         sampleEngine.releaseResources();
+        
+        // Epic 6: Release effects chain resources
+        if (effectsChain)
+        {
+            effectsChain->releaseResources();
+        }
     }
 
     void SynthVoice::startNote(int midiNoteNumber, float velocity, SynthesisType synthType, const SampleParams& sampleParams, const std::vector<juce::AudioBuffer<float>>& samplePool)
@@ -609,6 +622,49 @@ namespace spawnclone::audio
         advancedEnvelope->setParameters(envParams);
     }
 
+    //==============================================================================
+    // Epic 6: Effects chain control methods
+    
+    void SynthVoice::setEffectParameter(int slotIndex, const juce::String& paramName, float value)
+    {
+        if (effectsChain)
+        {
+            auto* effect = effectsChain->getEffect(slotIndex);
+            if (effect)
+            {
+                effect->setParameter(paramName, value, true);
+            }
+        }
+    }
+    
+    void SynthVoice::insertEffect(int slotIndex, const juce::String& effectType)
+    {
+        if (effectsChain)
+        {
+            auto effect = EffectsChain::createEffect(effectType);
+            if (effect)
+            {
+                effectsChain->insertEffect(slotIndex, std::move(effect));
+            }
+        }
+    }
+    
+    void SynthVoice::removeEffect(int slotIndex)
+    {
+        if (effectsChain)
+        {
+            effectsChain->removeEffect(slotIndex);
+        }
+    }
+    
+    void SynthVoice::setEffectsChainEnabled(bool enabled)
+    {
+        if (effectsChain)
+        {
+            effectsChain->setChainEnabled(enabled);
+        }
+    }
+
     void SynthVoice::stopNote(float /*velocity*/, bool allowTailOff)
     {
         if (allowTailOff)
@@ -659,6 +715,10 @@ namespace spawnclone::audio
 
         // Apply filter processing
         filter->processBlock(tempBuffer, 0, numSamples);
+
+        // Epic 6: Apply effects chain processing
+        juce::MidiBuffer emptyMidiBuffer; // Effects don't need MIDI
+        effectsChain->processBlock(tempBuffer, emptyMidiBuffer);
 
         for (int channel = 0; channel < outputBuffer.getNumChannels(); ++channel)
         {

@@ -858,6 +858,83 @@ void SpawnCloneAudioProcessorEditor::setupExperimentPad()
         // Future implementation: save pad presets to plugin state
         DBG("Experiment Pad preset saved: " << preset.name);
     });
+    
+    // Epic 6 Phase 2: Initialize Professional Reverb XY Controller
+    setupProfessionalReverbControl();
+}
+
+//==============================================================================
+// Epic 6 Phase 2: Setup Professional Reverb XY Controller Integration
+void SpawnCloneAudioProcessorEditor::setupProfessionalReverbControl()
+{
+    // Create the reverb XY controller
+    reverbXYController = std::make_unique<spawnclone::ui::ReverbXYController>();
+    
+    // Initialize with default studio mapping for professional sound
+    reverbXYController->loadStudioMapping();
+    
+    // Connect to audio processor's effects chain
+    // For now, we'll create a demonstration effects chain
+    // In production, this would connect to the actual audio processing pipeline
+    
+    // Enhanced ExperimentPad callbacks for professional reverb control
+    experimentPad.onPositionChanged = [this](const ExperimentPadComponent::PadPosition& position)
+    {
+        if (reverbXYController)
+        {
+            // Get modifier key states (would need to implement key state tracking)
+            bool shiftHeld = false;  // TODO: Implement modifier key detection
+            bool ctrlHeld = false;   
+            bool altHeld = false;
+            
+            // Update reverb parameters from XY position
+            reverbXYController->updateFromXYPosition(position.x, position.y, shiftHeld, ctrlHeld, altHeld);
+        }
+        
+        DBG("Professional Reverb Control - X=" << position.x << ", Y=" << position.y);
+    };
+    
+    // Set up reverb state change callback for UI feedback
+    reverbXYController->onStateChanged = [this](const spawnclone::ui::ReverbXYController::ReverbState& state)
+    {
+        // Update any reverb parameter displays in the UI
+        DBG("Reverb State Updated:");
+        DBG("  Room Size: " << state.roomSize);
+        DBG("  Reverb Time: " << state.reverbTime << "s");
+        DBG("  Damping: " << state.damping);
+        DBG("  Stereo Width: " << state.stereoWidth);
+        DBG("  Early Reflections: " << state.earlyReflectionsMix);
+        DBG("  Pre-delay: " << state.preDelay << "ms");
+        
+        // Future: Update parameter labels/displays in UI
+    };
+    
+    // Set up algorithm change callback
+    reverbXYController->onAlgorithmChanged = [this](spawnclone::audio::ReverbEngine::Algorithm algorithm)
+    {
+        juce::String algorithmName = "Unknown";
+        switch (algorithm)
+        {
+            case spawnclone::audio::ReverbEngine::Algorithm::Plate: algorithmName = "Plate"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Hall: algorithmName = "Hall"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Room: algorithmName = "Room"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Spring: algorithmName = "Spring"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Convolution: algorithmName = "Convolution"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Shimmer: algorithmName = "Shimmer"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Reverse: algorithmName = "Reverse"; break;
+            case spawnclone::audio::ReverbEngine::Algorithm::Gated: algorithmName = "Gated"; break;
+        }
+        
+        DBG("Reverb Algorithm Changed: " << algorithmName);
+        // Future: Update algorithm selector in UI
+    };
+    
+    // Enhanced effect mappings to match professional reverb parameters
+    experimentPad.clearEffectMappings();
+    experimentPad.addEffectMapping("Room Size", 0.0f, 1.0f);
+    experimentPad.addEffectMapping("Reverb Time", 0.5f, 6.0f);
+    experimentPad.addEffectMapping("Damping", 0.0f, 1.0f);
+    experimentPad.addEffectMapping("Stereo Width", 0.5f, 1.5f);
 }
 
 //==============================================================================
