@@ -1251,7 +1251,12 @@ void AdvancedSynthesisEngine::setSynthesisParameters(const SynthesisParameters& 
     for (auto& voice : voices)
     {
         if (voice)
+        {
             voice->setModulationParameters(currentParams.modulation);
+            voice->setFilterParameters(currentParams.filter);
+            voice->setUnisonParameters(currentParams.unison);
+            voice->setEnvelopeParameters(currentParams.envelope);
+        }
     }
 }
 
@@ -1261,15 +1266,61 @@ void AdvancedSynthesisEngine::setParameter(const juce::String& paramName, float 
     if (paramName == "wavetablePosition")
         currentParams.wavetable.wavetablePosition = juce::jlimit(0.0f, 1.0f, value);
     else if (paramName == "filterCutoff")
+    {
         currentParams.filter.cutoff = juce::jlimit(20.0f, 20000.0f, value);
+        // Propagate to all active voices immediately
+        for (auto& voice : voices)
+        {
+            if (voice)
+                voice->setFilterParameters(currentParams.filter);
+        }
+    }
     else if (paramName == "filterResonance")
+    {
         currentParams.filter.resonance = juce::jlimit(0.0f, 1.0f, value);
+        // Propagate to all active voices immediately
+        for (auto& voice : voices)
+        {
+            if (voice)
+                voice->setFilterParameters(currentParams.filter);
+        }
+    }
     else if (paramName == "lfoRate")
         currentParams.modulation.lfoRate = juce::jlimit(0.01f, 20.0f, value);
     else if (paramName == "lfoDepth")
         currentParams.modulation.lfoDepth = juce::jlimit(0.0f, 1.0f, value);
     else if (paramName == "masterVolume")
         currentParams.masterVolume = juce::jlimit(0.0f, 1.0f, value);
+    else if (paramName == "unisonVoices")
+    {
+        currentParams.unison.voiceCount = juce::jlimit(1, 8, static_cast<int>(value));
+        // Propagate to all voices immediately
+        for (auto& voice : voices)
+        {
+            if (voice)
+                voice->setUnisonParameters(currentParams.unison);
+        }
+    }
+    else if (paramName == "unisonDetune")
+    {
+        currentParams.unison.detune = juce::jlimit(0.0f, 1.0f, value);
+        // Propagate to all voices immediately
+        for (auto& voice : voices)
+        {
+            if (voice)
+                voice->setUnisonParameters(currentParams.unison);
+        }
+    }
+    else if (paramName == "unisonSpread")
+    {
+        currentParams.unison.stereoSpread = juce::jlimit(0.0f, 1.0f, value);
+        // Propagate to all voices immediately
+        for (auto& voice : voices)
+        {
+            if (voice)
+                voice->setUnisonParameters(currentParams.unison);
+        }
+    }
 }
 
 void AdvancedSynthesisEngine::noteOn(int midiNoteNumber, float velocity)

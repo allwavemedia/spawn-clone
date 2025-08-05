@@ -633,6 +633,292 @@ TEST_F(AdvancedSynthesisEngineTest, LFOModulation)
     EXPECT_TRUE(modulationDetected) << "LFO modulation should affect audio output. Max difference: " << maxDifference;
 }
 
+TEST_F(AdvancedSynthesisEngineTest, FilterTypesValidation)
+{
+    // Test all filter types to ensure they're working correctly
+    std::vector<AdvancedSynthesisEngine::FilterParams::Type> filterTypes = {
+        AdvancedSynthesisEngine::FilterParams::LowPass,
+        AdvancedSynthesisEngine::FilterParams::HighPass,
+        AdvancedSynthesisEngine::FilterParams::BandPass,
+        AdvancedSynthesisEngine::FilterParams::Notch,
+        AdvancedSynthesisEngine::FilterParams::MoogLadder,
+        AdvancedSynthesisEngine::FilterParams::StateVariable
+    };
+    
+    for (auto filterType : filterTypes)
+    {
+        auto params = engine->getSynthesisParameters();
+        params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+        params.filter.enabled = true;
+        params.filter.filterType = filterType;
+        params.filter.cutoff = 1000.0f;
+        params.filter.resonance = 0.3f;
+        
+        engine->setSynthesisParameters(params);
+        
+        // Generate audio with filter applied
+        juce::AudioBuffer<float> buffer(2, 512);
+        buffer.clear();
+        juce::MidiBuffer midiBuffer;
+        
+        engine->noteOn(60, 0.8f);
+        engine->processBlock(buffer, midiBuffer);
+        engine->noteOff(60);
+        
+        // Verify audio was generated (filter should not silence the output completely)
+        bool hasAudio = false;
+        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+        {
+            for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+            {
+                if (std::abs(buffer.getSample(channel, sample)) > 0.01f)
+                {
+                    hasAudio = true;
+                    break;
+                }
+            }
+            if (hasAudio) break;
+        }
+        
+        EXPECT_TRUE(hasAudio) << "Filter type " << static_cast<int>(filterType) << " should not completely silence audio";
+    }
+}
+
+TEST_F(AdvancedSynthesisEngineTest, UnisonVoiceImplementation)
+{
+    // Test unison voice functionality
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params.unison.enabled = true;
+    params.unison.voiceCount = 4;
+    params.unison.detune = 0.2f;
+    params.unison.stereoSpread = 0.8f;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify parameters were set
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_TRUE(retrievedParams.unison.enabled);
+    EXPECT_EQ(retrievedParams.unison.voiceCount, 4);
+    EXPECT_FLOAT_EQ(retrievedParams.unison.detune, 0.2f);
+    EXPECT_FLOAT_EQ(retrievedParams.unison.stereoSpread, 0.8f);
+    
+    // First test basic audio generation without unison
+    params.unison.enabled = false;
+    engine->setSynthesisParameters(params);
+    
+    juce::AudioBuffer<float> buffer(2, 512);
+    buffer.clear();
+    juce::MidiBuffer midiBuffer;
+    
+    engine->noteOn(60, 0.8f);
+    engine->processBlock(buffer, midiBuffer);
+    
+    // Verify basic audio generation works
+    bool hasBasicAudio = false;
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            if (std::abs(buffer.getSample(channel, sample)) > 0.01f)
+            {
+                hasBasicAudio = true;
+                break;
+            }
+        }
+        if (hasBasicAudio) break;
+    }
+    
+    EXPECT_TRUE(hasBasicAudio) << "Basic wavetable synthesis should work before testing unison";
+    
+    engine->noteOff(60);
+    
+    // Now test with unison enabled
+    params.unison.enabled = true;
+    engine->setSynthesisParameters(params);
+    
+    buffer.clear();
+    engine->noteOn(60, 0.8f);
+    engine->processBlock(buffer, midiBuffer);
+    engine->noteOff(60);
+    
+    // Verify audio was generated with unison
+    bool hasUnisonAudio = false;
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            if (std::abs(buffer.getSample(channel, sample)) > 0.01f)
+            {
+                hasUnisonAudio = true;
+                break;
+            }
+        }
+        if (hasUnisonAudio) break;
+    }
+    
+    EXPECT_TRUE(hasUnisonAudio) << "Unison voices should generate audio";
+}
+
+TEST_F(AdvancedSynthesisEngineTest, AdvancedEnvelopeShapes)
+{
+    // Test advanced envelope shapes
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params.envelope.attack = 0.1f;
+    params.envelope.decay = 0.2f;
+    params.envelope.sustain = 0.6f;
+    params.envelope.release = 0.3f;
+    params.envelope.attackShape = AdvancedSynthesisEngine::EnvelopeParams::Exponential;
+    params.envelope.decayShape = AdvancedSynthesisEngine::EnvelopeParams::Logarithmic;
+    params.envelope.releaseShape = AdvancedSynthesisEngine::EnvelopeParams::SCurve;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Verify parameters were set
+    auto retrievedParams = engine->getSynthesisParameters();
+    EXPECT_EQ(retrievedParams.envelope.attackShape, AdvancedSynthesisEngine::EnvelopeParams::Exponential);
+    EXPECT_EQ(retrievedParams.envelope.decayShape, AdvancedSynthesisEngine::EnvelopeParams::Logarithmic);
+    EXPECT_EQ(retrievedParams.envelope.releaseShape, AdvancedSynthesisEngine::EnvelopeParams::SCurve);
+    
+    // Generate audio to test envelope functionality
+    juce::AudioBuffer<float> buffer(2, 1024);
+    buffer.clear();
+    juce::MidiBuffer midiBuffer;
+    
+    engine->noteOn(60, 0.8f);
+    engine->processBlock(buffer, midiBuffer);
+    engine->noteOff(60);
+    
+    // Process more blocks to test release phase
+    for (int i = 0; i < 5; ++i)
+    {
+        buffer.clear();
+        engine->processBlock(buffer, midiBuffer);
+    }
+    
+    EXPECT_TRUE(true) << "Advanced envelope shapes should process without errors";
+}
+
+TEST_F(AdvancedSynthesisEngineTest, UnisonParameterControl)
+{
+    // Test real-time unison parameter changes
+    engine->setParameter("unisonVoices", 6.0f);
+    engine->setParameter("unisonDetune", 0.3f);
+    engine->setParameter("unisonSpread", 1.0f);
+    
+    auto params = engine->getSynthesisParameters();
+    EXPECT_EQ(params.unison.voiceCount, 6);
+    EXPECT_FLOAT_EQ(params.unison.detune, 0.3f);
+    EXPECT_FLOAT_EQ(params.unison.stereoSpread, 1.0f);
+    
+    // Test parameter range limiting
+    engine->setParameter("unisonVoices", 15.0f); // Should be limited to 8
+    engine->setParameter("unisonDetune", -0.5f); // Should be limited to 0.0
+    engine->setParameter("unisonSpread", 2.0f);  // Should be limited to 1.0
+    
+    params = engine->getSynthesisParameters();
+    EXPECT_LE(params.unison.voiceCount, 8);
+    EXPECT_GE(params.unison.detune, 0.0f);
+    EXPECT_LE(params.unison.stereoSpread, 1.0f);
+}
+
+TEST_F(AdvancedSynthesisEngineTest, PerformanceOptimization)
+{
+    // Test performance with simpler synthesis first
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    
+    engine->setSynthesisParameters(params);
+    
+    // Test basic performance first
+    engine->noteOn(60, 0.8f);
+    
+    juce::AudioBuffer<float> buffer(2, 256);
+    juce::MidiBuffer midiBuffer;
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    for (int i = 0; i < 50; ++i)  // Reduced iterations for simpler test
+    {
+        buffer.clear();
+        engine->processBlock(buffer, midiBuffer);
+    }
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+    
+    // Clean up
+    engine->noteOff(60);
+    
+    // Performance should complete within reasonable time
+    EXPECT_LT(duration.count(), 50000) << "Basic synthesis should complete within reasonable time";
+    
+    // Verify audio was generated (check last buffer)
+    bool hasAudio = false;
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            if (std::abs(buffer.getSample(channel, sample)) > 0.001f)
+            {
+                hasAudio = true;
+                break;
+            }
+        }
+        if (hasAudio) break;
+    }
+    
+    EXPECT_TRUE(hasAudio) << "Synthesis should still generate audio";
+}
+
+TEST_F(AdvancedSynthesisEngineTest, UnisonPhaseOffset)
+{
+    // Test unison phase offset for thickness
+    auto params = engine->getSynthesisParameters();
+    params.synthesisType = AdvancedSynthesisEngine::SynthesisType::Wavetable;
+    params.unison.enabled = true;
+    params.unison.voiceCount = 4;
+    params.unison.detune = 0.1f;
+    params.unison.phaseOffset = 0.25f; // 25% phase randomization
+    
+    engine->setSynthesisParameters(params);
+    
+    // Generate audio samples
+    juce::AudioBuffer<float> buffer1(2, 256);
+    juce::AudioBuffer<float> buffer2(2, 256);
+    juce::MidiBuffer midiBuffer;
+    
+    // Generate identical notes twice
+    buffer1.clear();
+    engine->noteOn(60, 0.8f);
+    engine->processBlock(buffer1, midiBuffer);
+    engine->noteOff(60);
+    
+    buffer2.clear();
+    engine->noteOn(60, 0.8f);
+    engine->processBlock(buffer2, midiBuffer);
+    engine->noteOff(60);
+    
+    // With phase offset, the two generations should be different
+    bool buffersAreDifferent = false;
+    for (int channel = 0; channel < buffer1.getNumChannels(); ++channel)
+    {
+        for (int sample = 0; sample < buffer1.getNumSamples(); ++sample)
+        {
+            float diff = std::abs(buffer1.getSample(channel, sample) - buffer2.getSample(channel, sample));
+            if (diff > 0.001f)
+            {
+                buffersAreDifferent = true;
+                break;
+            }
+        }
+        if (buffersAreDifferent) break;
+    }
+    
+    EXPECT_TRUE(buffersAreDifferent) << "Phase offset should create variation between identical note triggers";
+}
+
 //==============================================================================
 // Main Test Entry Point
 

@@ -96,6 +96,27 @@ public:
         float sustain = 1.0f;              // 0.0 to 1.0 level (full sustain for immediate audio)
         float release = 0.3f;              // 0.001 to 10.0 seconds
         float velocity = 1.0f;             // 0.0 to 2.0 velocity sensitivity
+        
+        // Advanced envelope shapes
+        enum Shape { Linear = 0, Exponential = 1, Logarithmic = 2, SCurve = 3 };
+        Shape attackShape = Exponential;   // Attack curve shape
+        Shape decayShape = Exponential;    // Decay curve shape  
+        Shape releaseShape = Exponential;  // Release curve shape
+    };
+    
+    struct UnisonParams
+    {
+        bool enabled = false;              // Enable/disable unison
+        int voiceCount = 2;                // 2 to 8 unison voices
+        float detune = 0.1f;               // 0.0 to 1.0 (detune amount in semitones)
+        float stereoSpread = 0.5f;         // 0.0 to 1.0 (stereo width)
+        float blend = 1.0f;                // 0.0 to 1.0 (dry/wet mix)
+        float phaseOffset = 0.0f;          // 0.0 to 1.0 (phase randomization)
+        
+        // Advanced unison parameters
+        float dynamicDetune = 0.0f;        // 0.0 to 1.0 (velocity-sensitive detune)
+        float chorusEffect = 0.0f;         // 0.0 to 1.0 (subtle modulation for thickness)
+        bool linkToVelocity = false;       // Link voice count to velocity
     };
     
     
@@ -107,6 +128,7 @@ public:
         FilterParams filter;
         ModulationParams modulation;
         EnvelopeParams envelope;
+        UnisonParams unison;
         SampleParams sample;
         
         // Global parameters

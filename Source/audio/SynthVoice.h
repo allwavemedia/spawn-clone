@@ -41,6 +41,15 @@ namespace spawnclone::audio
         
         // Modulation support - using forward declaration
         void setModulationParameters(const AdvancedSynthesisEngine::ModulationParams& modParams);
+        
+        // Filter support
+        void setFilterParameters(const AdvancedSynthesisEngine::FilterParams& filterParams);
+        
+        // Unison support
+        void setUnisonParameters(const AdvancedSynthesisEngine::UnisonParams& unisonParams);
+        
+        // Advanced envelope support
+        void setEnvelopeParameters(const AdvancedSynthesisEngine::EnvelopeParams& envParams);
 
         bool isVoiceActive() const;
         bool isPlayingNote(int midiNoteNumber) const;
@@ -49,19 +58,40 @@ namespace spawnclone::audio
         void clearCurrentNote();
         void generateBasicOscillator(juce::AudioBuffer<float>& buffer, int numSamples);
         void generateWavetableAudio(juce::AudioBuffer<float>& buffer, int numSamples);
+        
+        // Unison audio generation methods
+        void generateUnisonAudio(juce::AudioBuffer<float>& buffer, int numSamples, double baseFrequency);
+        void generateSingleOscillatorAudio(juce::AudioBuffer<float>& buffer, int numSamples, double baseFrequency, bool hasLFOModulation);
 
         SampleEngine sampleEngine;
         // Forward declaration - wavetable oscillator will be implemented
         class WavetableOscillator;
         std::unique_ptr<WavetableOscillator> wavetableOscillator;
         
+        // Unison oscillators for rich sound
+        static constexpr int MAX_UNISON_VOICES = 8;
+        std::array<std::unique_ptr<WavetableOscillator>, MAX_UNISON_VOICES> unisonOscillators;
+        std::array<float, MAX_UNISON_VOICES> unisonPanning;
+        std::array<float, MAX_UNISON_VOICES> unisonDetune;
+        
         // Forward declaration - LFO oscillator for modulation
         class LFOscillator;
         std::unique_ptr<LFOscillator> lfo1;
         std::unique_ptr<LFOscillator> lfo2;
+        
+        // Forward declaration - Filter for audio processing
+        class StateVariableFilter;
+        std::unique_ptr<StateVariableFilter> filter;
+        
+        // Forward declaration - Advanced envelope with curve shapes
+        class AdvancedEnvelope;
+        std::unique_ptr<AdvancedEnvelope> advancedEnvelope;
 
         SynthesisType currentSynthesisType;
         AdvancedSynthesisEngine::ModulationParams currentModulationParams;
+        AdvancedSynthesisEngine::FilterParams currentFilterParams;
+        AdvancedSynthesisEngine::UnisonParams currentUnisonParams;
+        AdvancedSynthesisEngine::EnvelopeParams currentEnvelopeParams;
 
         bool active = false;
         int currentMidiNote = -1;
