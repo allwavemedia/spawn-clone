@@ -44,7 +44,7 @@ namespace spawnclone::audio
         }
         
         // Add slight offset between left and right LFOs for stereo spread
-        lfos[1].reset(); // Right LFO starts with phase offset
+        lfos[1].setPhaseOffset(juce::MathConstants<float>::pi * stereoSpread);
         
         // Prepare delay lines (50ms maximum for chorus/flanger)
         for (auto& delayLine : delayLines)
@@ -147,50 +147,57 @@ namespace spawnclone::audio
         startCPUMonitoring();
         
         const int numSamples = buffer.getNumSamples();
-        const int numChannels = juce::jmin(buffer.getNumChannels(), 2);
         
-        // Ensure temporary buffers are the right size
-        if (tempBuffer.getNumSamples() != numSamples)
+        // Ensure wet buffer is the right size
+        if (wetBuffer.getNumSamples() != numSamples)
         {
-            tempBuffer.setSize(2, numSamples, false, false, true);
-            wetBuffer.setSize(2, numSamples, false, false, true);
+            wetBuffer.setSize(buffer.getNumChannels(), numSamples, false, false, true);
         }
         
         // Store dry signal for wet/dry mixing
         juce::AudioBuffer<float> dryBuffer;
         dryBuffer.makeCopyOf(buffer);
         
-        // Process according to current modulation type
+        // Process according to current modulation type, writing wet signal to wetBuffer
+        // or modifying buffer in-place for some effects
         switch (currentModulationType)
         {
             case ModulationType::Chorus:
-                processChorus(buffer);
+                processChorus(wetBuffer, dryBuffer);
                 break;
             case ModulationType::Flanger:
-                processFlanger(buffer);
+                processFlanger(buffer); // This one modifies in-place
                 break;
             case ModulationType::Phaser:
-                processPhaser(buffer);
+                processPhaser(buffer); // This one modifies in-place
                 break;
             case ModulationType::Tremolo:
-                processTremolo(buffer);
+                processTremolo(buffer); // This one modifies in-place
                 break;
             case ModulationType::Vibrato:
-                processVibrato(buffer);
+                processVibrato(buffer); // This one modifies in-place
                 break;
             case ModulationType::AutoPan:
-                processAutoPan(buffer);
+                processAutoPan(buffer); // This one modifies in-place
                 break;
             case ModulationType::RingMod:
-                processRingMod(buffer);
+                processRingMod(buffer); // This one modifies in-place
                 break;
             case ModulationType::Rotary:
-                processRotary(buffer);
+                processRotary(buffer); // This one modifies in-place
                 break;
         }
-        
+
         // Apply wet/dry mixing
-        applyWetDryMix(buffer, dryBuffer);
+        if (currentModulationType == ModulationType::Chorus)
+        {
+             applyWetDryMix(buffer, dryBuffer, wetBuffer);
+        }
+        else
+        {
+            // For in-place effects, the 'buffer' is now the 'wet' signal.
+            applyWetDryMix(buffer, dryBuffer, buffer);
+        }
         
         endCPUMonitoring();
     }
@@ -199,21 +206,47 @@ namespace spawnclone::audio
     // Wet/Dry Mixing
     //==============================================================================
     
-    void ModulationEngine::applyWetDryMix(juce::AudioBuffer<float>& wetBuffer, const juce::AudioBuffer<float>& dryBuffer)
+    void ModulationEngine::applyWetDryMix(juce::AudioBuffer<float>& outputBuffer, const juce::AudioBuffer<float>& dryBuffer, const juce::AudioBuffer<float>& wetBuffer)
     {
-        float currentMix = mix; // Use stored value instead of smoother current
+        const int numSamples = outputBuffer.getNumSamples();
+        const int numChannels = juce::jmin(outputBuffer.getNumChannels(), dryBuffer.getNumChannels(), wetBuffer.getNumChannels());
+
+        // Since this function is called once per block, we get the next value for the mix smoother.
+        // For per-sample smoothing, this would be inside the sample loop.
+        float currentMix = mixSmoother.getNextValue();
+
+        if (currentMix <= 0.0f)
+        {
+            // Pure dry signal
+            if (&outputBuffer != &dryBuffer)
+            {
+                for (int ch = 0; ch < numChannels; ++ch)
+                    outputBuffer.copyFrom(ch, 0, dryBuffer, ch, 0, numSamples);
+            }
+            return;
+        }
         
-        const int numSamples = wetBuffer.getNumSamples();
-        const int numChannels = juce::jmin(wetBuffer.getNumChannels(), dryBuffer.getNumChannels());
+        if (currentMix >= 1.0f)
+        {
+            // Pure wet signal
+            if (&outputBuffer != &wetBuffer)
+            {
+                for (int ch = 0; ch < numChannels; ++ch)
+                    outputBuffer.copyFrom(ch, 0, wetBuffer, ch, 0, numSamples);
+            }
+            return;
+        }
         
+        // Mix of wet and dry
         for (int channel = 0; channel < numChannels; ++channel)
         {
-            float* wetData = wetBuffer.getWritePointer(channel);
-            const float* dryData = dryBuffer.getReadPointer(channel);
-            
+            const float* dry = dryBuffer.getReadPointer(channel);
+            const float* wet = wetBuffer.getReadPointer(channel);
+            float* out = outputBuffer.getWritePointer(channel);
+
             for (int sample = 0; sample < numSamples; ++sample)
             {
-                wetData[sample] = dryData[sample] * (1.0f - currentMix) + wetData[sample] * currentMix;
+                out[sample] = dry[sample] * (1.0f - currentMix) + wet[sample] * currentMix;
             }
         }
     }
@@ -343,10 +376,10 @@ namespace spawnclone::audio
     // Modulation Algorithm Implementations
     //==============================================================================
     
-    void ModulationEngine::processChorus(juce::AudioBuffer<float>& buffer)
+    void ModulationEngine::processChorus(juce::AudioBuffer<float>& wetBuffer, const juce::AudioBuffer<float>& dryBuffer)
     {
-        const int numSamples = buffer.getNumSamples();
-        const int numChannels = juce::jmin(buffer.getNumChannels(), 2);
+        const int numSamples = dryBuffer.getNumSamples();
+        const int numChannels = juce::jmin(dryBuffer.getNumChannels(), 2);
         
         wetBuffer.clear();
         
@@ -356,7 +389,6 @@ namespace spawnclone::audio
             float currentRate = rateSmoother.getNextValue();
             float currentDepth = depthSmoother.getNextValue();
             float currentCenterDelay = centerDelaySmoother.getNextValue();
-            float currentMix = mixSmoother.getNextValue();
             
             // Update LFO frequencies
             for (auto& lfo : lfos)
@@ -366,10 +398,7 @@ namespace spawnclone::audio
             
             for (int channel = 0; channel < numChannels; ++channel)
             {
-                float* channelData = buffer.getWritePointer(channel);
-                float* wetData = wetBuffer.getWritePointer(channel);
-                float input = channelData[sample];
-                
+                float input = dryBuffer.getSample(channel, sample);
                 float chorusOutput = 0.0f;
                 
                 // Process active chorus voices
@@ -382,8 +411,8 @@ namespace spawnclone::audio
                     float modulatedDelay = currentCenterDelay + voiceParams.delayOffset +
                                          (lfoValue * currentDepth * 5.0f); // Max 5ms modulation
                     
-                    // Ensure we don't exceed delay line array bounds
-                    int delayLineIndex = (voice * 2 + channel) % 8; // Safely map to 0-7 range
+                    // Safely map voice to delay line
+                    int delayLineIndex = (voice * numChannels + channel) % delayLines.size();
                     
                     // Process through delay line
                     float voiceOutput = delayLines[delayLineIndex].processSample(input, modulatedDelay);
@@ -397,10 +426,10 @@ namespace spawnclone::audio
                 }
                 
                 // Average the voices
-                chorusOutput /= static_cast<float>(voiceCount);
+                if (voiceCount > 0)
+                    chorusOutput /= static_cast<float>(voiceCount);
                 
-                // Store wet signal for global mixing
-                channelData[sample] = chorusOutput;
+                wetBuffer.setSample(channel, sample, chorusOutput);
             }
         }
     }
@@ -497,7 +526,6 @@ namespace spawnclone::audio
         {
             float currentRate = rateSmoother.getNextValue();
             float currentDepth = depthSmoother.getNextValue();
-            float currentStereoSpread = stereoSpreadSmoother.getNextValue();
             
             // Update LFO frequencies
             for (auto& lfo : lfos)
@@ -510,13 +538,8 @@ namespace spawnclone::audio
                 float* channelData = buffer.getWritePointer(channel);
                 float input = channelData[sample];
                 
-                // Get LFO modulation with stereo offset
+                // Get LFO modulation
                 float lfoValue = lfos[channel].getNextSample();
-                if (channel == 1 && numChannels == 2)
-                {
-                    // Apply stereo spread offset to right channel
-                    lfoValue = lfos[0].getNextSample(); // Use phase-shifted version
-                }
                 
                 // Calculate amplitude modulation
                 float amplitude = 1.0f - currentDepth * 0.5f * (1.0f + lfoValue);
@@ -585,7 +608,6 @@ namespace spawnclone::audio
             
             float leftInput = leftData[sample];
             float rightInput = rightData[sample];
-            float monoInput = (leftInput + rightInput) * 0.5f;
             
             // Get LFO modulation for panning
             float lfoValue = lfos[0].getNextSample();
@@ -596,8 +618,8 @@ namespace spawnclone::audio
             float rightGain = std::sqrt(0.5f * (1.0f + panPosition));
             
             // Apply auto-panning
-            leftData[sample] = monoInput * leftGain;
-            rightData[sample] = monoInput * rightGain;
+            leftData[sample] = leftInput * leftGain;
+            rightData[sample] = rightInput * rightGain;
         }
     }
 
@@ -664,13 +686,6 @@ namespace spawnclone::audio
                 float dopplerDelay = 10.0f + lfoValue * currentDepth * 5.0f;
                 float rotaryOutput = delayLines[channel].processSample(input, dopplerDelay);
                 
-                // Apply amplitude modulation for horn effect
-                float amplitude = 1.0f + 0.3f * lfoValue * currentDepth;
-                rotaryOutput *= amplitude;
-                
-                // Apply simple filtering for frequency modulation
-                rotaryOutput = toneFilters[channel].processLowpass(rotaryOutput);
-                
                 channelData[sample] = rotaryOutput;
             }
         }
@@ -727,6 +742,11 @@ namespace spawnclone::audio
         phase = 0.0f;
     }
 
+    void ModulationEngine::ModulationLFO::setPhaseOffset(float offset)
+    {
+        phaseOffset = offset;
+    }
+
     void ModulationEngine::ModulationLFO::reset()
     {
         phase = 0.0f;
@@ -747,19 +767,23 @@ namespace spawnclone::audio
     {
         float output = 0.0f;
         
+        float currentPhase = phase + phaseOffset;
+        while (currentPhase >= 2.0f * juce::MathConstants<float>::pi)
+            currentPhase -= 2.0f * juce::MathConstants<float>::pi;
+
         switch (currentWaveform)
         {
             case Waveform::Sine:
-                output = std::sin(phase);
+                output = std::sin(currentPhase);
                 break;
             case Waveform::Triangle:
-                output = (2.0f / juce::MathConstants<float>::pi) * std::asin(std::sin(phase));
+                output = (2.0f / juce::MathConstants<float>::pi) * std::asin(std::sin(currentPhase));
                 break;
             case Waveform::Sawtooth:
-                output = (2.0f / juce::MathConstants<float>::pi) * (phase - juce::MathConstants<float>::pi);
+                output = (2.0f / juce::MathConstants<float>::pi) * (currentPhase - juce::MathConstants<float>::pi);
                 break;
             case Waveform::Square:
-                output = (phase < juce::MathConstants<float>::pi) ? 1.0f : -1.0f;
+                output = (currentPhase < juce::MathConstants<float>::pi) ? 1.0f : -1.0f;
                 break;
             case Waveform::Random:
                 if (phase >= 2.0f * juce::MathConstants<float>::pi)

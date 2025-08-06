@@ -98,6 +98,10 @@ namespace spawnclone::audio
         // Epic 6: Professional effects chain
         std::unique_ptr<EffectsChain> effectsChain;
 
+        // Buffers for audio processing to avoid real-time allocation
+        juce::AudioBuffer<float> tempBuffer;
+        juce::AudioBuffer<float> unisonBuffer;
+
         SynthesisType currentSynthesisType;
         AdvancedSynthesisEngine::ModulationParams currentModulationParams;
         AdvancedSynthesisEngine::FilterParams currentFilterParams;

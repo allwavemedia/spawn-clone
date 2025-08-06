@@ -32,8 +32,7 @@ private:
 };
 
 //==============================================================================
-// Epic 9.3: Recommendation Panel Component (Temporarily disabled for compilation)
-/*
+// Epic 9.3: Recommendation Panel Component
 class RecommendationPanel : public juce::Component
 {
 public:
@@ -70,7 +69,6 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RecommendationPanel)
 };
-*/
 
 //==============================================================================
 /**
@@ -108,7 +106,7 @@ public:
     void setInstrumentLibraryManager(InstrumentLibraryManager* manager);
     
     /** Set the recommendation engine for intelligent suggestions */
-    // void setRecommendationEngine(std::shared_ptr<SpawnClone::PresetRecommendationEngine> engine); // Temporarily disabled
+    void setRecommendationEngine(std::shared_ptr<SpawnClone::PresetRecommendationEngine> engine);
     
     /** Get currently selected preset */
     InstrumentLibraryManager::PresetData getCurrentlySelectedPreset() const;
@@ -123,12 +121,12 @@ public:
     void onPresetListSelectionChanged(int selectedIndex);
 
     //==============================================================================
-    // Epic 9.3: Smart Recommendation Features (Temporarily disabled)
+    // Epic 9.3: Smart Recommendation Features
     
-    // void updateRecommendations();
-    // void setMusicalContext(const SpawnClone::PresetRecommendationEngine::MusicalContext& context);
-    // void setRecommendationsVisible(bool visible);
-    // void showComplementaryInstruments();
+    void updateRecommendations();
+    void setMusicalContext(const SpawnClone::PresetRecommendationEngine::MusicalContext& context);
+    void setRecommendationsVisible(bool visible);
+    void showComplementaryInstruments();
 
     //==============================================================================
     // Callback system
@@ -175,23 +173,23 @@ private:
     std::unique_ptr<juce::TextButton> previewButton;
     std::unique_ptr<juce::ToggleButton> autoPreviewToggle;
     
-    // Epic 9.3: Recommendation system UI (temporarily disabled)
-    // std::unique_ptr<juce::TextButton> recommendationsToggle;
-    // std::unique_ptr<juce::TextButton> refreshRecommendationsButton;
-    // std::unique_ptr<RecommendationPanel> recommendationPanel;
+    // Epic 9.3: Recommendation system UI
+    std::unique_ptr<juce::TextButton> recommendationsToggle;
+    std::unique_ptr<juce::TextButton> refreshRecommendationsButton;
+    std::unique_ptr<RecommendationPanel> recommendationPanel;
 
     //==============================================================================
     // Internal data
     InstrumentLibraryManager* instrumentLibrary = nullptr;
-    // std::shared_ptr<SpawnClone::PresetRecommendationEngine> recommendationEngine; // temporarily disabled
+    std::shared_ptr<SpawnClone::PresetRecommendationEngine> recommendationEngine;
     juce::Array<InstrumentLibraryManager::PresetData> currentPresetList;
     InstrumentLibraryManager::PresetData selectedPreset;
     int selectedPresetIndex = -1;
     
-    // Epic 9.3: Musical context and recommendations (temporarily disabled)
-    // SpawnClone::PresetRecommendationEngine::MusicalContext currentContext;
-    // std::vector<SpawnClone::PresetRecommendationEngine::Recommendation> currentRecommendations;
-    // bool recommendationsVisible = true;
+    // Epic 9.3: Musical context and recommendations
+    SpawnClone::PresetRecommendationEngine::MusicalContext currentContext;
+    std::vector<SpawnClone::PresetRecommendationEngine::Recommendation> currentRecommendations;
+    bool recommendationsVisible = true;
     
     // Filter state
     juce::String currentSearchText;
@@ -211,10 +209,10 @@ private:
     void previewButtonClicked();
     void autoPreviewToggled();
     
-    // Epic 9.3: Recommendation callbacks (temporarily disabled)
-    // void recommendationsToggleClicked();
-    // void refreshRecommendationsClicked();
-    // void onRecommendationChosen(const std::string& presetName);
+    // Epic 9.3: Recommendation callbacks
+    void recommendationsToggleClicked();
+    void refreshRecommendationsClicked();
+    void onRecommendationChosen(const std::string& presetName);
 
     //==============================================================================
     // Internal methods

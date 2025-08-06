@@ -96,12 +96,14 @@ namespace spawnclone::audio
             void reset();
             void setFrequency(float frequency);
             void setWaveform(Waveform waveform);
+            void setPhaseOffset(float offset);
             float getNextSample();
             
         private:
             double sampleRate = 44100.0;
             float frequency = 1.0f;
             float phase = 0.0f;
+            float phaseOffset = 0.0f;
             Waveform currentWaveform = Waveform::Sine;
             float randomValue = 0.0f;
             juce::Random random;
@@ -159,7 +161,7 @@ namespace spawnclone::audio
         //==============================================================================
         // Modulation Type Implementations
         
-        void processChorus(juce::AudioBuffer<float>& buffer);
+        void processChorus(juce::AudioBuffer<float>& wetBuffer, const juce::AudioBuffer<float>& dryBuffer);
         void processFlanger(juce::AudioBuffer<float>& buffer);
         void processPhaser(juce::AudioBuffer<float>& buffer);
         void processTremolo(juce::AudioBuffer<float>& buffer);
@@ -216,7 +218,7 @@ namespace spawnclone::audio
         //==============================================================================
         // Processing Methods
         
-        void applyWetDryMix(juce::AudioBuffer<float>& wetBuffer, const juce::AudioBuffer<float>& dryBuffer);
+        void applyWetDryMix(juce::AudioBuffer<float>& outputBuffer, const juce::AudioBuffer<float>& dryBuffer, const juce::AudioBuffer<float>& wetBuffer);
 
         //==============================================================================
         // Helper Methods

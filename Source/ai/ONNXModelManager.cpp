@@ -1,21 +1,5 @@
 /*
-  ===================================================bool ONNXModelManager::loadModel(const juce::String& modelPath)
-{
-    if (!runtimeInitialized)
-    {
-        lastError = "ONNX Runtime not initialized";
-        return false;
-    }
-    
-    juce::File modelFile(modelPath);
-    if (!modelFile.existsAsFile())
-    {
-        lastError = "Model file not found: " + modelPath;
-        return false;
-    }
-    
-    // Validate model format
-    if (!validateModel(modelFile))==========
+  ==============================================================================
 
     ONNXModelManager.cpp
     Created: 29 Jul 2025
@@ -32,6 +16,8 @@
 #include "../GenerationParameters.h"
 #include <random>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 //==============================================================================
 ONNXModelManager::ONNXModelManager()
@@ -67,11 +53,12 @@ bool ONNXModelManager::initializeRuntime()
         return false;
     }
     #else
-    // ONNX Runtime not available, simulate unavailable state
-    lastError = "ONNX Runtime not available in this build";
-    runtimeInitialized = false;
-    runtimeAvailable = false;
-    return false;
+    // ONNX Runtime not available, but we can still simulate
+    lastError = "ONNX Runtime not available - using simulation mode";
+    runtimeInitialized = true;  // Allow simulation mode
+    runtimeAvailable = false;   // But mark runtime as unavailable
+    DBG("ONNXModelManager: Initialized in simulation mode");
+    return true;
     #endif
 }
 
@@ -83,6 +70,8 @@ bool ONNXModelManager::loadModel(const juce::String& modelPath)
         return false;
     }
     
+    // In simulation mode, we don't need a real file
+    #ifdef ONNX_RUNTIME_AVAILABLE
     juce::File modelFile(modelPath);
     if (!modelFile.existsAsFile())
     {
@@ -96,7 +85,6 @@ bool ONNXModelManager::loadModel(const juce::String& modelPath)
         return false;
     }
     
-    #ifdef ONNX_RUNTIME_AVAILABLE
     try
     {
         // Load ONNX model into session
@@ -112,8 +100,7 @@ bool ONNXModelManager::loadModel(const juce::String& modelPath)
         return false;
     }
     #else
-    // Simulate model loading for development
-    currentModelFile = modelFile;
+    // Simulate model loading for development - no need for real file
     modelLoaded = true;
     DBG("Simulated model loading: " + modelPath);
     return true;
@@ -148,6 +135,28 @@ bool ONNXModelManager::generatePattern(std::vector<uint8_t>& pattern, const Gene
     if (!postprocessOutput(outputData, midiPattern, params))
     {
         return false;
+    }
+    
+    // Update performance report with pattern quality metrics
+    lastInferenceReport.outputPatternLength = static_cast<int>(params.patternLengthBeats);
+    lastInferenceReport.numGeneratedNotes = static_cast<int>(midiPattern.notes.size());
+    
+    // Calculate pattern complexity (simple metric based on note density and pitch variance)
+    if (!midiPattern.notes.empty()) {
+        double avgPitch = 0.0;
+        for (const auto& note : midiPattern.notes) {
+            avgPitch += note.pitch;
+        }
+        avgPitch /= midiPattern.notes.size();
+        
+        double pitchVariance = 0.0;
+        for (const auto& note : midiPattern.notes) {
+            pitchVariance += std::pow(note.pitch - avgPitch, 2);
+        }
+        pitchVariance /= midiPattern.notes.size();
+        
+        double noteDensity = midiPattern.notes.size() / params.patternLengthBeats;
+        lastInferenceReport.patternComplexity = std::sqrt(pitchVariance) + (noteDensity * 10.0);
     }
     
     // Convert MIDIPattern to raw MIDI bytes
@@ -227,30 +236,88 @@ std::vector<float> ONNXModelManager::preprocessParameters(const GenerationParame
 
 bool ONNXModelManager::runInference(const std::vector<float>& inputData, std::vector<float>& outputData)
 {
+    PROFILE_INFERENCE();
+    
+    // Start detailed performance tracking
+    auto startTime = std::chrono::high_resolution_clock::now();
+    lastInferenceReport = DetailedPerformanceReport{};
+    lastInferenceReport.memoryBefore = PerformanceProfiler::getInstance().getCurrentMetrics().currentMemoryUsage;
+    
     #ifdef ONNX_RUNTIME_AVAILABLE
     try
     {
         // Run ONNX model inference
         // This will be implemented when ONNX Runtime is integrated
+        PROFILE_SUCCESS();
         return true;
     }
     catch (const std::exception& e)
     {
         lastError = "Inference failed: " + juce::String(e.what());
+        PROFILE_FAILURE();
         return false;
     }
     #else
-    // Simulate inference for development - generate dummy output
+    // Simulate inference for development - generate dummy output with performance tracking
+    auto preprocessStart = std::chrono::high_resolution_clock::now();
+    
+    // Preprocessing simulation
+    if (currentPerformanceMode == "quality") {
+        // Simulate more thorough preprocessing
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    
+    auto inferenceStart = std::chrono::high_resolution_clock::now();
+    lastInferenceReport.preprocessTime = std::chrono::duration<double, std::milli>(inferenceStart - preprocessStart).count();
+    
+    // Main inference simulation
     outputData.resize(128);  // Simulate 128 output values
     std::mt19937 gen(inputData.size() > 0 ? static_cast<uint32_t>(inputData[6] * 10000) : 12345);
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    
+    // Simulate processing time based on performance mode and batch size
+    int simulatedTimeMs = 50; // Base time
+    if (currentPerformanceMode == "fast") {
+        simulatedTimeMs = 20;
+    } else if (currentPerformanceMode == "quality") {
+        simulatedTimeMs = 100;
+    }
+    
+    // Batch processing affects timing
+    if (batchProcessingEnabled) {
+        simulatedTimeMs = static_cast<int>(simulatedTimeMs * 0.7 * currentBatchSize); // Batching is more efficient
+    }
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(simulatedTimeMs));
     
     for (auto& value : outputData)
     {
         value = dist(gen);
     }
     
-    DBG("Simulated ONNX inference with " + juce::String(inputData.size()) + " inputs");
+    auto postprocessStart = std::chrono::high_resolution_clock::now();
+    lastInferenceReport.inferenceTime = std::chrono::duration<double, std::milli>(postprocessStart - inferenceStart).count();
+    
+    // Postprocessing simulation
+    if (currentPerformanceMode == "quality") {
+        std::this_thread::sleep_for(std::chrono::milliseconds(3));
+    }
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    lastInferenceReport.postprocessTime = std::chrono::duration<double, std::milli>(endTime - postprocessStart).count();
+    lastInferenceReport.totalTime = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+    lastInferenceReport.memoryAfter = PerformanceProfiler::getInstance().getCurrentMetrics().currentMemoryUsage;
+    lastInferenceReport.memoryPeak = std::max(lastInferenceReport.memoryBefore, lastInferenceReport.memoryAfter);
+    
+    // Update global performance metrics
+    updatePerformanceMetrics(static_cast<float>(lastInferenceReport.totalTime));
+    
+    DBG("Simulated ONNX inference: " + juce::String(lastInferenceReport.totalTime, 2) + "ms total (" +
+        "preprocess: " + juce::String(lastInferenceReport.preprocessTime, 1) + "ms, " +
+        "inference: " + juce::String(lastInferenceReport.inferenceTime, 1) + "ms, " +
+        "postprocess: " + juce::String(lastInferenceReport.postprocessTime, 1) + "ms)");
+    
+    PROFILE_SUCCESS();
     return true;
     #endif
 }
@@ -440,4 +507,214 @@ std::vector<uint8_t> ONNXModelManager::convertPatternToMIDI(const MIDIPattern& p
 juce::String ONNXModelManager::getLastError() const
 {
     return lastError;
+}
+
+//==============================================================================
+// Missing Method Implementations - Epic 7 ONNX Fixes
+
+bool ONNXModelManager::isModelLoaded() const
+{
+    // In simulation mode, we just check if modelLoaded is true
+    return modelLoaded;
+}
+
+int ONNXModelManager::getTotalInferences() const
+{
+    // Return stored inference count from ModelInfo
+    return currentModelInfo.numInferences;
+}
+
+float ONNXModelManager::getAverageInferenceTime() const
+{
+    // Return stored average from ModelInfo
+    return currentModelInfo.avgInferenceTime;
+}
+
+float ONNXModelManager::getTotalSavings() const
+{
+    // Calculate savings based on local vs cloud inference costs
+    // Assuming cloud cost ~$0.01 per inference, local cost ~$0.001
+    const float cloudCostPerInference = 0.01f;
+    const float localCostPerInference = 0.001f;
+    const float savingsPerInference = cloudCostPerInference - localCostPerInference;
+    
+    return static_cast<float>(getTotalInferences()) * savingsPerInference;
+}
+
+ONNXModelManager::ModelInfo ONNXModelManager::getModelInfo() const
+{
+    return currentModelInfo;
+}
+
+void ONNXModelManager::updatePerformanceMetrics(float inferenceTime)
+{
+    // Update inference count and running average
+    currentModelInfo.numInferences++;
+    
+    // Calculate rolling average inference time
+    if (currentModelInfo.numInferences == 1) {
+        currentModelInfo.avgInferenceTime = inferenceTime;
+    } else {
+        // Exponential moving average for better recent performance weighting
+        const float alpha = 0.1f;  // Smoothing factor
+        currentModelInfo.avgInferenceTime = 
+            alpha * inferenceTime + (1.0f - alpha) * currentModelInfo.avgInferenceTime;
+    }
+    
+    // Record with global performance profiler
+    PerformanceProfiler::getInstance().recordInferenceTime(inferenceTime, true);
+}
+
+//==============================================================================
+// Performance Optimization Methods
+
+void ONNXModelManager::optimizeMemoryUsage()
+{
+    PROFILE_OPERATION("memory-optimization");
+    
+    DBG("Optimizing memory usage for ONNX model...");
+    
+    // 1. Clear any unnecessary caches
+    if (modelCacheManager) {
+        // Keep only essential models in cache
+        // modelCacheManager->cleanupOldModels();
+    }
+    
+    // 2. Optimize model loading strategy
+    if (currentPerformanceMode == "fast") {
+        // In fast mode, prefer memory-mapped models
+        modelCachingEnabled = false; // Don't keep models in memory
+    } else {
+        modelCachingEnabled = true;  // Keep models cached for quality
+    }
+    
+    // 3. Adjust batch processing to reduce memory footprint
+    if (batchProcessingEnabled && currentBatchSize > 2) {
+        currentBatchSize = std::max(1, currentBatchSize / 2);
+        DBG("Reduced batch size to " + juce::String(currentBatchSize) + " for memory optimization");
+    }
+    
+    PROFILE_SUCCESS();
+}
+
+void ONNXModelManager::optimizeInferenceSpeed()
+{
+    PROFILE_OPERATION("speed-optimization");
+    
+    DBG("Optimizing inference speed for ONNX model...");
+    
+    // 1. Enable batch processing for throughput
+    if (!batchProcessingEnabled && currentPerformanceMode != "quality") {
+        enableBatchProcessing(2); // Start with small batch size
+    }
+    
+    // 2. Optimize for current performance mode
+    if (currentPerformanceMode == "fast") {
+        // Aggressive optimizations for speed
+        modelCachingEnabled = true;  // Keep model hot in memory
+        currentBatchSize = std::min(4, currentBatchSize + 1);
+    } else if (currentPerformanceMode == "balanced") {
+        // Balanced approach
+        modelCachingEnabled = true;
+        currentBatchSize = 2;
+    }
+    
+    // 3. Pre-warm the model if not already done
+    if (modelLoaded && runtimeAvailable) {
+        // Run a quick dummy inference to warm up the model
+        std::vector<float> dummyInput(7, 0.5f); // Typical input size
+        std::vector<float> dummyOutput;
+        runInference(dummyInput, dummyOutput);
+        DBG("Model pre-warmed for faster subsequent inferences");
+    }
+    
+    PROFILE_SUCCESS();
+}
+
+bool ONNXModelManager::enableBatchProcessing(int batchSize)
+{
+    if (batchSize < 1 || batchSize > 16) {
+        lastError = "Invalid batch size: must be between 1 and 16";
+        return false;
+    }
+    
+    batchProcessingEnabled = (batchSize > 1);
+    currentBatchSize = batchSize;
+    
+    DBG("Batch processing " + juce::String(batchProcessingEnabled ? "enabled" : "disabled") + 
+        " with batch size: " + juce::String(currentBatchSize));
+    
+    return true;
+}
+
+void ONNXModelManager::enableModelCaching(bool enable)
+{
+    modelCachingEnabled = enable;
+    DBG("Model caching " + juce::String(enable ? "enabled" : "disabled"));
+}
+
+void ONNXModelManager::setPerformanceMode(const juce::String& mode)
+{
+    currentPerformanceMode = mode.toLowerCase();
+    
+    if (currentPerformanceMode == "fast") {
+        // Optimize for speed
+        enableBatchProcessing(4);
+        enableModelCaching(true);
+        DBG("Performance mode set to FAST - optimizing for speed");
+    } else if (currentPerformanceMode == "quality") {
+        // Optimize for quality
+        enableBatchProcessing(1); // Disable batching
+        enableModelCaching(true);
+        DBG("Performance mode set to QUALITY - optimizing for accuracy");
+    } else {
+        // Balanced mode (default)
+        currentPerformanceMode = "balanced";
+        enableBatchProcessing(2);
+        enableModelCaching(true);
+        DBG("Performance mode set to BALANCED - optimizing for speed/quality balance");
+    }
+}
+
+//==============================================================================
+// Advanced Monitoring
+
+ONNXModelManager::DetailedPerformanceReport ONNXModelManager::getLastInferenceReport() const
+{
+    return lastInferenceReport;
+}
+
+juce::String ONNXModelManager::getPerformanceRecommendations() const
+{
+    auto recommendations = PerformanceProfiler::getInstance().getOptimizationRecommendations();
+    juce::String result = "=== ONNX Performance Recommendations ===\n\n";
+    
+    if (recommendations.empty()) {
+        result += "✅ All performance targets are being met!\n";
+        result += "Current configuration is optimal.\n\n";
+    } else {
+        for (const auto& rec : recommendations) {
+            juce::String priority = (rec.priority == 1) ? "🔴 CRITICAL" :
+                                   (rec.priority == 2) ? "🟡 IMPORTANT" : "🟢 MINOR";
+            
+            result += priority + " [" + rec.category + "]\n";
+            result += "Issue: " + rec.issue + "\n";
+            result += "Recommendation: " + rec.recommendation + "\n\n";
+        }
+    }
+    
+    // Add model-specific recommendations
+    auto metrics = PerformanceProfiler::getInstance().getCurrentMetrics();
+    
+    if (currentPerformanceMode == "balanced" && metrics.averageInferenceTime > 1000.0) {
+        result += "💡 Consider switching to 'fast' mode for better performance:\n";
+        result += "   Call setPerformanceMode(\"fast\")\n\n";
+    }
+    
+    if (!batchProcessingEnabled && metrics.totalInferences > 50) {
+        result += "💡 Consider enabling batch processing for better throughput:\n";
+        result += "   Call enableBatchProcessing(2)\n\n";
+    }
+    
+    return result;
 }

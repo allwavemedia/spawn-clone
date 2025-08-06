@@ -6,6 +6,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include "PerformanceProfiler.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -80,6 +81,37 @@ public:
     bool generatePattern(std::vector<uint8_t>& pattern, const struct GenerationParameters& params);
     juce::String getLastError() const;
     
+    // Performance Optimization Methods (Epic 7 Task)
+    void optimizeMemoryUsage();
+    void optimizeInferenceSpeed();
+    bool enableBatchProcessing(int batchSize = 4);
+    void enableModelCaching(bool enable = true);
+    void setPerformanceMode(const juce::String& mode); // "fast", "balanced", "quality"
+    
+    // Advanced monitoring
+    struct DetailedPerformanceReport
+    {
+        // Timing breakdown
+        double preprocessTime = 0.0;
+        double inferenceTime = 0.0;
+        double postprocessTime = 0.0;
+        double totalTime = 0.0;
+        
+        // Resource usage
+        size_t memoryBefore = 0;
+        size_t memoryAfter = 0;
+        size_t memoryPeak = 0;
+        double cpuUsage = 0.0;
+        
+        // Quality metrics
+        int outputPatternLength = 0;
+        int numGeneratedNotes = 0;
+        double patternComplexity = 0.0;
+    };
+    
+    DetailedPerformanceReport getLastInferenceReport() const;
+    juce::String getPerformanceRecommendations() const;
+    
 private:
     // Helper Methods
     bool initializeRuntime();
@@ -95,6 +127,14 @@ private:
     bool runtimeAvailable = false;
     juce::File currentModelFile;
     std::shared_ptr<ModelCacheManager> modelCacheManager;
+    ModelInfo currentModelInfo;  // Track current model performance metrics
+    
+    // Enhanced performance tracking
+    DetailedPerformanceReport lastInferenceReport;
+    juce::String currentPerformanceMode = "balanced";
+    bool batchProcessingEnabled = false;
+    int currentBatchSize = 1;
+    bool modelCachingEnabled = true;
     
     std::vector<int> tokenizeInput(const juce::String& text);
     std::vector<uint8_t> embeddingsToMIDI(const std::vector<float>& embeddings,

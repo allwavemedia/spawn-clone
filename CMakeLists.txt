@@ -93,6 +93,8 @@ target_sources(SpawnClone PRIVATE
     Source/ai/GenreSpecialist.h
     Source/ai/PresetRecommendationEngine.cpp
     Source/ai/PresetRecommendationEngine.h
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/PerformanceProfiler.h
     Source/audio/AudioPreviewEngine.cpp
     Source/audio/AudioPreviewEngine.h
     Source/audio/AdvancedSynthesisEngine.cpp
@@ -187,6 +189,17 @@ if(BUILD_TESTS)
         Source/test_AudioPreviewEngine.cpp
         Source/audio/AudioPreviewEngine.cpp
         Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/SynthVoice.cpp
+        Source/audio/SampleCache.cpp
+        Source/audio/AsyncSampleLoader.cpp
+        Source/audio/EffectsChain.cpp
+        Source/audio/EffectProcessor.cpp
+        Source/audio/DelayEngine.cpp
+        Source/audio/ReverbEngine.cpp
+        Source/audio/ModulationEngine.cpp
+        Source/audio/synthesis/SampleEngine.cpp
+        Source/audio/synthesis/LoopManager.cpp
+        Source/audio/synthesis/PitchShifter.cpp
         Source/audio/SynthesisParameterMapper.cpp
         Source/audio/LayerEffectsProcessor.cpp
         Source/audio/InstrumentLibraryManager.cpp
@@ -204,6 +217,7 @@ if(BUILD_TESTS)
         Source 
         Source/ai 
         Source/audio
+        Source/audio/synthesis
     )
     
     target_link_libraries(test_AudioPreviewEngine PRIVATE 
@@ -795,6 +809,86 @@ target_link_libraries(epic8_story8_4_realtime_demo PRIVATE
 
 target_compile_features(epic8_story8_4_realtime_demo PRIVATE cxx_std_17)
 target_include_directories(epic8_story8_4_realtime_demo PRIVATE "Source")
+
+# Epic 7 Performance Optimization Demo
+add_executable(performance_optimization_demo
+    performance_optimization_demo.cpp
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/ModelCacheManager.cpp
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+)
+
+target_link_libraries(performance_optimization_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_data_structures
+)
+
+target_compile_features(performance_optimization_demo PRIVATE cxx_std_17)
+target_include_directories(performance_optimization_demo PRIVATE "Source")
+
+# Simple ONNX Test (Debug)
+add_executable(simple_onnx_test
+    simple_onnx_test.cpp
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/ModelCacheManager.cpp
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+)
+
+target_link_libraries(simple_onnx_test PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_data_structures
+)
+
+target_compile_features(simple_onnx_test PRIVATE cxx_std_17)
+target_include_directories(simple_onnx_test PRIVATE "Source")
+
+# Debug Performance Demo
+add_executable(debug_performance_demo
+    debug_performance_demo.cpp
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/ModelCacheManager.cpp
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+)
+
+target_link_libraries(debug_performance_demo PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_data_structures
+)
+
+target_compile_features(debug_performance_demo PRIVATE cxx_std_17)
+target_include_directories(debug_performance_demo PRIVATE "Source")
+
+# Standalone Performance Test
+add_executable(standalone_performance_test
+    standalone_performance_test.cpp
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/ModelCacheManager.cpp
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+)
+
+target_link_libraries(standalone_performance_test PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_data_structures
+)
+
+target_compile_features(standalone_performance_test PRIVATE cxx_std_17)
+target_include_directories(standalone_performance_test PRIVATE "Source")
 
 # Epic 9.3: Tag-Based Sound Pairing System
 # Implementation begins here with intelligent preset recommendation engine

@@ -110,6 +110,13 @@ void PresetBrowserComponent::resized()
     previewButton->setBounds(buttonArea.removeFromLeft(80));
     buttonArea.removeFromLeft(10);
     autoPreviewToggle->setBounds(buttonArea.removeFromLeft(100));
+    
+    // Epic 9.3: Recommendation panel (bottom area)
+    if (detailsArea.getHeight() > 120)
+    {
+        detailsArea.removeFromTop(15); // Spacing
+        recommendationPanel->setBounds(detailsArea);
+    }
 }
 
 //==============================================================================
@@ -381,6 +388,25 @@ void PresetBrowserComponent::initializeComponents()
     autoPreviewToggle->setColour(juce::ToggleButton::textColourId, juce::Colours::white);
     autoPreviewToggle->onClick = [this] { autoPreviewToggled(); };
     addAndMakeVisible(*autoPreviewToggle);
+    
+    // Epic 9.3: Initialize recommendation panel
+    recommendationPanel = std::make_unique<RecommendationPanel>();
+    recommendationPanel->onRecommendationSelected = [this](const std::string& presetName) {
+        // Find and load the selected preset
+        juce::String jucePresetName(presetName);
+        for (int i = 0; i < presetListModel->getNumRows(); ++i) {
+            const auto& preset = presetListModel->getPreset(i);
+            if (preset.name == jucePresetName) {
+                selectedPresetIndex = i;
+                selectedPreset = preset;
+                presetListBox->selectRow(i);
+                if (onPresetDoubleClicked)
+                    onPresetDoubleClicked(preset);
+                break;
+            }
+        }
+    };
+    addAndMakeVisible(*recommendationPanel);
 }
 
 void PresetBrowserComponent::updatePresetList()
@@ -596,4 +622,126 @@ const InstrumentLibraryManager::PresetData& PresetListBoxModel::getPreset(int in
     if (index >= 0 && index < presets.size())
         return presets[index];
     return emptyPreset;
+}
+
+//==============================================================================
+// Epic 9.3: AI Recommendation Implementation
+
+void PresetBrowserComponent::setRecommendationEngine(std::shared_ptr<SpawnClone::PresetRecommendationEngine> engine)
+{
+    recommendationEngine = engine;
+    updateRecommendations();
+}
+
+void PresetBrowserComponent::updateRecommendations()
+{
+    if (!recommendationEngine || !instrumentLibrary)
+        return;
+        
+    // Get current selection context
+    auto context = currentContext;
+    if (selectedPresetIndex >= 0 && selectedPresetIndex < currentPresetList.size())
+    {
+        // Note: PresetRecommendationEngine doesn't use presetId in context
+        // context.currentPresetName = currentPresetList[selectedPresetIndex].name;
+    }
+    
+    // Generate recommendations using the correct method name
+    currentRecommendations = recommendationEngine->getRecommendations(context);
+    
+    // Update the recommendation panel
+    if (recommendationPanel)
+    {
+        recommendationPanel->setRecommendations(currentRecommendations);
+    }
+}
+
+void PresetBrowserComponent::setMusicalContext(const SpawnClone::PresetRecommendationEngine::MusicalContext& context)
+{
+    currentContext = context;
+    updateRecommendations();
+}
+
+//==============================================================================
+// RecommendationPanel Implementation
+
+RecommendationPanel::RecommendationPanel()
+{
+    titleLabel.setText("Smart Recommendations", juce::dontSendNotification);
+    titleLabel.setFont(juce::FontOptions(14.0f, juce::Font::bold));
+    titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    titleLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(titleLabel);
+    
+    addAndMakeVisible(viewport);
+    viewport.setViewedComponent(&contentComponent, false);
+}
+
+void RecommendationPanel::paint(juce::Graphics& g)
+{
+    // Background
+    g.setColour(juce::Colour(0xff2d2d2d));
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), 4.0f);
+    
+    // Border
+    g.setColour(juce::Colour(0xff505050));
+    g.drawRoundedRectangle(getLocalBounds().toFloat(), 4.0f, 1.0f);
+}
+
+void RecommendationPanel::resized()
+{
+    auto area = getLocalBounds().reduced(8);
+    
+    // Title
+    titleLabel.setBounds(area.removeFromTop(25));
+    area.removeFromTop(5);
+    
+    // Viewport takes remaining space
+    viewport.setBounds(area);
+    
+    // Layout buttons in content component
+    auto contentArea = juce::Rectangle<int>(0, 0, area.getWidth(), 0);
+    const int buttonHeight = 35;
+    const int spacing = 5;
+    
+    for (auto& button : recommendationButtons)
+    {
+        button->setBounds(0, contentArea.getHeight(), contentArea.getWidth(), buttonHeight);
+        contentArea = contentArea.withHeight(contentArea.getHeight() + buttonHeight + spacing);
+    }
+    
+    contentComponent.setSize(contentArea.getWidth(), contentArea.getHeight());
+}
+
+void RecommendationPanel::setRecommendations(
+    const std::vector<SpawnClone::PresetRecommendationEngine::Recommendation>& recommendations)
+{
+    // Clear existing buttons
+    recommendationButtons.clear();
+    
+    // Create new buttons for recommendations
+    for (const auto& rec : recommendations)
+    {
+        auto button = std::make_unique<RecommendationButton>(rec);
+        button->onClick = [this, rec] { 
+            if (onRecommendationSelected)
+                onRecommendationSelected(rec.presetName);
+        };
+        contentComponent.addAndMakeVisible(*button);
+        recommendationButtons.push_back(std::move(button));
+    }
+    
+    resized();
+}
+
+void RecommendationPanel::clearRecommendations()
+{
+    recommendationButtons.clear();
+    repaint();
+}
+
+void RecommendationPanel::buttonClicked(RecommendationButton* button)
+{
+    if (button && onRecommendationSelected)
+        onRecommendationSelected(button->recommendation.presetName);
 }

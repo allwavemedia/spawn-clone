@@ -685,19 +685,27 @@ namespace spawnclone::audio
             return;
         }
 
-        juce::AudioBuffer<float> tempBuffer(outputBuffer.getNumChannels(), numSamples);
-        tempBuffer.clear();
+        // Ensure temporary buffer is large enough
+        if (tempBuffer.getNumSamples() < numSamples)
+        {
+            tempBuffer.setSize(outputBuffer.getNumChannels(), numSamples, false, false, true);
+        }
+        
+        // Use a scoped part of the buffer to avoid issues with different block sizes
+        juce::AudioBuffer<float> tempBlock(tempBuffer.getArrayOfWritePointers(), outputBuffer.getNumChannels(), numSamples);
+        tempBlock.clear();
+
 
         switch (currentSynthesisType)
         {
             case SynthesisType::Sample:
-                sampleEngine.processBlock(tempBuffer, 0, numSamples);
+                sampleEngine.processBlock(tempBlock, 0, numSamples);
                 break;
             case SynthesisType::Wavetable:
             case SynthesisType::Subtractive:
             case SynthesisType::Hybrid:
                 // Use wavetable oscillator for high-quality synthesis
-                generateWavetableAudio(tempBuffer, numSamples);
+                generateWavetableAudio(tempBlock, numSamples);
                 break;
             default:
                 break;
@@ -706,23 +714,23 @@ namespace spawnclone::audio
         // Apply envelope (advanced or standard ADSR)
         if (advancedEnvelope->isActive())
         {
-            advancedEnvelope->processBlock(tempBuffer, 0, numSamples);
+            advancedEnvelope->processBlock(tempBlock, 0, numSamples);
         }
         else
         {
-            adsr.applyEnvelopeToBuffer(tempBuffer, 0, numSamples);
+            adsr.applyEnvelopeToBuffer(tempBlock, 0, numSamples);
         }
 
         // Apply filter processing
-        filter->processBlock(tempBuffer, 0, numSamples);
+        filter->processBlock(tempBlock, 0, numSamples);
 
         // Epic 6: Apply effects chain processing
         juce::MidiBuffer emptyMidiBuffer; // Effects don't need MIDI
-        effectsChain->processBlock(tempBuffer, emptyMidiBuffer);
+        effectsChain->processBlock(tempBlock, emptyMidiBuffer);
 
         for (int channel = 0; channel < outputBuffer.getNumChannels(); ++channel)
         {
-            outputBuffer.addFrom(channel, startSample, tempBuffer, channel, 0, numSamples);
+            outputBuffer.addFrom(channel, startSample, tempBlock, channel, 0, numSamples);
         }
 
         if (!adsr.isActive() && !advancedEnvelope->isActive())
@@ -775,9 +783,22 @@ namespace spawnclone::audio
         int activeVoices = juce::jlimit(1, MAX_UNISON_VOICES, currentUnisonParams.voiceCount);
         float voiceGain = 1.0f / std::sqrt(static_cast<float>(activeVoices)); // Compensate for loudness
         
-        // Temporary buffers for each unison voice
-        juce::AudioBuffer<float> unisonBuffer(buffer.getNumChannels(), numSamples);
+        // Ensure unison buffer is large enough
+        if (unisonBuffer.getNumSamples() < numSamples)
+        {
+            unisonBuffer.setSize(buffer.getNumChannels(), numSamples, false, false, true);
+        }
+
+        // Pre-calculate LFO values for this block
+        juce::AudioBuffer<float> lfo1Samples(1, numSamples);
+        auto* lfo1Data = lfo1Samples.getWritePointer(0);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            lfo1Data[i] = lfo1->getNextSample();
+        }
         
+        buffer.clear();
+
         for (int voice = 0; voice < activeVoices; ++voice)
         {
             unisonBuffer.clear();
@@ -789,9 +810,8 @@ namespace spawnclone::audio
             // Generate audio for this unison voice
             for (int sample = 0; sample < numSamples; ++sample)
             {
-                // Get LFO values for modulation
-                float lfo1Value = lfo1->getNextSample();
-                float lfo2Value = lfo2->getNextSample();
+                // Get pre-calculated LFO values for modulation
+                float lfo1Value = lfo1Data[sample];
                 
                 // Apply modulation
                 float modulatedFrequency = detunedFrequency;
@@ -841,7 +861,7 @@ namespace spawnclone::audio
             if (buffer.getNumChannels() >= 2)
             {
                 buffer.addFrom(0, 0, unisonBuffer, 0, 0, numSamples, leftGain);
-                buffer.addFrom(1, 0, unisonBuffer, 0, 0, numSamples, rightGain);
+                buffer.addFrom(1, 0, unisonBuffer, 1, 0, numSamples, rightGain);
             }
             else
             {
