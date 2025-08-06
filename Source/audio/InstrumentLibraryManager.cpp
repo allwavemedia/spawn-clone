@@ -226,6 +226,11 @@ juce::Array<InstrumentLibraryManager::PresetData> InstrumentLibraryManager::sear
     return results;
 }
 
+juce::Array<InstrumentLibraryManager::PresetData> InstrumentLibraryManager::getAllPresets() const
+{
+    return presets;
+}
+
 InstrumentLibraryManager::PresetData InstrumentLibraryManager::getPreset(const juce::String& presetId) const
 {
     for (const auto& preset : presets)

@@ -718,7 +718,7 @@ bool CloudAPIManager::initializeONNXModel()
         return false;
     }
     
-    String modelPath = "./models/midi-model.onnx";
+    juce::String modelPath = "./models/midi-model.onnx";
     bool success = onnxManager->loadModel(modelPath);
     
     if (success)
@@ -745,10 +745,10 @@ void CloudAPIManager::generatePatternWithONNX(const GenerationParameters& params
     juce::Thread::launch([this, params, callback]()
     {
         auto midiData = onnxManager->generateMIDIPattern(
-            params.genre,
-            params.style,
+            "default", // Use default genre since GenerationParameters doesn't have genre
+            "default", // Use default style since GenerationParameters doesn't have style
             params.patternLengthBeats,
-            120 // Default tempo
+            static_cast<int>(params.tempo)
         );
         
         MIDIPattern pattern;
@@ -826,18 +826,18 @@ juce::String CloudAPIManager::getWeek2StatusReport() const
     
     // ONNX Status
     report += "Local ONNX Model:\n";
-    report += "- Status: " + (isONNXModelReady() ? "READY" : "NOT READY") + "\n";
+    report += "- Status: " + juce::String(isONNXModelReady() ? "READY" : "NOT READY") + "\n";
     if (onnxManager)
     {
         report += "- Avg Inference Time: " + juce::String(onnxManager->getAverageInferenceTime(), 4) + "s\n";
-        report += "- Performance Target: " + (onnxManager->meetsPerformanceTarget() ? "MET" : "NOT MET") + "\n";
+        report += "- Performance Target: " + juce::String(onnxManager->meetsPerformanceTarget() ? "MET" : "NOT MET") + "\n";
         report += "- Total Inferences: " + juce::String(onnxManager->getTotalInferences()) + "\n";
         report += "- Cost Savings: $" + juce::String(onnxManager->getTotalSavings(), 4) + "\n";
     }
     
     report += "\nHybrid System:\n";
-    report += "- Primary: Local ONNX (" + (isONNXModelReady() ? "Available" : "Unavailable") + ")\n";
-    report += "- Fallback: Hugging Face Cloud (" + (networkAvailable ? "Available" : "Unavailable") + ")\n";
+    report += "- Primary: Local ONNX (" + juce::String(isONNXModelReady() ? "Available" : "Unavailable") + ")\n";
+    report += "- Fallback: Hugging Face Cloud (" + juce::String(networkAvailable ? "Available" : "Unavailable") + ")\n";
     report += "- Cost Target: <$0.001 per request (ACHIEVED with local ONNX)\n";
     report += "- Performance Target: <2s inference (ACHIEVED: ~0.1s local)\n";
     

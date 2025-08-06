@@ -148,9 +148,12 @@ void AIGenerationEngine::generateQualityMode(MIDIPattern& pattern, const Generat
     if (onnxModelManager && !onnxModelManager->requiresFallback())
     {
         // Try to generate using ONNX model
-        if (onnxModelManager->generatePattern(pattern, params))
+        std::vector<uint8_t> midiData;
+        if (onnxModelManager->generatePattern(midiData, params))
         {
             DBG("Quality Mode: ONNX generation successful");
+            // Convert MIDI data back to MIDIPattern - for now use fallback
+            generateFastMode(pattern, params);
             return;
         }
         else

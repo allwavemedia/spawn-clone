@@ -107,6 +107,9 @@ public:
     /** Get presets matching search text */
     juce::Array<PresetData> searchPresets(const juce::String& searchText) const;
     
+    /** Get all presets in the library */
+    juce::Array<PresetData> getAllPresets() const;
+    
     /** Get specific preset by ID */
     PresetData getPreset(const juce::String& presetId) const;
     

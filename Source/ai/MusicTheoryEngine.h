@@ -56,11 +56,65 @@ public:
         Chromatic
     };
     
+    enum class Key
+    {
+        C_MAJOR = 0,     // C Major
+        Db_MAJOR = 1,    // Db Major
+        D_MAJOR = 2,     // D Major
+        Eb_MAJOR = 3,    // Eb Major
+        E_MAJOR = 4,     // E Major
+        F_MAJOR = 5,     // F Major
+        Gb_MAJOR = 6,    // Gb Major
+        G_MAJOR = 7,     // G Major
+        Ab_MAJOR = 8,    // Ab Major
+        A_MAJOR = 9,     // A Major
+        Bb_MAJOR = 10,   // Bb Major
+        B_MAJOR = 11,    // B Major
+        
+        C_MINOR = 12,    // C Minor
+        Db_MINOR = 13,   // Db Minor
+        D_MINOR = 14,    // D Minor
+        Eb_MINOR = 15,   // Eb Minor
+        E_MINOR = 16,    // E Minor
+        F_MINOR = 17,    // F Minor
+        Gb_MINOR = 18,   // Gb Minor
+        G_MINOR = 19,    // G Minor
+        Ab_MINOR = 20,   // Ab Minor
+        A_MINOR = 21,    // A Minor
+        Bb_MINOR = 22,   // Bb Minor
+        B_MINOR = 23     // B Minor
+    };
+    
+    /** Convert Key enum to root note (0-11) */
+    static int getKeyRootNote(Key key) 
+    {
+        return static_cast<int>(key) % 12;
+    }
+    
+    /** Convert Key enum to ScaleType */
+    static ScaleType getKeyScaleType(Key key) 
+    {
+        return static_cast<int>(key) < 12 ? ScaleType::Major : ScaleType::NaturalMinor;
+    }
+    
+    /** Create Key from root note and scale type */
+    static Key createKey(int rootNote, ScaleType scaleType)
+    {
+        int offset = (scaleType == ScaleType::Major) ? 0 : 12;
+        return static_cast<Key>((rootNote % 12) + offset);
+    }
+    
     /** Get scale intervals for a given scale type */
     std::vector<int> getScaleIntervals(ScaleType scaleType) const;
     
     /** Get scale notes for a given key and scale type */
     std::vector<int> getScaleNotes(int rootNote, ScaleType scaleType) const;
+    
+    /** Get scale notes for a given key */
+    std::vector<int> getScaleNotes(Key key) const
+    {
+        return getScaleNotes(getKeyRootNote(key), getKeyScaleType(key));
+    }
     
     /** Check if a note is in the given scale */
     bool isNoteInScale(int note, int rootNote, ScaleType scaleType) const;
