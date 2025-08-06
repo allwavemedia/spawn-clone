@@ -17,8 +17,8 @@ int main()
         ONNXModelManager manager;
         std::cout << "   ✓ ONNXModelManager created" << std::endl;
         
-        std::cout << "2. Loading simulation model..." << std::endl;
-        bool loaded = manager.loadModel("test_model.onnx");
+        std::cout << "2. Loading real ONNX model..." << std::endl;
+        bool loaded = manager.loadModel("models/midi-model/onnx/model_base.onnx");
         std::cout << "   Model loaded: " << (loaded ? "YES" : "NO") << std::endl;
         if (!loaded) {
             std::cout << "   Error: " << manager.getLastError().toStdString() << std::endl;

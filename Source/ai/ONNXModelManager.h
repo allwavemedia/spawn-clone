@@ -12,6 +12,10 @@
 #include <string>
 #include <functional>
 
+#ifdef ONNX_RUNTIME_AVAILABLE
+    #include <onnxruntime_cxx_api.h>
+#endif
+
 // Forward declarations
 class ModelCacheManager;
 struct MIDIPattern;
@@ -135,6 +139,24 @@ private:
     bool batchProcessingEnabled = false;
     int currentBatchSize = 1;
     bool modelCachingEnabled = true;
+    
+    // Python subprocess integration (workaround for C++ ONNX Runtime segfault)
+    juce::String currentModelName;
+    juce::var pythonModelInputs;
+    juce::var pythonModelOutputs;
+    bool loadModelViaPython(const juce::String& modelPath);
+    bool generatePatternViaPython(std::vector<uint8_t>& pattern, const struct GenerationParameters& params);
+    
+    #ifdef ONNX_RUNTIME_AVAILABLE
+        // ONNX Runtime session and environment (currently disabled due to segfaults)
+        std::unique_ptr<Ort::Env> ortEnv;
+        std::unique_ptr<Ort::Session> ortSession;
+        std::unique_ptr<Ort::SessionOptions> sessionOptions;
+        std::vector<std::string> inputNames;
+        std::vector<std::string> outputNames;
+        std::vector<std::vector<int64_t>> inputShapes;
+        std::vector<std::vector<int64_t>> outputShapes;
+    #endif
     
     std::vector<int> tokenizeInput(const juce::String& text);
     std::vector<uint8_t> embeddingsToMIDI(const std::vector<float>& embeddings,

@@ -153,15 +153,31 @@ target_include_directories(SpawnClone PRIVATE
     Source)
 
 # Optional ONNX Runtime Integration
-option(USE_ONNX_RUNTIME "Enable ONNX Runtime for Quality Mode" OFF)
+option(USE_ONNX_RUNTIME "Enable ONNX Runtime for Quality Mode" ON)
 
 if(USE_ONNX_RUNTIME)
-    find_package(onnxruntime QUIET)
+    # Directly use Homebrew installation paths
+    set(ONNXRUNTIME_INCLUDE_DIR /opt/homebrew/Cellar/onnxruntime/1.22.1/include/onnxruntime)
+    set(ONNXRUNTIME_LIBRARY /opt/homebrew/lib/libonnxruntime.dylib)
     
-    if(onnxruntime_FOUND)
-        target_link_libraries(SpawnClone PRIVATE onnxruntime::onnxruntime)
-        target_compile_definitions(SpawnClone PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+    if(EXISTS ${ONNXRUNTIME_INCLUDE_DIR}/onnxruntime_cxx_api.h AND EXISTS ${ONNXRUNTIME_LIBRARY})
+        set(ONNXRUNTIME_FOUND TRUE)
+        set(ONNXRUNTIME_LIBRARIES ${ONNXRUNTIME_LIBRARY})
+        set(ONNXRUNTIME_INCLUDE_DIRS ${ONNXRUNTIME_INCLUDE_DIR})
         message(STATUS "ONNX Runtime found - Quality Mode enabled")
+        message(STATUS "  Include: ${ONNXRUNTIME_INCLUDE_DIRS}")
+        message(STATUS "  Libraries: ${ONNXRUNTIME_LIBRARIES}")
+    else()
+        message(STATUS "ONNX Runtime not found at expected Homebrew paths")
+        message(STATUS "  Checked include: ${ONNXRUNTIME_INCLUDE_DIR}")
+        message(STATUS "  Checked library: ${ONNXRUNTIME_LIBRARY}")
+        set(ONNXRUNTIME_FOUND FALSE)
+    endif()
+    
+    if(ONNXRUNTIME_FOUND)
+        target_include_directories(SpawnClone PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+        target_link_libraries(SpawnClone PRIVATE ${ONNXRUNTIME_LIBRARIES})
+        target_compile_definitions(SpawnClone PRIVATE ONNX_RUNTIME_AVAILABLE=1)
     else()
         message(STATUS "ONNX Runtime not found - Quality Mode will use fallback")
     endif()
@@ -847,8 +863,87 @@ target_link_libraries(simple_onnx_test PRIVATE
     juce::juce_data_structures
 )
 
+# Add ONNX Runtime support to test programs
+if(USE_ONNX_RUNTIME AND ONNXRUNTIME_FOUND)
+    target_include_directories(simple_onnx_test PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+    target_link_libraries(simple_onnx_test PRIVATE ${ONNXRUNTIME_LIBRARIES})
+    target_compile_definitions(simple_onnx_test PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+endif()
+
 target_compile_features(simple_onnx_test PRIVATE cxx_std_17)
 target_include_directories(simple_onnx_test PRIVATE "Source")
+
+# Proper MIDI Model Test (Improved ONNX Loading)
+add_executable(test_midi_model_proper
+    test_midi_model_proper.cpp
+)
+
+target_link_libraries(test_midi_model_proper PRIVATE
+    juce::juce_core
+)
+
+# Add ONNX Runtime support to proper MIDI model test
+if(USE_ONNX_RUNTIME AND ONNXRUNTIME_FOUND)
+    target_include_directories(test_midi_model_proper PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+    target_link_libraries(test_midi_model_proper PRIVATE ${ONNXRUNTIME_LIBRARIES})
+    target_compile_definitions(test_midi_model_proper PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+endif()
+
+target_compile_features(test_midi_model_proper PRIVATE cxx_std_17)
+
+# Minimal ONNX Test (Isolate Segfaults)
+add_executable(test_minimal_onnx
+    test_minimal_onnx.cpp
+)
+
+target_link_libraries(test_minimal_onnx PRIVATE
+    juce::juce_core
+)
+
+# Add ONNX Runtime support to minimal test
+if(USE_ONNX_RUNTIME AND ONNXRUNTIME_FOUND)
+    target_include_directories(test_minimal_onnx PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+    target_link_libraries(test_minimal_onnx PRIVATE ${ONNXRUNTIME_LIBRARIES})
+    target_compile_definitions(test_minimal_onnx PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+endif()
+
+target_compile_features(test_minimal_onnx PRIVATE cxx_std_17)
+
+# Simple Model Test (Test ONNX Runtime Basic Functionality)
+add_executable(test_simple_model
+    test_simple_model.cpp
+)
+
+target_link_libraries(test_simple_model PRIVATE
+    juce::juce_core
+)
+
+# Add ONNX Runtime support to simple model test
+if(USE_ONNX_RUNTIME AND ONNXRUNTIME_FOUND)
+    target_include_directories(test_simple_model PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+    target_link_libraries(test_simple_model PRIVATE ${ONNXRUNTIME_LIBRARIES})
+    target_compile_definitions(test_simple_model PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+endif()
+
+target_compile_features(test_simple_model PRIVATE cxx_std_17)
+
+# C API Test (Test ONNX Runtime C API vs C++ API)
+add_executable(test_c_api
+    test_c_api.cpp
+)
+
+target_link_libraries(test_c_api PRIVATE
+    juce::juce_core
+)
+
+# Add ONNX Runtime support to C API test
+if(USE_ONNX_RUNTIME AND ONNXRUNTIME_FOUND)
+    target_include_directories(test_c_api PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+    target_link_libraries(test_c_api PRIVATE ${ONNXRUNTIME_LIBRARIES})
+    target_compile_definitions(test_c_api PRIVATE ONNX_RUNTIME_AVAILABLE=1)
+endif()
+
+target_compile_features(test_c_api PRIVATE cxx_std_17)
 
 # Debug Performance Demo
 add_executable(debug_performance_demo
