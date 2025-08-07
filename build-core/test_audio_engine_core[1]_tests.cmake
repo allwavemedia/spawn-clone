@@ -1,0 +1,5 @@
+add_test([=[PluginCoreSmokeTest.InitDoesNotThrow]=]  /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core [==[--gtest_filter=PluginCoreSmokeTest.InitDoesNotThrow]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[PluginCoreSmokeTest.InitDoesNotThrow]=]  PROPERTIES WORKING_DIRECTORY /Users/laurencedoby/Desktop/Development/spawn-clone/build-core SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+add_test([=[PluginCoreSmokeTest.Sanity]=]  /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core [==[--gtest_filter=PluginCoreSmokeTest.Sanity]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[PluginCoreSmokeTest.Sanity]=]  PROPERTIES WORKING_DIRECTORY /Users/laurencedoby/Desktop/Development/spawn-clone/build-core SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+set(  test_audio_engine_core_TESTS PluginCoreSmokeTest.InitDoesNotThrow PluginCoreSmokeTest.Sanity)

@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core[1]_tests.cmake")
+else()
+  add_test(test_audio_engine_core_NOT_BUILT test_audio_engine_core_NOT_BUILT)
+endif()

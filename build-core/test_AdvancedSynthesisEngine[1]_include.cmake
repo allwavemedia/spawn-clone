@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_AdvancedSynthesisEngine[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_AdvancedSynthesisEngine[1]_tests.cmake")
+else()
+  add_test(test_AdvancedSynthesisEngine_NOT_BUILT test_AdvancedSynthesisEngine_NOT_BUILT)
+endif()

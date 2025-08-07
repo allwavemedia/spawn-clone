@@ -60,48 +60,15 @@ SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
     // Epic 7 integration safe destruction
     try
     {
-        // Safely clear any audio processing
-        if (audioPreviewEngine)
-        {
-            try
-            {
-                audioPreviewEngine.reset();
-            }
-            catch (...)
-            {
-                // Audio engine cleanup failed, continue with other cleanup
-            }
-        }
-        
-        // Safe live performance integration cleanup
-        if (livePerformanceIntegration)
-        {
-            try
-            {
-                livePerformanceIntegration.reset();
-            }
-            catch (...)
-            {
-                // Live performance cleanup failed, continue
-            }
-        }
-        
-        // Safe parameter manager cleanup
-        if (parameterManager)
-        {
-            try
-            {
-                parameterManager.reset();
-            }
-            catch (...)
-            {
-                // Parameter manager cleanup failed, continue
-            }
-        }
+        // Any cleanup code should go here
+    }
+    catch (const std::exception& e)
+    {
+        juce::Logger::writeToLog("FATAL: Exception in ~SpawnCloneAudioProcessor(): " + juce::String(e.what()));
     }
     catch (...)
     {
-        // Global destructor exception - don't throw from destructor
+        juce::Logger::writeToLog("FATAL: Unknown exception in ~SpawnCloneAudioProcessor()");
     }
 }
 

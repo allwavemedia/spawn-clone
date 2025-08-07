@@ -1,3 +1,5 @@
+#include <cmath>
+#include <vector>
 #include <gtest/gtest.h>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "ui/WaveformDisplayComponent.h"

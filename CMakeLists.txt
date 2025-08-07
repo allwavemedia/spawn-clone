@@ -1,14 +1,95 @@
 cmake_minimum_required(VERSION 3.15)
 project(SpawnClone VERSION 1.0.0)
 
+# -----------------------------------------------------------------------------
+# Build Mode Option
+# -----------------------------------------------------------------------------
+option(BUILD_UI_ONLY "Build only WaveformDisplayComponent tests (skip unfinished audio engine)" ON)
+option(BUILD_PLUGIN "Build the SpawnClone plugin target" OFF)
+option(BUILD_LEGACY_TESTS "Build legacy test targets (temporarily disabled during brownfield)" OFF)
+
 # Set C++ Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Add JUCE as a subdirectory
+# Add JUCE as a subdirectory (always needed)
 add_subdirectory(Libs/JUCE)
 
+# -----------------------------------------------------------------------------
+# UI-only test target (Phase 1 green-build)
+# -----------------------------------------------------------------------------
+if(BUILD_UI_ONLY)
+    # Fetch GoogleTest (UI-only mode still needs it)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG release-1.12.1
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    add_executable(ui_tests
+        Source/ui/WaveformDisplayComponent.cpp
+        tests/ui/test_WaveformDisplayComponent.cpp)
+
+    target_include_directories(ui_tests PRIVATE Source)
+
+    target_link_libraries(ui_tests PRIVATE
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_gui_basics
+        juce::juce_dsp
+        juce::juce_audio_processors
+        gtest_main)
+
+    enable_testing()
+    include(GoogleTest)
+    gtest_discover_tests(ui_tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+
+# -----------------------------------------------------------------------------
+# Full plugin and additional targets (build when not UI-only)
+# -----------------------------------------------------------------------------
+if(NOT BUILD_UI_ONLY)
+# Core static library for engine (Sprint 1 scaffold)
+add_library(plugin_core STATIC
+    Source/plugin_core/plugin_core_stub.cpp
+)
+target_include_directories(plugin_core PUBLIC Source)
+
+# Ensure CTest is enabled for non-UI-only builds when tests are requested
+if(BUILD_TESTS)
+    enable_testing()
+endif()
+
+# Unit test scaffold for plugin_core (enabled when BUILD_TESTS is ON)
+if(BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG release-1.12.1
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    add_executable(test_audio_engine_core
+        tests/unit/audio_engine_tests/test_plugin_core_smoke.cpp
+    )
+    target_link_libraries(test_audio_engine_core PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_audio_engine_core PRIVATE cxx_std_17)
+    include(GoogleTest)
+    gtest_discover_tests(test_audio_engine_core)
+endif()
+
 # Add the plugin target
+if(BUILD_PLUGIN)
 juce_add_plugin(SpawnClone
     COMPANY_NAME "SpawnClone Audio"
     BUNDLE_ID "com.spawnclone.spawnclone"
@@ -198,10 +279,12 @@ else()
     message(STATUS "ONNX Runtime disabled - Quality Mode will use fallback")
 endif()
 
+endif()
+
 # Testing Configuration
 option(BUILD_TESTS "Build unit tests" ON)
 
-if(BUILD_TESTS)
+if(BUILD_TESTS AND BUILD_LEGACY_TESTS)
     # Google Test
     include(FetchContent)
     FetchContent_Declare(
@@ -580,6 +663,7 @@ if(BUILD_TESTS)
     gtest_discover_tests(test_WaveformDisplayComponent)
 endif()
 
+if(BUILD_LEGACY_TESTS)
 # Epic 4 Story 4.2 Test Executable
 add_executable(Epic4_Story4_2_CoreTest
     Source/Epic4_Story4_2_CoreTest.cpp
@@ -595,7 +679,7 @@ target_link_libraries(Epic4_Story4_2_CoreTest PRIVATE
 target_compile_features(Epic4_Story4_2_CoreTest PRIVATE cxx_std_17)
 
 # Epic 8 Story 8.1 Test: Experiment Pad Component Tests
-if(BUILD_TESTS)
+if(BUILD_TESTS AND BUILD_LEGACY_TESTS)
     add_executable(test_ExperimentPadComponent
         Source/test_ExperimentPadComponent.cpp
         Source/ui/ExperimentPadComponent.cpp
@@ -1415,3 +1499,6 @@ set_target_properties(test_plugin_live_performance PROPERTIES
         message(STATUS "E2E Testing disabled")
     endif()
 
+endif()
+
+endif()

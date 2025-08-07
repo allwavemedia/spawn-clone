@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_Epic7_Cross_Platform[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_Epic7_Cross_Platform[1]_tests.cmake")
+else()
+  add_test(test_Epic7_Cross_Platform_NOT_BUILT test_Epic7_Cross_Platform_NOT_BUILT)
+endif()

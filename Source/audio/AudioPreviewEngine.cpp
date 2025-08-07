@@ -35,14 +35,7 @@ AudioPreviewEngine::~AudioPreviewEngine()
     try
     {
         // Stop any audio processing first
-        try
-        {
-            isCurrentlyPlaying.store(false);
-        }
-        catch (...)
-        {
-            // Continue with cleanup
-        }
+        isCurrentlyPlaying.store(false);
         
         // Safe keyboard state cleanup
         try
@@ -79,9 +72,13 @@ AudioPreviewEngine::~AudioPreviewEngine()
             // Advanced synthesis cleanup failed, continue
         }
     }
+    catch (const std::exception& e)
+    {
+        juce::Logger::writeToLog("FATAL: Exception in ~AudioPreviewEngine(): " + juce::String(e.what()));
+    }
     catch (...)
     {
-        // Global destructor exception - don't throw from destructor
+        juce::Logger::writeToLog("FATAL: Unknown exception in ~AudioPreviewEngine()");
     }
 }
 

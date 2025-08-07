@@ -1,4 +1,5 @@
 #include "WaveformDisplayComponent.h"
+#include <cmath>
 
 //==============================================================================
 WaveformDisplayComponent::WaveformDisplayComponent()
@@ -405,7 +406,7 @@ void WaveformDisplayComponent::drawGrid(juce::Graphics& g, const juce::Rectangle
 void WaveformDisplayComponent::drawLabels(juce::Graphics& g, const juce::Rectangle<float>& bounds)
 {
     g.setColour(juce::Colours::white.withAlpha(0.7f));
-    g.setFont(juce::FontOptions("Arial", "Regular", 10.0f));
+    g.setFont(juce::Font("Arial", 10.0f, juce::Font::plain));
     
     // Mode label
     juce::String modeText;
@@ -648,4 +649,24 @@ void WaveformDisplayComponent::setWavetableData(const std::vector<float>& waveta
 {
     wavetableData = wavetable;
     repaint();
+}
+
+juce::Point<float> WaveformDisplayComponent::sampleToPixel(int sampleIndex, float value, const juce::Rectangle<float>& bounds) const
+{
+    const float x = bounds.getX() + (static_cast<float>(sampleIndex) / static_cast<float>(maxSamples)) * bounds.getWidth();
+    const float centerY = bounds.getCentreY();
+    const float amplitude = bounds.getHeight() * 0.4f * settings.amplitudeScale;
+    const float y = centerY - value * amplitude;
+    return { x, y };
+}
+
+juce::Point<int> WaveformDisplayComponent::pixelToSample(const juce::Point<float>& pixel, const juce::Rectangle<float>& bounds) const
+{
+    const float normX = juce::jlimit(0.0f, 1.0f, (pixel.x - bounds.getX()) / bounds.getWidth());
+    const int sampleIndex = static_cast<int>(normX * static_cast<float>(maxSamples - 1));
+    const float centerY = bounds.getCentreY();
+    const float amplitude = bounds.getHeight() * 0.4f * settings.amplitudeScale;
+    const float value = juce::jlimit(-1.0f, 1.0f, (centerY - pixel.y) / amplitude);
+    // Encode value as scaled integer for convenience (not used by tests)
+    return { sampleIndex, static_cast<int>(value * 1000.0f) };
 }

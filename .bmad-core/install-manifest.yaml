@@ -1,9 +1,9 @@
-version: 4.35.0
-installed_at: '2025-08-05T01:07:02.509Z'
+version: 4.35.3
+installed_at: '2025-08-07T18:39:42.450Z'
 install_type: full
 agent: null
 ides_setup:
-  - roo
+  - cline
 expansion_packs: []
 files:
   - path: .bmad-core/working-in-the-brownfield.md
@@ -13,7 +13,7 @@ files:
     hash: 76403bbc48b4c389
     modified: false
   - path: .bmad-core/install-manifest.yaml
-    hash: c52f5f9a23965ba9
+    hash: 09b61f5bfe80e92b
     modified: false
   - path: .bmad-core/enhanced-ide-development-workflow.md
     hash: 3c3a2383d7772089
