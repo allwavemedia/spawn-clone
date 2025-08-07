@@ -24,7 +24,7 @@ juce_add_plugin(SpawnClone
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_EMAIL "support@spawnclone.com"
     PLUGIN_MANUFACTURER_WEBSITE "https://spawnclone.com"
-    PLUGIN_DESCRIPTION "AI-Powered MIDI Pattern Generator"
+    PLUGIN_DESCRIPTION "AI-Powered MIDI Pattern Generator with Live Performance"
     # Epic 8 Story 8.3: Multi-Output Configuration
     PLUGIN_NUM_OUTPUT_CHANNELS 6
     VST3_AUTO_MANIFEST TRUE
@@ -987,3 +987,217 @@ target_include_directories(standalone_performance_test PRIVATE "Source")
 
 # Epic 9.3: Tag-Based Sound Pairing System
 # Implementation begins here with intelligent preset recommendation engine
+
+# Production ONNX Daemon Integration Test
+add_executable(test_production_integration
+    test_production_integration.cpp
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/ONNXDaemonClient.cpp
+    Source/ai/PerformanceProfiler.cpp
+    Source/ai/ModelCacheManager.cpp
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+)
+
+target_link_libraries(test_production_integration PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_data_structures
+)
+
+target_compile_features(test_production_integration PRIVATE cxx_std_17)
+target_include_directories(test_production_integration PRIVATE ".")
+
+# Set working directory to project root for Python daemon scripts
+set_target_properties(test_production_integration PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
+#==============================================================================
+# Live Performance Demo Application
+#==============================================================================
+juce_add_gui_app(live_performance_demo
+    PRODUCT_NAME "SpawnClone Live Performance Demo"
+)
+
+target_sources(live_performance_demo PRIVATE
+    live_performance_demo.cpp
+    # Live Performance Engine
+    Source/ai/LivePerformanceEngine.cpp
+    Source/ai/LivePerformanceEngine.h
+    Source/processor/LivePerformanceIntegration.cpp
+    Source/processor/LivePerformanceIntegration.h
+    
+    # ONNX Daemon Integration
+    Source/ai/ONNXDaemonClient.cpp
+    Source/ai/ONNXDaemonClient.h
+    Source/ai/ONNXModelManager.cpp
+    Source/ai/ONNXModelManager.h
+    
+    # Audio Engine
+    Source/audio/AudioPreviewEngine.cpp
+    Source/audio/AudioPreviewEngine.h
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/AdvancedSynthesisEngine.h
+    
+    # Parameter Mapping
+    Source/audio/SynthesisParameterMapper.cpp
+    Source/audio/SynthesisParameterMapper.h
+    
+    # Core Data Structures
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/MIDIPattern.h
+    Source/Note.h
+    
+    # Effects Engines (required by AdvancedSynthesisEngine)
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    
+    # Instrument Library
+    Source/audio/InstrumentLibraryManager.cpp
+    Source/audio/InstrumentLibraryManager.h
+)
+
+target_link_libraries(live_performance_demo PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+    juce::juce_dsp
+)
+
+target_compile_features(live_performance_demo PRIVATE cxx_std_17)
+target_include_directories(live_performance_demo PRIVATE ".")
+
+target_compile_definitions(live_performance_demo PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:live_performance_demo,JUCE_PRODUCT_NAME>"
+    JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:live_performance_demo,JUCE_VERSION>"
+)
+
+# Set working directory for the demo
+set_target_properties(live_performance_demo PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
+#==============================================================================
+# Live Performance Integration Test
+#==============================================================================
+add_executable(test_live_performance_integration
+    test_live_performance_integration.cpp
+    # Live Performance Engine
+    Source/ai/LivePerformanceEngine.cpp
+    Source/ai/LivePerformanceEngine.h
+    Source/processor/LivePerformanceIntegration.cpp
+    Source/processor/LivePerformanceIntegration.h
+    
+    # ONNX Integration
+    Source/ai/ONNXDaemonClient.cpp
+    Source/ai/ONNXDaemonClient.h
+    
+    # Audio Engine (minimal for testing)
+    Source/audio/AudioPreviewEngine.cpp
+    Source/audio/AudioPreviewEngine.h
+    Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/AdvancedSynthesisEngine.h
+    
+    # Parameter Mapping
+    Source/audio/SynthesisParameterMapper.cpp
+    
+    # Core Data
+    Source/GenerationParameters.h
+    Source/MIDIPattern.cpp
+    Source/Note.h
+    
+    # Required Effects
+    Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    
+    # Instrument Library
+    Source/audio/InstrumentLibraryManager.cpp
+)
+
+target_link_libraries(test_live_performance_integration PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_processors
+    juce::juce_data_structures
+    juce::juce_dsp
+    juce::juce_gui_basics
+)
+
+target_compile_features(test_live_performance_integration PRIVATE cxx_std_17)
+target_include_directories(test_live_performance_integration PRIVATE ".")
+
+target_compile_definitions(test_live_performance_integration PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+
+set_target_properties(test_live_performance_integration PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
+#==============================================================================
+# Live Performance Validation (Simple)
+#==============================================================================
+add_executable(live_performance_validation
+    live_performance_validation.cpp
+)
+
+target_compile_features(live_performance_validation PRIVATE cxx_std_17)
+
+#==============================================================================
+# Plugin Live Performance Integration Test
+#==============================================================================
+add_executable(test_plugin_live_performance
+    test_plugin_live_performance.cpp
+)
+
+# Link with the SpawnClone shared code library
+target_link_libraries(test_plugin_live_performance PRIVATE 
+    SpawnClone
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_devices  
+    juce::juce_audio_processors
+    juce::juce_data_structures
+    juce::juce_dsp
+    juce::juce_gui_basics
+)
+
+target_compile_features(test_plugin_live_performance PRIVATE cxx_std_17)
+target_include_directories(test_plugin_live_performance PRIVATE ".")
+
+target_compile_definitions(test_plugin_live_performance PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    ONNX_RUNTIME_AVAILABLE=1
+)
+
+# Link with ONNX Runtime
+if(ONNX_RUNTIME_FOUND)
+    target_link_libraries(test_plugin_live_performance PRIVATE ${ONNX_RUNTIME_LIB})
+    target_include_directories(test_plugin_live_performance PRIVATE ${ONNX_RUNTIME_INCLUDE})
+endif()
+
+set_target_properties(test_plugin_live_performance PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)

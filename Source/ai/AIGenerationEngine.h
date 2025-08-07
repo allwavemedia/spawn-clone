@@ -42,6 +42,9 @@ public:
     
     /** Get access to CloudAPIManager for subscription status checking */
     CloudAPIManager* getCloudAPIManager() const { return cloudAPIManager.get(); }
+    
+    /** Get access to ONNXModelManager for live performance integration */
+    ONNXModelManager* getONNXModelManager() const { return onnxModelManager.get(); }
 
 private:
     ThreadManager& threadManager;

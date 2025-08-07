@@ -38,6 +38,19 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
     
     // Epic 9 Story 9.1: Initialize instrument library manager
     instrumentLibraryManager = std::make_unique<InstrumentLibraryManager>();
+    
+    // Initialize Live Performance System Integration
+    livePerformanceIntegration = std::make_unique<spawnclone::processor::LivePerformanceIntegration>();
+    
+    // Initialize live performance with required components
+    // Note: The ONNX client will be initialized when live performance is first enabled
+    if (livePerformanceIntegration)
+    {
+        // Initialize with audio preview engine
+        // ONNX client will be set up on-demand when live performance features are used
+        livePerformanceIntegration->initialize(audioPreviewEngine.get(), nullptr);
+        DBG("Live Performance Integration initialized (ONNX client will be set on-demand)");
+    }
 }
 
 SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
@@ -122,6 +135,12 @@ void SpawnCloneAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     {
         multiOutputManager->prepareToPlay(sampleRate, samplesPerBlock);
     }
+    
+    // Prepare Live Performance Integration
+    if (livePerformanceIntegration)
+    {
+        livePerformanceIntegration->prepareToPlay(sampleRate, samplesPerBlock);
+    }
 }
 
 void SpawnCloneAudioProcessor::releaseResources()
@@ -136,6 +155,12 @@ void SpawnCloneAudioProcessor::releaseResources()
     if (multiOutputManager)
     {
         multiOutputManager->releaseResources();
+    }
+    
+    // Release Live Performance Integration resources
+    if (livePerformanceIntegration)
+    {
+        livePerformanceIntegration->releaseResources();
     }
 }
 
@@ -177,6 +202,14 @@ void SpawnCloneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     
     // Epic 2 Story 2.1 Task 2.1.1: Update host transport info
     updateHostInfo();
+    
+    // Live Performance Integration - Process MIDI triggers and update performance state
+    if (livePerformanceIntegration && livePerformanceIntegration->isLivePerformanceEnabled())
+    {
+        auto transportInfo = getHostTransportInfo();
+        livePerformanceIntegration->processMIDI(midiMessages, transportInfo.ppqPosition, transportInfo.isPlaying);
+        livePerformanceIntegration->updatePerformanceState(transportInfo.ppqPosition, transportInfo.isPlaying);
+    }
 
     // Clear any output channels that don't contain input data
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
@@ -486,4 +519,55 @@ float SpawnCloneAudioProcessor::getSynthesisParameterValue(const juce::String& p
     return 0.0f;
 }
 
+//==============================================================================
+// Live Performance System Integration
+
+void SpawnCloneAudioProcessor::setLivePerformanceEnabled(bool enabled)
+{
+    if (livePerformanceIntegration)
+    {
+        if (enabled && aiEngine)
+        {
+            // Set up ONNX client for live performance when enabling
+            auto* onnxManager = aiEngine->getONNXModelManager();
+            if (onnxManager)
+            {
+                auto daemonClient = onnxManager->getDaemonClient();
+                livePerformanceIntegration->initialize(audioPreviewEngine.get(), daemonClient);
+            }
+        }
+        
+        livePerformanceIntegration->setLivePerformanceEnabled(enabled);
+        DBG("Live Performance " + juce::String(enabled ? "ENABLED" : "DISABLED"));
+    }
+}
+
+bool SpawnCloneAudioProcessor::isLivePerformanceEnabled() const
+{
+    return livePerformanceIntegration && livePerformanceIntegration->isLivePerformanceEnabled();
+}
+
+void SpawnCloneAudioProcessor::setLivePerformanceMode(spawnclone::ai::LivePerformanceEngine::PerformanceMode mode)
+{
+    if (livePerformanceIntegration)
+    {
+        livePerformanceIntegration->setPerformanceMode(mode);
+    }
+}
+
+void SpawnCloneAudioProcessor::configureLiveAIModulation(bool enabled, float intensity)
+{
+    if (livePerformanceIntegration)
+    {
+        livePerformanceIntegration->configureAIModulation(enabled, intensity);
+    }
+}
+
+void SpawnCloneAudioProcessor::triggerLivePatternGeneration()
+{
+    if (livePerformanceIntegration)
+    {
+        livePerformanceIntegration->triggerPatternGeneration();
+    }
+}
 

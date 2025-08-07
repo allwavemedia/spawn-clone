@@ -18,6 +18,7 @@
 
 // Forward declarations
 class ModelCacheManager;
+class ONNXDaemonClient;
 struct MIDIPattern;
 struct GenerationParameters;
 
@@ -85,6 +86,12 @@ public:
     bool generatePattern(std::vector<uint8_t>& pattern, const struct GenerationParameters& params);
     juce::String getLastError() const;
     
+    // Daemon Status and Performance Monitoring
+    juce::String getDaemonStatus() const;
+    
+    /** Get daemon client for live performance integration */
+    std::shared_ptr<ONNXDaemonClient> getDaemonClient() const;
+    
     // Performance Optimization Methods (Epic 7 Task)
     void optimizeMemoryUsage();
     void optimizeInferenceSpeed();
@@ -140,12 +147,15 @@ private:
     int currentBatchSize = 1;
     bool modelCachingEnabled = true;
     
-    // Python subprocess integration (workaround for C++ ONNX Runtime segfault)
+    // Python daemon integration (persistent process for optimal performance)
     juce::String currentModelName;
     juce::var pythonModelInputs;
     juce::var pythonModelOutputs;
-    bool loadModelViaPython(const juce::String& modelPath);
-    bool generatePatternViaPython(std::vector<uint8_t>& pattern, const struct GenerationParameters& params);
+    std::shared_ptr<ONNXDaemonClient> daemonClient;
+    bool initializeDaemon();
+    bool loadModelViaDaemon(const juce::String& modelPath);
+    bool generatePatternViaDaemon(std::vector<uint8_t>& pattern, const struct GenerationParameters& params);
+    void shutdownDaemon();
     
     #ifdef ONNX_RUNTIME_AVAILABLE
         // ONNX Runtime session and environment (currently disabled due to segfaults)

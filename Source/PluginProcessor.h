@@ -17,6 +17,8 @@
 #include "audio/AudioPreviewEngine.h"
 #include "audio/MultiOutputManager.h"
 #include "audio/InstrumentLibraryManager.h"
+#include "processor/LivePerformanceIntegration.h"
+#include "ai/LivePerformanceEngine.h"  // For PerformanceMode enum
 
 //==============================================================================
 /**
@@ -136,6 +138,27 @@ public:
     
     /** Get multi-output manager for layer routing control */
     MultiOutputManager* getMultiOutputManager() { return multiOutputManager.get(); }
+    
+    //==============================================================================
+    // Live Performance System Integration
+    
+    /** Enable/disable live performance mode */
+    void setLivePerformanceEnabled(bool enabled);
+    
+    /** Check if live performance mode is enabled */
+    bool isLivePerformanceEnabled() const;
+    
+    /** Set live performance mode (Pattern Generation, Parameter Modulation, Evolution, Full Live) */
+    void setLivePerformanceMode(spawnclone::ai::LivePerformanceEngine::PerformanceMode mode);
+    
+    /** Configure AI-driven parameter modulation */
+    void configureLiveAIModulation(bool enabled, float intensity = 0.5f);
+    
+    /** Trigger manual pattern generation in live performance mode */
+    void triggerLivePatternGeneration();
+    
+    /** Get live performance integration for advanced control */
+    spawnclone::processor::LivePerformanceIntegration* getLivePerformanceIntegration() { return livePerformanceIntegration.get(); }
 
 
 private:
@@ -160,6 +183,9 @@ private:
     
     // Epic 9 Story 9.1: Instrument library for preset management
     std::unique_ptr<InstrumentLibraryManager> instrumentLibraryManager;
+    
+    // Live Performance System Integration
+    std::unique_ptr<spawnclone::processor::LivePerformanceIntegration> livePerformanceIntegration;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessor)

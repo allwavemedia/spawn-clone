@@ -11,6 +11,7 @@
 */
 
 #include "ONNXModelManager.h"
+#include "ONNXDaemonClient.h"  // Include full definition
 #include "ModelCacheManager.h"
 #include "../MIDIPattern.h"
 #include "../GenerationParameters.h"
@@ -25,14 +26,28 @@
 
 //==============================================================================
 ONNXModelManager::ONNXModelManager()
+    : modelLoaded(false)
+    , lastError("")
+    , currentModelName("")
+    , daemonClient(std::make_shared<ONNXDaemonClient>())
 {
-    // Initialize ONNX Runtime if available
-    initializeRuntime();
+    DBG("ONNXModelManager initialized with persistent daemon client");
+    
+    // Start the daemon on initialization
+    if (!daemonClient->startDaemon())
+    {
+        DBG("⚠️ Warning: Failed to start ONNX daemon during initialization");
+        lastError = "Failed to start ONNX daemon";
+    }
 }
 
 ONNXModelManager::~ONNXModelManager()
 {
-    // Cleanup ONNX Runtime resources
+    DBG("ONNXModelManager destructor - shutting down daemon");
+    if (daemonClient)
+    {
+        daemonClient->shutdownDaemon();
+    }
 }
 
 //==============================================================================
@@ -66,101 +81,51 @@ bool ONNXModelManager::loadModel(const juce::String& modelPath)
     }
     
     // Use Python subprocess for model loading
-    return loadModelViaPython(modelPath);
+    return loadModelViaDaemon(modelPath);
 }
 
-bool ONNXModelManager::loadModelViaPython(const juce::String& modelPath)
+bool ONNXModelManager::loadModelViaDaemon(const juce::String& modelPath)
 {
+    if (!daemonClient)
+    {
+        lastError = "Daemon client not initialized";
+        return false;
+    }
+    
+    if (!daemonClient->isDaemonRunning())
+    {
+        DBG("Daemon not running, attempting to start...");
+        if (!daemonClient->startDaemon())
+        {
+            lastError = "Failed to start ONNX daemon";
+            return false;
+        }
+    }
+    
     try
     {
-        juce::File modelFile(modelPath);
-        if (!modelFile.existsAsFile())
+        DBG("Loading model via persistent daemon: " + modelPath);
+        
+        bool success = daemonClient->loadModel(modelPath);
+        
+        if (success)
         {
-            lastError = "Model file not found: " + modelPath;
-            return false;
-        }
-        
-        // Extract model name from path (e.g., "model_token" from "models/midi-model/onnx/model_token.onnx")
-        juce::String modelName = modelFile.getFileNameWithoutExtension();
-        
-        // Prepare JSON command for Python server
-        juce::DynamicObject::Ptr commandObj = new juce::DynamicObject();
-        commandObj->setProperty("action", "load_model");
-        commandObj->setProperty("model_name", modelName);
-        
-        juce::String jsonCommand = juce::JSON::toString(juce::var(commandObj.get()));
-        
-        // Execute Python server using temporary file to avoid shell escaping issues
-        juce::File tempCommandFile = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("onnx_command.json");
-        tempCommandFile.replaceWithText(jsonCommand);
-        
-        juce::String workingDir = juce::File::getCurrentWorkingDirectory().getFullPathName();
-        juce::String pythonCommand = "/bin/bash -c \"cd '" + workingDir + "' && cat '" + tempCommandFile.getFullPathName() + "' | python3 midi_model_server.py\"";
-        
-        DBG("Executing: " + pythonCommand);
-        
-        juce::ChildProcess process;
-        if (!process.start(pythonCommand))
-        {
-            lastError = "Failed to start Python MIDI model server";
-            return false;
-        }
-        
-        // Get the result
-        juce::String result = process.readAllProcessOutput();
-        process.waitForProcessToFinish(5000); // 5 second timeout
-        
-        // Clean up temp file
-        tempCommandFile.deleteFile();
-        
-        DBG("Python server response: " + result);
-        
-        // Parse JSON response
-        juce::var responseVar = juce::JSON::parse(result);
-        if (responseVar.isObject())
-        {
-            juce::DynamicObject* responseObj = responseVar.getDynamicObject();
+            currentModelName = modelPath;  // Use path as name for now
+            modelLoaded = true;
             
-            juce::var successVar = responseObj->getProperty("success");
-            bool success = successVar.isBool() ? (bool)successVar : false;
-            
-            if (success)
-            {
-                currentModelFile = modelFile;
-                modelLoaded = true;
-                currentModelName = modelName;
-                
-                // Store model metadata from Python response
-                if (responseObj->hasProperty("inputs"))
-                {
-                    pythonModelInputs = responseObj->getProperty("inputs");
-                }
-                if (responseObj->hasProperty("outputs"))
-                {
-                    pythonModelOutputs = responseObj->getProperty("outputs");
-                }
-                
-                DBG("Model loaded via Python: " + modelName);
-                return true;
-            }
-            else
-            {
-                juce::var errorVar = responseObj->getProperty("error");
-                juce::String error = errorVar.toString();
-                if (error.isEmpty()) error = "Unknown error";
-                lastError = "Python server error: " + error;
-                return false;
-            }
+            DBG("✅ Model loaded successfully via daemon: " + modelPath);
+            return true;
         }
         else
         {
-            lastError = "Invalid response from Python server: " + result;
+            auto status = daemonClient->getDaemonStatus();
+            lastError = "Daemon model loading failed: " + status.lastError;
             return false;
         }
     }
     catch (const std::exception& e)
     {
-        lastError = "Exception in Python model loading: " + juce::String(e.what());
+        lastError = "Exception in daemon model loading: " + juce::String(e.what());
         return false;
     }
 }
@@ -177,18 +142,19 @@ bool ONNXModelManager::generatePattern(std::vector<uint8_t>& pattern, const Gene
     }
     
     // Use Python subprocess for pattern generation
-    return generatePatternViaPython(pattern, params);
+    return generatePatternViaDaemon(pattern, params);
 }
 
-bool ONNXModelManager::generatePatternViaPython(std::vector<uint8_t>& pattern, const GenerationParameters& params)
+bool ONNXModelManager::generatePatternViaDaemon(std::vector<uint8_t>& pattern, const GenerationParameters& params)
 {
+    if (!daemonClient || !daemonClient->isDaemonRunning())
+    {
+        lastError = "Daemon not available";
+        return false;
+    }
+    
     try
     {
-        // Prepare JSON command for Python server
-        juce::DynamicObject::Ptr commandObj = new juce::DynamicObject();
-        commandObj->setProperty("action", "generate_pattern");
-        commandObj->setProperty("model_name", currentModelName);
-        
         // Convert GenerationParameters to JSON
         juce::DynamicObject::Ptr paramsObj = new juce::DynamicObject();
         paramsObj->setProperty("key", params.key);
@@ -199,83 +165,46 @@ bool ONNXModelManager::generatePatternViaPython(std::vector<uint8_t>& pattern, c
         paramsObj->setProperty("patternLengthBeats", params.patternLengthBeats);
         paramsObj->setProperty("generationSeed", static_cast<int>(params.generationSeed));
         
-        commandObj->setProperty("params", juce::var(paramsObj.get()));
+        juce::var parameters = juce::var(paramsObj.get());
         
-        juce::String jsonCommand = juce::JSON::toString(juce::var(commandObj.get()));
+        DBG("Generating pattern via persistent daemon: " + currentModelName);
         
-        // Execute Python server using temporary file
-        juce::File tempCommandFile = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("onnx_pattern_command.json");
-        tempCommandFile.replaceWithText(jsonCommand);
+        auto result = daemonClient->generatePattern(currentModelName, parameters);
         
-        juce::String workingDir = juce::File::getCurrentWorkingDirectory().getFullPathName();
-        juce::String pythonCommand = "/bin/bash -c \"cd '" + workingDir + "' && cat '" + tempCommandFile.getFullPathName() + "' | python3 midi_model_server.py\"";
-        
-        DBG("Executing pattern generation: " + pythonCommand);
-        
-        juce::ChildProcess process;
-        if (!process.start(pythonCommand))
+        if (result.success)
         {
-            lastError = "Failed to start Python MIDI model server for pattern generation";
-            return false;
-        }
-        
-        // Get the result
-        juce::String result = process.readAllProcessOutput();
-        process.waitForProcessToFinish(10000); // 10 second timeout for generation
-        
-        // Clean up temp file
-        tempCommandFile.deleteFile();
-        
-        DBG("Python server pattern response: " + result.substring(0, 200) + "..."); // Log first 200 chars
-        
-        // Parse JSON response
-        juce::var responseVar = juce::JSON::parse(result);
-        if (responseVar.isObject())
-        {
-            juce::DynamicObject* responseObj = responseVar.getDynamicObject();
+            // Convert the pattern data to our format
+            pattern.clear();
             
-            juce::var successVar = responseObj->getProperty("success");
-            bool success = successVar.isBool() ? (bool)successVar : false;
-            
-            if (success)
+            if (!result.patternData.isEmpty())
             {
-                // Extract pattern data from response
-                juce::var patternData = responseObj->getProperty("pattern_data");
-                
                 // For now, create a simple pattern from the response
-                // TODO: Implement proper MIDI tokenization/detokenization
-                pattern.clear();
+                // TODO: Implement proper MIDI tokenization/detokenization based on your model's output format
                 pattern.resize(128, 0); // Simple 128-byte pattern
                 
-                // Fill with some dummy MIDI data based on parameters
+                // Fill with some derived MIDI data based on parameters and AI output
                 pattern[0] = 0x90; // Note on
                 pattern[1] = 60 + params.key; // Note (C4 + key offset)
                 pattern[2] = 64; // Velocity
                 pattern[3] = 0x80; // Note off (later in pattern)
                 pattern[4] = 60 + params.key;
                 pattern[5] = 0;
-                
-                DBG("Pattern generated successfully via Python, size: " + juce::String(pattern.size()));
-                return true;
             }
-            else
-            {
-                juce::var errorVar = responseObj->getProperty("error");
-                juce::String error = errorVar.toString();
-                if (error.isEmpty()) error = "Unknown error";
-                lastError = "Python pattern generation error: " + error;
-                return false;
-            }
+            
+            DBG("✅ Pattern generated successfully via daemon in " + 
+                juce::String(result.inferenceTimeMs, 1) + "ms, size: " + 
+                juce::String(pattern.size()));
+            return true;
         }
         else
         {
-            lastError = "Invalid response from Python server: " + result.substring(0, 100);
+            lastError = "Daemon pattern generation error: " + result.errorMessage;
             return false;
         }
     }
     catch (const std::exception& e)
     {
-        lastError = "Exception in Python pattern generation: " + juce::String(e.what());
+        lastError = "Exception in daemon pattern generation: " + juce::String(e.what());
         return false;
     }
 }
@@ -836,4 +765,49 @@ juce::String ONNXModelManager::getPerformanceRecommendations() const
     }
     
     return result;
+}
+
+//==============================================================================
+// Daemon Status and Performance Monitoring
+
+juce::String ONNXModelManager::getDaemonStatus() const
+{
+    if (!daemonClient)
+    {
+        return "Daemon client not initialized";
+    }
+    
+    auto status = daemonClient->getDaemonStatus();
+    
+    juce::String result = "=== ONNX Daemon Status ===\n";
+    result += "Running: " + juce::String(status.running ? "✅ Yes" : "❌ No") + "\n";
+    result += "Total Requests: " + juce::String(status.totalRequests) + "\n";
+    result += "Uptime: " + juce::String(status.uptimeSeconds, 1) + "s\n";
+    result += "Average Inference Time: " + juce::String(daemonClient->getAverageInferenceTime(), 1) + "ms\n";
+    result += "Loaded Models: ";
+    
+    if (status.loadedModels.isEmpty())
+    {
+        result += "None\n";
+    }
+    else
+    {
+        result += "\n";
+        for (const auto& model : status.loadedModels)
+        {
+            result += "  • " + model + "\n";
+        }
+    }
+    
+    if (!status.lastError.isEmpty())
+    {
+        result += "Last Error: " + status.lastError + "\n";
+    }
+    
+    return result;
+}
+
+std::shared_ptr<ONNXDaemonClient> ONNXModelManager::getDaemonClient() const
+{
+    return daemonClient;
 }
