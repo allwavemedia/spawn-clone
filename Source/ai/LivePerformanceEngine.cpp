@@ -238,7 +238,7 @@ void LivePerformanceEngine::manualTrigger()
     {
         triggerPatternVariation(0.3f);
     }
-    else if (!performanceState.lastGenerationParams.musicalKey.isEmpty())
+    else if (performanceState.lastGenerationParams.key != 0)
     {
         triggerPatternGeneration(performanceState.lastGenerationParams);
     }
@@ -355,17 +355,23 @@ void LivePerformanceEngine::processGenerationQueue()
             if (request.type == GenerationRequest::NewPattern)
             {
                 // Generate completely new pattern
-                auto result = onnxClient->generatePattern(
-                    request.params.musicalKey,
-                    request.params.scale,
-                    static_cast<int>(request.params.tempo),
-                    request.params.complexity,
-                    request.params.generationType == GenerationParameters::GenerationType::Melody ? "melody" : "chords"
-                );
+                juce::var params = juce::var(new juce::DynamicObject());
+                params.getDynamicObject()->setProperty("key", request.params.key);
+                params.getDynamicObject()->setProperty("scale", static_cast<int>(request.params.scale));
+                params.getDynamicObject()->setProperty("tempo", static_cast<int>(request.params.tempo));
+                params.getDynamicObject()->setProperty("complexity", request.params.rhythmicComplexity);
+                params.getDynamicObject()->setProperty("generationType", 
+                    request.params.generationType == GenerationParameters::GenerationType::Melody ? "melody" : "chords");
                 
-                if (result.success && result.pattern)
+                auto result = onnxClient->generatePattern("default", params);
+                
+                if (result.success && !result.patternData.isEmpty())
                 {
-                    newPattern = result.pattern;
+                    // Convert patternData to MIDIPattern
+                    newPattern = std::make_shared<MIDIPattern>();
+                    // TODO: Implement conversion from result.patternData to MIDIPattern
+                    // For now, create a basic pattern as placeholder
+                    newPattern->notes.clear();
                 }
             }
             else if (request.type == GenerationRequest::Variation && performanceState.currentPattern)

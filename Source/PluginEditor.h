@@ -18,6 +18,7 @@
 #include "ui/PresetBrowserComponent.h"
 #include "ui/SynthesisControlPanel.h"
 #include "ui/ReverbXYController.h"  // Epic 6 Phase 2: Professional Reverb Control
+#include "ui/LivePerformanceControlPanel.h"  // Revolutionary Live Performance Interface
 
 //==============================================================================
 /**
@@ -155,6 +156,9 @@ private:
     std::unique_ptr<SynthesisControlPanel> synthesisControlPanel;
     std::unique_ptr<juce::TextButton> synthesisExpandButton;
     bool synthesisControlsExpanded = false;
+    
+    // Revolutionary Live Performance Interface
+    std::unique_ptr<spawnclone::ui::LivePerformanceControlPanel> livePerformancePanel;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessorEditor)

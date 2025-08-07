@@ -44,7 +44,7 @@ public:
     // Initialization
     
     /** Initialize with required components */
-    bool initialize(AudioPreviewEngine* audioEngine,
+    void initialize(AudioPreviewEngine* audioEngine,
                    std::shared_ptr<ONNXDaemonClient> onnxClient);
     
     /** Prepare for audio processing */

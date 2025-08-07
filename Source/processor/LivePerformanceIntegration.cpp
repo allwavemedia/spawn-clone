@@ -33,8 +33,8 @@ LivePerformanceIntegration::~LivePerformanceIntegration()
 //==============================================================================
 // Initialization
 
-bool LivePerformanceIntegration::initialize(AudioPreviewEngine* audioEngine,
-                                          std::shared_ptr<spawnclone::ai::ONNXDaemonClient> onnxClient)
+void LivePerformanceIntegration::initialize(AudioPreviewEngine* audioEngine,
+                                          std::shared_ptr<ONNXDaemonClient> onnxClient)
 {
     audioPreviewEngine = audioEngine;
     onnxDaemonClient = onnxClient;
@@ -42,7 +42,7 @@ bool LivePerformanceIntegration::initialize(AudioPreviewEngine* audioEngine,
     if (!audioEngine || !onnxClient)
     {
         notifyError("LivePerformanceIntegration: Invalid components provided");
-        return false;
+        return;
     }
     
     // Configure live engine
@@ -53,7 +53,7 @@ bool LivePerformanceIntegration::initialize(AudioPreviewEngine* audioEngine,
     if (!synthesisEngine)
     {
         notifyError("LivePerformanceIntegration: Advanced Synthesis Engine not available");
-        return false;
+        return;
     }
     
     liveEngine->setAdvancedSynthesisEngine(synthesisEngine);
@@ -62,11 +62,10 @@ bool LivePerformanceIntegration::initialize(AudioPreviewEngine* audioEngine,
     if (!liveEngine->initialize())
     {
         notifyError("LivePerformanceIntegration: Failed to initialize live engine");
-        return false;
+        return;
     }
     
     isInitialized.store(true);
-    return true;
 }
 
 void LivePerformanceIntegration::prepareToPlay(double sampleRate, int blockSize)
@@ -351,7 +350,7 @@ void LivePerformanceIntegration::applyGeneratedPattern(std::shared_ptr<MIDIPatte
         return;
     
     // Set the new pattern in the audio preview engine
-    audioPreviewEngine->setCurrentPattern(pattern);
+    audioPreviewEngine->loadPattern(*pattern);
     
     // Auto-start playback if enabled (this could be configurable)
     if (isLivePerformanceEnabled())

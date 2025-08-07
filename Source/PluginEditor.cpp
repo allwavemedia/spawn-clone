@@ -159,6 +159,10 @@ void SpawnCloneAudioProcessorEditor::resized()
         synthesisControlPanel->setBounds(bounds.removeFromTop(220).reduced(margin, 0));
     }
     
+    // Revolutionary Live Performance Control Panel
+    bounds.removeFromTop(margin / 2);
+    livePerformancePanel->setBounds(bounds.removeFromTop(180).reduced(margin, 0));
+    
     // Generate button with enhanced styling
     bounds.removeFromTop(margin);
     generateButton.setBounds(bounds.removeFromTop(45).reduced(margin));
@@ -1017,4 +1021,8 @@ void SpawnCloneAudioProcessorEditor::setupSynthesisControls()
     // Start collapsed by default to save screen space
     synthesisControlsExpanded = false;
     synthesisControlPanel->setVisible(false);
+    
+    // Initialize live performance control panel
+    livePerformancePanel = std::make_unique<spawnclone::ui::LivePerformanceControlPanel>(audioProcessor);
+    addAndMakeVisible(*livePerformancePanel);
 }

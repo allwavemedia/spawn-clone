@@ -139,6 +139,14 @@ target_sources(SpawnClone PRIVATE
     Source/audio/DelayXYController.h
     Source/audio/ModulationXYController.cpp
     Source/audio/ModulationXYController.h
+    # Live Performance and AI Integration Components
+    Source/processor/LivePerformanceIntegration.cpp
+    Source/processor/LivePerformanceIntegration.h
+    Source/ai/LivePerformanceEngine.cpp
+    Source/ai/LivePerformanceEngine.h
+    Source/ai/ONNXDaemonClient.cpp
+    Source/ai/ONNXDaemonClient.h
+    # UI Components
     Source/ui/ReverbXYController.cpp
     Source/ui/ReverbXYController.h
     Source/ui/ExperimentPadComponent.cpp
@@ -147,6 +155,8 @@ target_sources(SpawnClone PRIVATE
     Source/ui/PresetBrowserComponent.h
     Source/ui/SynthesisControlPanel.cpp
     Source/ui/SynthesisControlPanel.h
+    Source/ui/LivePerformanceControlPanel.cpp
+    Source/ui/LivePerformanceControlPanel.h
 )
 
 target_include_directories(SpawnClone PRIVATE
@@ -262,6 +272,10 @@ if(BUILD_TESTS)
         Source/ai/MusicTheoryEngine.cpp
         Source/ai/GenreSpecialist_Fixed.cpp
         Source/audio/AdvancedSynthesisEngine.cpp
+        Source/audio/SynthVoice.cpp
+        Source/audio/SampleCache.cpp
+        Source/audio/AsyncSampleLoader.cpp
+        Source/audio/SynthesisParameterMapper.cpp
         Source/audio/LayerEffectsProcessor.cpp
         Source/audio/InstrumentLibraryManager.cpp
         Source/audio/RealTimeProcessor.cpp
@@ -670,6 +684,17 @@ gtest_discover_tests(test_AdvancedSynthesisEngine)
 add_executable(debug_synthesis
     debug_synthesis.cpp
     Source/audio/AdvancedSynthesisEngine.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/LoopManager.cpp
+    Source/audio/synthesis/PitchShifter.cpp
 )
 
 target_link_libraries(debug_synthesis PRIVATE
@@ -686,7 +711,17 @@ target_include_directories(debug_synthesis PRIVATE "Source")
 add_executable(minimal_debug
     minimal_debug.cpp
     Source/audio/AdvancedSynthesisEngine.cpp
-    Source/ui/SynthesisControlPanel.cpp
+    Source/audio/SynthVoice.cpp
+    Source/audio/SampleCache.cpp
+    Source/audio/AsyncSampleLoader.cpp
+    Source/audio/EffectsChain.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ReverbEngine.cpp
+    Source/audio/ModulationEngine.cpp
+    Source/audio/EffectProcessor.cpp
+    Source/audio/synthesis/SampleEngine.cpp
+    Source/audio/synthesis/LoopManager.cpp
+    Source/audio/synthesis/PitchShifter.cpp
 )
 
 target_link_libraries(minimal_debug PRIVATE
@@ -706,6 +741,7 @@ add_executable(epic6_reverb_demo
     Source/audio/EffectsChain.cpp
     Source/audio/ReverbEngine.cpp
     Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
 )
 
 target_link_libraries(epic6_reverb_demo PRIVATE
@@ -725,6 +761,8 @@ add_executable(epic6_xy_demo
     Source/audio/EffectProcessor.cpp
     Source/audio/EffectsChain.cpp
     Source/audio/ReverbEngine.cpp
+    Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
     Source/ui/ReverbXYController.cpp
 )
 
@@ -746,6 +784,7 @@ add_executable(epic6_delay_demo
     Source/audio/EffectsChain.cpp
     Source/audio/ReverbEngine.cpp
     Source/audio/DelayEngine.cpp
+    Source/audio/ModulationEngine.cpp
 )
 
 target_link_libraries(epic6_delay_demo PRIVATE
@@ -1201,3 +1240,151 @@ set_target_properties(test_plugin_live_performance PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
+
+    #==============================================================================
+    # End-to-End Testing Framework
+    #==============================================================================
+
+    # E2E Testing option
+    option(BUILD_E2E_TESTS "Build end-to-end tests" ON)
+
+    if(BUILD_E2E_TESTS)
+        # Simple E2E Test for framework validation
+        add_executable(test_E2E_Simple
+            tests/e2e/simple_e2e_test.cpp
+        )
+
+        target_include_directories(test_E2E_Simple PRIVATE 
+            Source 
+        )
+        
+        target_link_libraries(test_E2E_Simple PRIVATE 
+            gtest_main
+            juce::juce_core
+            juce::juce_audio_basics
+            juce::juce_audio_devices
+        )
+
+        target_compile_features(test_E2E_Simple PRIVATE cxx_std_17)
+        
+        target_compile_definitions(test_E2E_Simple PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+        )
+
+        # Epic 7 AI Integration E2E Test
+        add_executable(test_Epic7_AI_Integration
+            tests/e2e/audio/test_epic7_ai_integration.cpp
+        )
+
+        target_include_directories(test_Epic7_AI_Integration PRIVATE 
+            Source 
+            Source/ai
+            tests/e2e/utilities
+        )
+        
+        target_link_libraries(test_Epic7_AI_Integration PRIVATE 
+            gtest_main
+            juce::juce_core
+            juce::juce_audio_basics
+            juce::juce_audio_devices
+            juce::juce_audio_processors
+            juce::juce_dsp
+        )
+
+        # Add ONNX Runtime if available
+        if(ONNXRUNTIME_FOUND)
+            target_include_directories(test_Epic7_AI_Integration PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
+            target_link_libraries(test_Epic7_AI_Integration PRIVATE ${ONNXRUNTIME_LIBRARIES})
+            target_compile_definitions(test_Epic7_AI_Integration PRIVATE USE_ONNX_RUNTIME=1)
+        endif()
+
+        target_compile_features(test_Epic7_AI_Integration PRIVATE cxx_std_17)
+        
+        target_compile_definitions(test_Epic7_AI_Integration PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+            JUCE_MODAL_LOOPS_PERMITTED=1
+        )
+
+        # Epic 7 Security Audit Test
+        add_executable(test_Epic7_Security_Audit
+            tests/e2e/security/test_epic7_security_audit.cpp
+        )
+
+        target_include_directories(test_Epic7_Security_Audit PRIVATE 
+            Source 
+            Source/ai
+        )
+        
+        target_link_libraries(test_Epic7_Security_Audit PRIVATE 
+            gtest_main
+            juce::juce_core
+            juce::juce_audio_basics
+        )
+
+        target_compile_features(test_Epic7_Security_Audit PRIVATE cxx_std_17)
+        
+        target_compile_definitions(test_Epic7_Security_Audit PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+        )
+
+        # Epic 7 Error Handling Test
+        add_executable(test_Epic7_Error_Handling
+            tests/e2e/resilience/test_epic7_error_handling.cpp
+        )
+        
+        target_include_directories(test_Epic7_Error_Handling PRIVATE 
+            tests/e2e/utilities
+            Source
+        )
+        
+        target_link_libraries(test_Epic7_Error_Handling PRIVATE 
+            juce::juce_core
+            juce::juce_audio_basics
+            gtest_main
+        )
+        
+        target_compile_features(test_Epic7_Error_Handling PRIVATE cxx_std_17)
+        
+        target_compile_definitions(test_Epic7_Error_Handling PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+        )
+
+        # Epic 7 Cross-Platform Test
+        add_executable(test_Epic7_Cross_Platform
+            tests/e2e/cross-platform/test_epic7_cross_platform.cpp
+        )
+        
+        target_include_directories(test_Epic7_Cross_Platform PRIVATE 
+            tests/e2e/utilities
+            Source
+        )
+        
+        target_link_libraries(test_Epic7_Cross_Platform PRIVATE 
+            juce::juce_core
+            juce::juce_audio_basics
+            gtest_main
+        )
+        
+        target_compile_features(test_Epic7_Cross_Platform PRIVATE cxx_std_17)
+        
+        target_compile_definitions(test_Epic7_Cross_Platform PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+        )
+
+        include(GoogleTest)
+        gtest_discover_tests(test_E2E_Simple)
+        gtest_discover_tests(test_Epic7_AI_Integration)
+        gtest_discover_tests(test_Epic7_Security_Audit)
+        gtest_discover_tests(test_Epic7_Error_Handling)
+        gtest_discover_tests(test_Epic7_Cross_Platform)
+
+        message(STATUS "E2E Testing enabled - Building comprehensive test suite including Epic 7 AI validation and security audit")
+    else()
+        message(STATUS "E2E Testing disabled")
+    endif()
+

@@ -17,16 +17,15 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
-#include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <memory>
+#include <atomic>
+#include <queue>
 #include "ONNXDaemonClient.h"
 #include "../audio/AdvancedSynthesisEngine.h"
 #include "../audio/SynthesisParameterMapper.h"
 #include "../GenerationParameters.h"
 #include "../MIDIPattern.h"
-#include <atomic>
-#include <queue>
-#include <memory>
 
 namespace spawnclone::ai
 {
@@ -210,6 +209,14 @@ public:
     void removeListener(Listener* listener);
 
 private:
+    //==============================================================================
+    // Pattern Analysis Methods
+    float calculatePatternComplexity(const MIDIPattern& pattern);
+    float calculateAveragePitch(const MIDIPattern& pattern);
+    float calculateRhythmDensity(const MIDIPattern& pattern);
+    float calculateHarmonicContent(const MIDIPattern& pattern);
+    bool isTargetEnabled(const juce::String& paramName);
+    
     //==============================================================================
     // Core Components
     std::shared_ptr<ONNXDaemonClient> onnxClient;
