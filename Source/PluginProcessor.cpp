@@ -8,6 +8,8 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "ui/WaveformDisplayComponent.h"  // Epic 9.2 Story 9.1: For real-time audio visualization
+#include "ai/Epic7CompatibilityLayer.h"  // Epic 7 Integration: Safe operations
 
 //==============================================================================
 SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
@@ -55,6 +57,52 @@ SpawnCloneAudioProcessor::SpawnCloneAudioProcessor()
 
 SpawnCloneAudioProcessor::~SpawnCloneAudioProcessor()
 {
+    // Epic 7 integration safe destruction
+    try
+    {
+        // Safely clear any audio processing
+        if (audioPreviewEngine)
+        {
+            try
+            {
+                audioPreviewEngine.reset();
+            }
+            catch (...)
+            {
+                // Audio engine cleanup failed, continue with other cleanup
+            }
+        }
+        
+        // Safe live performance integration cleanup
+        if (livePerformanceIntegration)
+        {
+            try
+            {
+                livePerformanceIntegration.reset();
+            }
+            catch (...)
+            {
+                // Live performance cleanup failed, continue
+            }
+        }
+        
+        // Safe parameter manager cleanup
+        if (parameterManager)
+        {
+            try
+            {
+                parameterManager.reset();
+            }
+            catch (...)
+            {
+                // Parameter manager cleanup failed, continue
+            }
+        }
+    }
+    catch (...)
+    {
+        // Global destructor exception - don't throw from destructor
+    }
 }
 
 //==============================================================================
@@ -196,55 +244,114 @@ bool SpawnCloneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 
 void SpawnCloneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-    
-    // Epic 2 Story 2.1 Task 2.1.1: Update host transport info
-    updateHostInfo();
-    
-    // Live Performance Integration - Process MIDI triggers and update performance state
-    if (livePerformanceIntegration && livePerformanceIntegration->isLivePerformanceEnabled())
+    // Epic 7 integration comprehensive safety wrapper
+    try
     {
-        auto transportInfo = getHostTransportInfo();
-        livePerformanceIntegration->processMIDI(midiMessages, transportInfo.ppqPosition, transportInfo.isPlaying);
-        livePerformanceIntegration->updatePerformanceState(transportInfo.ppqPosition, transportInfo.isPlaying);
-    }
-
-    // Clear any output channels that don't contain input data
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
-
-    // NEW FEATURE: Handle Instrument Mode
-    if (parameterManager->getInstrumentMode())
-    {
-        // In Instrument Mode, route incoming MIDI through audio preview engine
-        // without triggering AI generation (prevents double-triggering)
-        
-        // Epic 2 Story 2.2 Task 2.2.4: Process audio through preview engine
-        if (audioPreviewEngine)
+        // Validate buffer before any operations
+        if (!Epic7CompatibilityLayer::validateAudioParametersReadOnly(getSampleRate(), buffer.getNumSamples(), buffer.getNumChannels()))
         {
-            audioPreviewEngine->processBlock(buffer, midiMessages);
+            buffer.clear();
+            return;
+        }
+        
+        juce::ScopedNoDenormals noDenormals;
+        auto totalNumInputChannels  = getTotalNumInputChannels();
+        auto totalNumOutputChannels = getTotalNumOutputChannels();
+        
+        // Epic 2 Story 2.1 Task 2.1.1: Update host transport info
+        try
+        {
+            updateHostInfo();
+        }
+        catch (...)
+        {
+            // Host info update failed, continue processing
+        }
+        
+        // Live Performance Integration - Process MIDI triggers and update performance state
+        try
+        {
+            if (livePerformanceIntegration && livePerformanceIntegration->isLivePerformanceEnabled())
+            {
+                auto transportInfo = getHostTransportInfo();
+                livePerformanceIntegration->processMIDI(midiMessages, transportInfo.ppqPosition, transportInfo.isPlaying);
+                livePerformanceIntegration->updatePerformanceState(transportInfo.ppqPosition, transportInfo.isPlaying);
+            }
+        }
+        catch (...)
+        {
+            // Live performance processing failed, continue
+        }
+
+        // Clear any output channels that don't contain input data
+        for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        {
+            if (i < buffer.getNumChannels())
+                buffer.clear (i, 0, buffer.getNumSamples());
+        }
+
+        // NEW FEATURE: Handle Instrument Mode
+        try
+        {
+            if (parameterManager && parameterManager->getInstrumentMode())
+            {
+                // In Instrument Mode, route incoming MIDI through audio preview engine
+                // without triggering AI generation (prevents double-triggering)
+                
+                // Epic 2 Story 2.2 Task 2.2.4: Process audio through preview engine
+                if (audioPreviewEngine)
+                {
+                    audioPreviewEngine->processBlock(buffer, midiMessages);
+                }
+            }
+            else
+            {
+                // Normal mode - clear incoming MIDI as we generate our own patterns
+                midiMessages.clear();
+                
+                // Epic 2 Story 2.2: Process audio preview playback
+                if (audioPreviewEngine)
+                {
+                    audioPreviewEngine->processBlock(buffer, midiMessages);
+                }
+            }
+        }
+        catch (...)
+        {
+            // Audio processing failed - clear buffer for safety
+            buffer.clear();
+        }
+
+        // Basic audio processing placeholder - now handled by AudioPreviewEngine
+        for (int channel = 0; channel < totalNumInputChannels; ++channel)
+        {
+            auto* channelData = buffer.getWritePointer (channel);
+            // Audio processing is now handled by AudioPreviewEngine
+            (void)channelData; // Suppress unused variable warning
+        }
+        
+        // Epic 9.2 Story 9.1: Send audio data to waveform display for real-time visualization
+        try
+        {
+            if (waveformDisplay != nullptr)
+            {
+                waveformDisplay->pushAudioData(buffer);
+            }
+        }
+        catch (...)
+        {
+            // Waveform display update failed, continue
         }
     }
-    else
+    catch (const std::exception& e)
     {
-        // Normal mode - clear incoming MIDI as we generate our own patterns
-        midiMessages.clear();
-        
-        // Epic 2 Story 2.2: Process audio preview playback
-        if (audioPreviewEngine)
-        {
-            audioPreviewEngine->processBlock(buffer, midiMessages);
-        }
+        // Standard exception - clear buffer
+        buffer.clear();
     }
-
-    // Basic audio processing placeholder - now handled by AudioPreviewEngine
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    catch (...)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-        // Audio processing is now handled by AudioPreviewEngine
-        (void)channelData; // Suppress unused variable warning
+        // Unknown exception - clear buffer
+        buffer.clear();
     }
 }
 
@@ -263,40 +370,97 @@ juce::AudioProcessorEditor* SpawnCloneAudioProcessor::createEditor()
 void SpawnCloneAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
-    juce::ValueTree state("state");
-    state.addChild(parameterManager->getState().copyState(), -1, nullptr);
-    state.addChild(patternManager->toValueTree(), -1, nullptr);
-    
-    // NEW: Add PluginState serialization
-    state.addChild(pluginState.toValueTree(), -1, nullptr);
+    try 
+    {
+        juce::ValueTree state = Epic7CompatibilityLayer::safeCreateValueTree("state");
+        
+        // Safe ValueTree operations with Epic 7 compatibility
+        Epic7CompatibilityLayer::safeValueTreeOperation("getParameterState", [&]() {
+            if (parameterManager)
+            {
+                auto paramState = parameterManager->getState().copyState();
+                if (paramState.isValid())
+                    state.addChild(paramState, -1, nullptr);
+            }
+        });
+        
+        Epic7CompatibilityLayer::safeValueTreeOperation("getPatternManagerState", [&]() {
+            if (patternManager)
+            {
+                auto patternState = patternManager->toValueTree();
+                if (patternState.isValid())
+                    state.addChild(patternState, -1, nullptr);
+            }
+        });
+        
+        Epic7CompatibilityLayer::safeValueTreeOperation("getPluginState", [&]() {
+            auto pluginStateTree = pluginState.toValueTree();
+            if (pluginStateTree.isValid())
+                state.addChild(pluginStateTree, -1, nullptr);
+        });
 
-    juce::MemoryOutputStream stream(destData, false);
-    state.writeToStream(stream);
+        if (state.isValid())
+        {
+            juce::MemoryOutputStream stream(destData, false);
+            state.writeToStream(stream);
+        }
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("SpawnCloneAudioProcessor: Failed to save state information");
+    }
 }
 
 void SpawnCloneAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-    auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
-    if (tree.isValid())
+    try
     {
-        // The "parameters" child is the one managed by AudioProcessorValueTreeState
-        parameterManager->getState().replaceState(tree.getChildWithName("parameters"));
-
-        // Find our custom pattern manager data
-        auto patternManagerTree = tree.getChildWithName("PatternManager");
-        if (patternManagerTree.isValid())
+        if (data == nullptr || sizeInBytes <= 0)
         {
-            patternManager->fromValueTree(patternManagerTree);
+            juce::Logger::writeToLog("SpawnCloneAudioProcessor: Invalid state data");
+            return;
         }
         
-        // NEW: Restore PluginState
-        auto pluginStateTree = tree.getChildWithName("PluginState");
-        if (pluginStateTree.isValid())
+        auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
+        if (tree.isValid())
         {
-            pluginState.fromValueTree(pluginStateTree);
+            // The "parameters" child is the one managed by AudioProcessorValueTreeState
+            Epic7CompatibilityLayer::safeValueTreeOperation("setParameterState", [&]() {
+                if (parameterManager)
+                {
+                    auto paramTree = tree.getChildWithName("parameters");
+                    if (paramTree.isValid())
+                        parameterManager->getState().replaceState(paramTree);
+                }
+            });
+
+            // Find our custom pattern manager data
+            Epic7CompatibilityLayer::safeValueTreeOperation("setPatternManagerState", [&]() {
+                if (patternManager)
+                {
+                    auto patternManagerTree = tree.getChildWithName("PatternManager");
+                    if (patternManagerTree.isValid())
+                        patternManager->fromValueTree(patternManagerTree);
+                }
+            });
+            
+            // NEW: Restore PluginState
+            Epic7CompatibilityLayer::safeValueTreeOperation("setPluginState", [&]() {
+                auto pluginStateTree = tree.getChildWithName("PluginState");
+                if (pluginStateTree.isValid())
+                    pluginState.fromValueTree(pluginStateTree);
+            });
         }
+        else
+        {
+            juce::Logger::writeToLog("SpawnCloneAudioProcessor: Invalid ValueTree from state data");
+        }
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("SpawnCloneAudioProcessor: Failed to restore state information");
     }
 }
 

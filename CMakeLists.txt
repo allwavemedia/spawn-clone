@@ -157,6 +157,9 @@ target_sources(SpawnClone PRIVATE
     Source/ui/SynthesisControlPanel.h
     Source/ui/LivePerformanceControlPanel.cpp
     Source/ui/LivePerformanceControlPanel.h
+    # Epic 9.2 Advanced UI/UX Components
+    Source/ui/WaveformDisplayComponent.cpp
+    Source/ui/WaveformDisplayComponent.h
 )
 
 target_include_directories(SpawnClone PRIVATE
@@ -550,6 +553,31 @@ if(BUILD_TESTS)
 
     target_compile_features(test_SampleBasedSynthesis PRIVATE cxx_std_17)
     gtest_discover_tests(test_SampleBasedSynthesis)
+    
+    # Epic 9.2 Story 9.1: WaveformDisplayComponent Unit Tests
+    add_executable(test_WaveformDisplayComponent
+        tests/ui/test_WaveformDisplayComponent.cpp
+        Source/ui/WaveformDisplayComponent.cpp
+    )
+
+    target_include_directories(test_WaveformDisplayComponent PRIVATE 
+        Source 
+        Source/ui
+        Source/ai
+        Source/audio
+    )
+    
+    target_link_libraries(test_WaveformDisplayComponent PRIVATE 
+        gtest_main
+        juce::juce_core
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+        juce::juce_dsp
+    )
+
+    target_compile_features(test_WaveformDisplayComponent PRIVATE cxx_std_17)
+    gtest_discover_tests(test_WaveformDisplayComponent)
 endif()
 
 # Epic 4 Story 4.2 Test Executable
@@ -567,7 +595,7 @@ target_link_libraries(Epic4_Story4_2_CoreTest PRIVATE
 target_compile_features(Epic4_Story4_2_CoreTest PRIVATE cxx_std_17)
 
 # Epic 8 Story 8.1 Test: Experiment Pad Component Tests
-if(GTEST_FOUND)
+if(BUILD_TESTS)
     add_executable(test_ExperimentPadComponent
         Source/test_ExperimentPadComponent.cpp
         Source/ui/ExperimentPadComponent.cpp
@@ -581,8 +609,7 @@ if(GTEST_FOUND)
     )
     
     target_link_libraries(test_ExperimentPadComponent PRIVATE 
-        GTest::gtest 
-        GTest::gtest_main
+        gtest_main
         juce::juce_core
         juce::juce_audio_basics
         juce::juce_audio_processors

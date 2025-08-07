@@ -19,6 +19,7 @@
 #include "ui/SynthesisControlPanel.h"
 #include "ui/ReverbXYController.h"  // Epic 6 Phase 2: Professional Reverb Control
 #include "ui/LivePerformanceControlPanel.h"  // Revolutionary Live Performance Interface
+#include "ui/WaveformDisplayComponent.h"  // Epic 9.2 Story 9.1: Real-time Waveform Visualization
 
 //==============================================================================
 /**
@@ -58,6 +59,7 @@ private:
     void setupProfessionalReverbControl(); // Epic 6 Phase 2: Professional Reverb XY integration
     void setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
     void setupSynthesisControls(); // Phase 1B & 1C: Advanced synthesis controls
+    void setupWaveformDisplay(); // Epic 9.2 Story 9.1: Real-time waveform visualization
     void updateAIModeStatus(); // Epic 7 Story 7.6
     void updatePerformanceMetrics(double generationTimeMs, int noteCount); // Epic 7 Story 7.6.7
     void updatePatternDisplay();
@@ -159,6 +161,9 @@ private:
     
     // Revolutionary Live Performance Interface
     std::unique_ptr<spawnclone::ui::LivePerformanceControlPanel> livePerformancePanel;
+    
+    // Epic 9.2 Story 9.1: Real-time Waveform Visualization
+    std::unique_ptr<WaveformDisplayComponent> waveformDisplay;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessorEditor)

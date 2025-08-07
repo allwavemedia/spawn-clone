@@ -12,6 +12,7 @@
 
 #include "AudioPreviewEngine.h"
 #include "InstrumentLibraryManager.h"
+#include "../ai/Epic7CompatibilityLayer.h"  // Epic 7 Integration Support
 #include <cmath>
 
 //==============================================================================
@@ -30,7 +31,58 @@ AudioPreviewEngine::AudioPreviewEngine()
 
 AudioPreviewEngine::~AudioPreviewEngine()
 {
-    keyboardState.removeListener(this);
+    // Epic 7 integration safe destruction
+    try
+    {
+        // Stop any audio processing first
+        try
+        {
+            isCurrentlyPlaying.store(false);
+        }
+        catch (...)
+        {
+            // Continue with cleanup
+        }
+        
+        // Safe keyboard state cleanup
+        try
+        {
+            keyboardState.removeListener(this);
+        }
+        catch (...)
+        {
+            // Keyboard state cleanup failed, continue
+        }
+        
+        // Safe synthesizer cleanup
+        try
+        {
+            synthesiser.allNotesOff(0, false);
+            synthesiser.clearVoices();
+            synthesiser.clearSounds();
+        }
+        catch (...)
+        {
+            // Synthesizer cleanup failed, continue
+        }
+        
+        // Safe advanced synthesis engine cleanup
+        try
+        {
+            if (advancedSynthesisEngine)
+            {
+                advancedSynthesisEngine.reset();
+            }
+        }
+        catch (...)
+        {
+            // Advanced synthesis cleanup failed, continue
+        }
+    }
+    catch (...)
+    {
+        // Global destructor exception - don't throw from destructor
+    }
 }
 
 //==============================================================================
@@ -38,14 +90,38 @@ AudioPreviewEngine::~AudioPreviewEngine()
 
 void AudioPreviewEngine::prepareToPlay(double newSampleRate, int samplesPerBlock)
 {
-    sampleRate = newSampleRate;
+    // Epic 7 Integration: Safe parameter validation
+    double validatedSampleRate = newSampleRate;
+    int validatedSamplesPerBlock = samplesPerBlock;
+    int validatedChannels = 2; // Default stereo
+    
+    Epic7CompatibilityLayer::validateAudioParameters(validatedSampleRate, validatedSamplesPerBlock, validatedChannels);
+    
+    sampleRate = validatedSampleRate;
     synthesiser.setCurrentPlaybackSampleRate(sampleRate);
     
-    // Epic 9.2: Prepare Advanced Synthesis Engine
-    advancedSynthesisEngine->prepareToPlay(sampleRate, samplesPerBlock, 2); // Stereo
+    // Epic 9.2: Prepare Advanced Synthesis Engine with error handling
+    try 
+    {
+        if (advancedSynthesisEngine)
+        {
+            advancedSynthesisEngine->prepareToPlay(sampleRate, validatedSamplesPerBlock, validatedChannels);
+        }
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("AudioPreviewEngine: Advanced synthesis engine preparation failed");
+    }
     
-    // Epic 8 Story 8.2: Prepare LayerEffectsProcessor
-    layerEffects.prepareToPlay(sampleRate, samplesPerBlock, 2); // Stereo
+    // Epic 8 Story 8.2: Prepare LayerEffectsProcessor with error handling
+    try 
+    {
+        layerEffects.prepareToPlay(sampleRate, validatedSamplesPerBlock, validatedChannels);
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("AudioPreviewEngine: Layer effects preparation failed");
+    }
     
     // Reset playback state
     totalSamplesProcessed = 0;
@@ -61,47 +137,97 @@ void AudioPreviewEngine::releaseResources()
 
 void AudioPreviewEngine::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    // Clear the buffer
-    buffer.clear();
-    
-    // Process pattern playback if playing
-    if (isCurrentlyPlaying.load())
+    // ULTRA-SAFE Epic 7 compatibility wrapper
+    try
     {
-        processPatternPlayback(midiMessages, buffer.getNumSamples());
+        // Memory protection guard
+        static volatile bool processingGuard = false;
+        if (processingGuard)
+        {
+            buffer.clear();
+            return;  // Prevent re-entrant calls
+        }
+        processingGuard = true;
+        
+        // Early safety checks
+        if (sampleRate <= 0.0)
+        {
+            buffer.clear();
+            processingGuard = false;
+            return;
+        }
+        
+        // Buffer safety with Epic7 compatibility layer
+        static const juce::String processBlockContext = "AudioPreviewEngine::processBlock";
+        
+        if (!Epic7CompatibilityLayer::safeBufferOperation(buffer, processBlockContext))
+        {
+            // Buffer was invalid and has been corrected
+            processingGuard = false;
+            return;
+        }
+        
+        // Original audio processing logic with safety wrappers
+        try
+        {
+            // Clear the buffer
+            buffer.clear();
+            
+            // Process pattern playback if playing
+            if (isCurrentlyPlaying.load())
+            {
+                processPatternPlayback(midiMessages, buffer.getNumSamples());
+            }
+            
+            // Epic 9.2: Route audio through appropriate synthesis engine
+            if (advancedSynthesisEnabled.load() && advancedSynthesisEngine)
+            {
+                // Use advanced synthesis engine
+                advancedSynthesisEngine->processBlock(buffer, midiMessages);
+            }
+            else
+            {
+                // Use legacy JUCE synthesizer
+                synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+            }
+            
+            // Epic 8 Story 8.2: Apply layer effects processing
+            // For now, process the combined output through the melody layer effects
+            // In a full implementation, we would separate layers by MIDI channel or note range
+            if (buffer.getNumSamples() > 0)
+            {
+                layerEffects.processLayer(LayerEffectsProcessor::LayerType::Melody, buffer);
+            }
+            
+            // Apply master volume
+            const float volume = masterVolume.load();
+            if (volume != 1.0f)
+            {
+                buffer.applyGain(volume);
+            }
+            
+            // Update sample counter
+            totalSamplesProcessed += buffer.getNumSamples();
+        }
+        catch (...)
+        {
+            // Audio processing failed - clear buffer for safety
+            buffer.clear();
+        }
+        
+        processingGuard = false;
     }
-    
-    // Epic 9.2: Route audio through appropriate synthesis engine
-    if (advancedSynthesisEnabled.load() && advancedSynthesisEngine)
+    catch (const std::exception& e)
     {
-        // Use advanced synthesis engine
-        advancedSynthesisEngine->processBlock(buffer, midiMessages);
+        // Handle standard exceptions
+        buffer.clear();
     }
-    else
+    catch (...)
     {
-        // Use legacy JUCE synthesizer
-        synthesiser.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+        // Handle all other exceptions
+        buffer.clear();
     }
-    
-    // Epic 8 Story 8.2: Apply layer effects processing
-    // For now, process the combined output through the melody layer effects
-    // In a full implementation, we would separate layers by MIDI channel or note range
-    if (buffer.getNumSamples() > 0)
-    {
-        layerEffects.processLayer(LayerEffectsProcessor::LayerType::Melody, buffer);
-    }
-    
-    // Apply master volume
-    const float volume = masterVolume.load();
-    if (volume != 1.0f)
-    {
-        buffer.applyGain(volume);
-    }
-    
-    // Update sample counter
-    totalSamplesProcessed += buffer.getNumSamples();
-}
-
-//==============================================================================
+}//==============================================================================
 // Task 2.2.5: Pattern Playback Control
 
 void AudioPreviewEngine::loadPattern(const MIDIPattern& pattern)

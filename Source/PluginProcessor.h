@@ -133,6 +133,9 @@ public:
     /** Get instrument library manager for preset management */
     InstrumentLibraryManager* getInstrumentLibraryManager() { return instrumentLibraryManager.get(); }
     
+    /** Set waveform display for real-time audio visualization (Epic 9.2 Story 9.1) */
+    void setWaveformDisplay(class WaveformDisplayComponent* display) { waveformDisplay = display; }
+    
     //==============================================================================
     // Epic 8 Story 8.3: Multi-Output Routing Methods
     
@@ -186,6 +189,9 @@ private:
     
     // Live Performance System Integration
     std::unique_ptr<spawnclone::processor::LivePerformanceIntegration> livePerformanceIntegration;
+    
+    // Epic 9.2 Story 9.1: Real-time Waveform Visualization
+    class WaveformDisplayComponent* waveformDisplay = nullptr;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpawnCloneAudioProcessor)

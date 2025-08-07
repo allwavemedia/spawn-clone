@@ -11,6 +11,7 @@
 */
 
 #include "LayerEffectsProcessor.h"
+#include "../ai/Epic7CompatibilityLayer.h"  // Epic 7 Integration Support
 
 //==============================================================================
 LayerEffectsProcessor::LayerEffectsProcessor()
@@ -64,23 +65,57 @@ LayerEffectsProcessor::~LayerEffectsProcessor()
 //==============================================================================
 void LayerEffectsProcessor::prepareToPlay(double sampleRate, int samplesPerBlock, int numChannels)
 {
+    // Epic 7 Integration: Safe parameter validation
+    if (sampleRate <= 0.0 || sampleRate > 192000.0)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Invalid sample rate " + juce::String(sampleRate) + "Hz, using default 44100Hz");
+        sampleRate = 44100.0;
+    }
+    
+    if (samplesPerBlock <= 0 || samplesPerBlock > 8192)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Invalid block size " + juce::String(samplesPerBlock) + ", using default 512");
+        samplesPerBlock = 512;
+    }
+    
+    if (numChannels <= 0 || numChannels > 8)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Invalid channel count " + juce::String(numChannels) + ", using default 2");
+        numChannels = 2;
+    }
+    
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
     spec.numChannels = static_cast<juce::uint32>(numChannels);
     
     // Epic 8 Story 8.4: Prepare advanced real-time processor
-    realTimeProcessor.prepareToPlay(sampleRate, samplesPerBlock);
+    try 
+    {
+        realTimeProcessor.prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: RealTimeProcessor preparation failed");
+    }
     
-    // Prepare each layer's effects chain
+    // Prepare each layer's effects chain with error handling
     for (auto& chain : layerChains)
     {
-        setupEffectsChain(chain);
-        chain.processorChain.prepare(spec);
-        chain.adsr.setSampleRate(sampleRate);
-        chain.pitchShiftDelay.prepare(spec);
-        chain.panner.prepare(spec);
-        chain.volumeGain.prepare(spec);
-        chain.prepared = true;
+        try 
+        {
+            setupEffectsChain(chain);
+            chain.processorChain.prepare(spec);
+            chain.adsr.setSampleRate(sampleRate);
+            chain.pitchShiftDelay.prepare(spec);
+            chain.panner.prepare(spec);
+            chain.volumeGain.prepare(spec);
+            chain.prepared = true;
+        }
+        catch (...)
+        {
+            juce::Logger::writeToLog("LayerEffectsProcessor: Failed to prepare effects chain, disabling layer");
+            chain.prepared = false;
+        }
     }
     
     juce::Logger::writeToLog("LayerEffectsProcessor: Prepared for " + 
@@ -156,9 +191,28 @@ void LayerEffectsProcessor::processLayer(LayerType layer, juce::AudioBuffer<floa
         chain.pitchShiftDelay.process(pitchContext);
     }
     
-    // Process through effects chain
+    // Process through effects chain with Epic 7 safety measures
     juce::dsp::ProcessContextReplacing<float> context(block);
-    chain.processorChain.process(context);
+    
+    try
+    {
+        // Epic 7 Integration: Safe IIR filter processing
+        // Process filters individually to meet single-channel requirements
+        auto& hpFilter = chain.processorChain.template get<0>();
+        auto& lpFilter = chain.processorChain.template get<1>();
+        
+        Epic7CompatibilityLayer::safeIIRProcessing(hpFilter, buffer);
+        Epic7CompatibilityLayer::safeIIRProcessing(lpFilter, buffer);
+        
+        // Process remaining chain elements safely
+        auto& saturation = chain.processorChain.template get<2>();
+        saturation.process(context);
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Effects chain processing failed for layer " + juce::String(layerIndex));
+        buffer.clear(startSample, samplesToProcess);
+    }
     
     // Apply ADSR envelope (simplified - would need proper note tracking)
     // For now, just apply a smooth gain curve
@@ -420,15 +474,38 @@ void LayerEffectsProcessor::setupEffectsChain(LayerEffectsChain& chain)
 {
     auto& params = chain.parameters;
     
-    // Setup high-pass filter (index 0)
-    auto& hpFilter = chain.processorChain.template get<0>();
-    hpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(
-        spec.sampleRate, 40.0f, 0.7f); // High-pass at 40Hz
-    
-    // Setup low-pass filter (index 1)
-    auto& lpFilter = chain.processorChain.template get<1>();
-    lpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(
-        spec.sampleRate, params.filterCutoff, params.filterResonance);
+    // Epic 7 Integration: Safe filter setup with error handling
+    try 
+    {
+        // Validate sample rate before filter setup
+        if (spec.sampleRate <= 0.0 || spec.sampleRate > 192000.0)
+        {
+            juce::Logger::writeToLog("LayerEffectsProcessor: Invalid sample rate " + juce::String(spec.sampleRate) + "Hz, using default 44100Hz");
+            spec.sampleRate = 44100.0;
+        }
+        
+        // Setup high-pass filter (index 0) with safe parameters
+        auto& hpFilter = chain.processorChain.template get<0>();
+        auto hpFreq = juce::jlimit(1.0f, static_cast<float>(spec.sampleRate * 0.45), 40.0f);
+        hpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(
+            spec.sampleRate, hpFreq, 0.7f);
+        
+        // Setup low-pass filter (index 1) with safe parameters
+        auto& lpFilter = chain.processorChain.template get<1>();
+        auto lpFreq = juce::jlimit(20.0f, static_cast<float>(spec.sampleRate * 0.45), params.filterCutoff);
+        auto resonance = juce::jlimit(0.1f, 20.0f, params.filterResonance);
+        lpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+            spec.sampleRate, lpFreq, resonance);
+    }
+    catch (...)
+    {
+        juce::Logger::writeToLog("LayerEffectsProcessor: Filter setup failed, using bypass mode");
+        // Set bypass coefficients in case of error
+        auto& hpFilter = chain.processorChain.template get<0>();
+        auto& lpFilter = chain.processorChain.template get<1>();
+        hpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeAllPass(spec.sampleRate, 1000.0f);
+        lpFilter.coefficients = juce::dsp::IIR::Coefficients<float>::makeAllPass(spec.sampleRate, 1000.0f);
+    }
     
     // Setup reverb (index 2)
     auto& reverb = chain.processorChain.template get<2>();

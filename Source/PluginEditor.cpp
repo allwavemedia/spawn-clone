@@ -27,6 +27,7 @@ SpawnCloneAudioProcessorEditor::SpawnCloneAudioProcessorEditor (SpawnCloneAudioP
     setupExperimentPad(); // Epic 8 Story 8.1: SPAWN-style XY controller
     setupPresetBrowser(); // Epic 9 Story 9.1: Preset browser component
     setupSynthesisControls(); // Phase 1B/1C: AI synthesis parameter control
+    setupWaveformDisplay(); // Epic 9.2 Story 9.1: Real-time waveform visualization
     
     // Start listening to pattern changes
     audioProcessor.getPatternManager().addChangeListener(this);
@@ -39,6 +40,9 @@ SpawnCloneAudioProcessorEditor::~SpawnCloneAudioProcessorEditor()
 {
     stopTimer(); // Epic 4 Story 4.3: Stop visual sync timer
     audioProcessor.getPatternManager().removeChangeListener(this);
+    
+    // Epic 9.2 Story 9.1: Disconnect waveform display from processor
+    audioProcessor.setWaveformDisplay(nullptr);
 }
 
 //==============================================================================
@@ -207,6 +211,14 @@ void SpawnCloneAudioProcessorEditor::resized()
     bounds.removeFromTop(margin);
     auto experimentPadHeight = 140; // Generous height for XY controller
     experimentPad.setBounds(bounds.removeFromTop(experimentPadHeight).reduced(margin/2));
+    
+    // Epic 9.2 Story 9.1: Real-time Waveform Visualization (prominent placement)
+    bounds.removeFromTop(margin);
+    auto waveformDisplayHeight = 160; // Height for real-time waveform display
+    if (waveformDisplay != nullptr)
+    {
+        waveformDisplay->setBounds(bounds.removeFromTop(waveformDisplayHeight).reduced(margin/2));
+    }
     
     // Pattern visualization (remaining space with proper margins)
     bounds.removeFromTop(margin);
@@ -1025,4 +1037,43 @@ void SpawnCloneAudioProcessorEditor::setupSynthesisControls()
     // Initialize live performance control panel
     livePerformancePanel = std::make_unique<spawnclone::ui::LivePerformanceControlPanel>(audioProcessor);
     addAndMakeVisible(*livePerformancePanel);
+}
+
+//==============================================================================
+// Epic 9.2 Story 9.1: Setup Real-time Waveform Visualization
+void SpawnCloneAudioProcessorEditor::setupWaveformDisplay()
+{
+    // Initialize the waveform display component
+    waveformDisplay = std::make_unique<WaveformDisplayComponent>();
+    addAndMakeVisible(*waveformDisplay);
+    
+    // Configure default visualization settings
+    WaveformDisplayComponent::VisualizationSettings settings;
+    settings.mode = WaveformDisplayComponent::Oscilloscope;
+    settings.refreshRate = 60; // 60fps for smooth real-time visualization
+    settings.timeScale = 1.0f;
+    settings.amplitudeScale = 1.0f;
+    settings.showGrid = true;
+    settings.showLabels = true;
+    settings.waveformColour = juce::Colour(0xff00ff88); // Match plugin accent color
+    settings.gridColour = juce::Colour(0xff333333);
+    settings.backgroundColour = juce::Colour(0xff1a1a1a);
+    settings.triggerMode = WaveformDisplayComponent::Auto;
+    settings.triggerLevel = 0.1f;
+    
+    waveformDisplay->setVisualizationSettings(settings);
+    
+    // Set up Epic 7 AI integration callback
+    waveformDisplay->setAIGenerationCallback([this](const std::vector<float>& pattern) {
+        // Forward AI-generated patterns to the pattern manager
+        auto& patternManager = audioProcessor.getPatternManager();
+        // TODO: Convert float pattern to MIDI pattern and add to pattern manager
+        DBG("AI pattern received from waveform display: " << pattern.size() << " samples");
+    });
+    
+    // Connect to audio processor for real-time audio data
+    // This will be called from the audio processor's audio callback
+    audioProcessor.setWaveformDisplay(waveformDisplay.get());
+    
+    DBG("WaveformDisplayComponent initialized with Epic 7 AI integration");
 }
