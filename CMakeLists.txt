@@ -7,6 +7,7 @@ project(SpawnClone VERSION 1.0.0)
 option(BUILD_UI_ONLY "Build only WaveformDisplayComponent tests (skip unfinished audio engine)" ON)
 option(BUILD_PLUGIN "Build the SpawnClone plugin target" OFF)
 option(BUILD_LEGACY_TESTS "Build legacy test targets (temporarily disabled during brownfield)" OFF)
+option(ENABLE_DAEMON_IPC "Enable real daemon process/IPC for ONNXDaemonClient (OFF uses stub/deterministic client)" OFF)
 
 # Set C++ Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -86,6 +87,104 @@ if(BUILD_TESTS)
     target_compile_features(test_audio_engine_core PRIVATE cxx_std_17)
     include(GoogleTest)
     gtest_discover_tests(test_audio_engine_core)
+    add_test(NAME PluginCoreSmokeTest COMMAND test_audio_engine_core)
+
+    # SampleEngine unit tests (header-only implementation)
+    add_executable(test_sample_engine
+        tests/unit/audio_engine_tests/test_SampleEngine.cpp
+    )
+    target_link_libraries(test_sample_engine PRIVATE
+        gtest_main
+        juce::juce_core
+        plugin_core
+    )
+    target_compile_features(test_sample_engine PRIVATE cxx_std_17)
+    gtest_discover_tests(test_sample_engine)
+    add_test(NAME SampleEngineTest COMMAND test_sample_engine)
+
+    # SynthVoice unit tests
+    add_executable(test_synth_voice
+        tests/unit/audio_engine_tests/test_SynthVoice.cpp
+    )
+    target_link_libraries(test_synth_voice PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_synth_voice PRIVATE cxx_std_17)
+    gtest_discover_tests(test_synth_voice)
+    add_test(NAME SynthVoiceTest COMMAND test_synth_voice)
+
+    # EffectsChain unit tests
+    add_executable(test_effects_chain
+        tests/unit/audio_engine_tests/test_EffectsChain.cpp
+    )
+    target_link_libraries(test_effects_chain PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_effects_chain PRIVATE cxx_std_17)
+    gtest_discover_tests(test_effects_chain)
+    add_test(NAME EffectsChainTest COMMAND test_effects_chain)
+
+    # InstrumentLibraryManager unit tests
+    add_executable(test_instrument_library_manager
+        tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp
+    )
+    target_link_libraries(test_instrument_library_manager PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_instrument_library_manager PRIVATE cxx_std_17)
+    gtest_discover_tests(test_instrument_library_manager)
+    add_test(NAME InstrumentLibraryManagerTest COMMAND test_instrument_library_manager)
+
+    # VoiceManager unit tests
+    add_executable(test_voice_manager
+        tests/unit/audio_engine_tests/test_VoiceManager.cpp
+    )
+    target_link_libraries(test_voice_manager PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_voice_manager PRIVATE cxx_std_17)
+    gtest_discover_tests(test_voice_manager)
+    add_test(NAME VoiceManagerTest COMMAND test_voice_manager)
+
+    # SampleEngine file-backed playback tests
+    add_executable(test_sample_engine_fileplayback
+        tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp
+    )
+    target_link_libraries(test_sample_engine_fileplayback PRIVATE
+        plugin_core
+        gtest_main
+        juce::juce_core
+    )
+    target_compile_features(test_sample_engine_fileplayback PRIVATE cxx_std_17)
+    gtest_discover_tests(test_sample_engine_fileplayback)
+    add_test(NAME SampleEngineFilePlaybackTest COMMAND test_sample_engine_fileplayback)
+
+    # ONNXDaemonClient unit tests (Sprint 2 start)
+    add_executable(test_onnx_daemon_client
+        tests/unit/ai/test_ONNXDaemonClient.cpp
+        Source/ai/ONNXDaemonClient.cpp
+    )
+    target_link_libraries(test_onnx_daemon_client PRIVATE
+        gtest_main
+        juce::juce_core
+    )
+    target_include_directories(test_onnx_daemon_client PRIVATE
+        Source
+    )
+    target_compile_features(test_onnx_daemon_client PRIVATE cxx_std_17)
+    gtest_discover_tests(test_onnx_daemon_client)
+    add_test(NAME ONNXDaemonClientTest COMMAND test_onnx_daemon_client)
+    if(ENABLE_DAEMON_IPC)
+        target_compile_definitions(test_onnx_daemon_client PRIVATE ONNX_DAEMON_PROCESS_ENABLED=1)
+    endif()
 endif()
 
 # Add the plugin target
@@ -277,8 +376,6 @@ if(USE_ONNX_RUNTIME)
     endif()
 else()
     message(STATUS "ONNX Runtime disabled - Quality Mode will use fallback")
-endif()
-
 endif()
 
 # Testing Configuration
@@ -845,6 +942,7 @@ target_link_libraries(minimal_debug PRIVATE
 target_compile_features(minimal_debug PRIVATE cxx_std_17)
 target_include_directories(minimal_debug PRIVATE "Source" "Source/ui")
 
+if(BUILD_LEGACY_TESTS)
 # Epic 6 Phase 1: Professional Reverb Demo
 add_executable(epic6_reverb_demo
     epic6_reverb_demo.cpp
@@ -976,6 +1074,9 @@ target_link_libraries(epic8_story8_4_realtime_demo PRIVATE
 target_compile_features(epic8_story8_4_realtime_demo PRIVATE cxx_std_17)
 target_include_directories(epic8_story8_4_realtime_demo PRIVATE "Source")
 
+endif()
+
+if(BUILD_LEGACY_TESTS)
 # Epic 7 Performance Optimization Demo
 add_executable(performance_optimization_demo
     performance_optimization_demo.cpp
@@ -1134,11 +1235,15 @@ target_link_libraries(standalone_performance_test PRIVATE
 
 target_compile_features(standalone_performance_test PRIVATE cxx_std_17)
 target_include_directories(standalone_performance_test PRIVATE "Source")
+endif()
+
+endif()
 
 # Epic 9.3: Tag-Based Sound Pairing System
 # Implementation begins here with intelligent preset recommendation engine
 
 # Production ONNX Daemon Integration Test
+if(BUILD_LEGACY_TESTS)
 add_executable(test_production_integration
     test_production_integration.cpp
     Source/ai/ONNXModelManager.cpp
@@ -1351,6 +1456,8 @@ set_target_properties(test_plugin_live_performance PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     XCODE_SCHEME_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
+
+endif()
 
     #==============================================================================
     # End-to-End Testing Framework

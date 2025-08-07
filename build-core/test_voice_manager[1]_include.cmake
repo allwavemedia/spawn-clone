@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager[1]_tests.cmake")
+else()
+  add_test(test_voice_manager_NOT_BUILT test_voice_manager_NOT_BUILT)
+endif()

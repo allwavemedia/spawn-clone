@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /Users/laurencedoby/Desktop/Development/spawn-clone/build-cor
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/opt/homebrew/bin/ctest $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -189,6 +199,97 @@ test_audio_engine_core/fast:
 .PHONY : test_audio_engine_core/fast
 
 #=============================================================================
+# Target rules for targets named test_sample_engine
+
+# Build rule for target.
+test_sample_engine: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_sample_engine
+.PHONY : test_sample_engine
+
+# fast build rule for target.
+test_sample_engine/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/build
+.PHONY : test_sample_engine/fast
+
+#=============================================================================
+# Target rules for targets named test_synth_voice
+
+# Build rule for target.
+test_synth_voice: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_synth_voice
+.PHONY : test_synth_voice
+
+# fast build rule for target.
+test_synth_voice/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/build
+.PHONY : test_synth_voice/fast
+
+#=============================================================================
+# Target rules for targets named test_effects_chain
+
+# Build rule for target.
+test_effects_chain: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_effects_chain
+.PHONY : test_effects_chain
+
+# fast build rule for target.
+test_effects_chain/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/build
+.PHONY : test_effects_chain/fast
+
+#=============================================================================
+# Target rules for targets named test_instrument_library_manager
+
+# Build rule for target.
+test_instrument_library_manager: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_instrument_library_manager
+.PHONY : test_instrument_library_manager
+
+# fast build rule for target.
+test_instrument_library_manager/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/build
+.PHONY : test_instrument_library_manager/fast
+
+#=============================================================================
+# Target rules for targets named test_voice_manager
+
+# Build rule for target.
+test_voice_manager: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_voice_manager
+.PHONY : test_voice_manager
+
+# fast build rule for target.
+test_voice_manager/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/build
+.PHONY : test_voice_manager/fast
+
+#=============================================================================
+# Target rules for targets named test_sample_engine_fileplayback
+
+# Build rule for target.
+test_sample_engine_fileplayback: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_sample_engine_fileplayback
+.PHONY : test_sample_engine_fileplayback
+
+# fast build rule for target.
+test_sample_engine_fileplayback/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/build
+.PHONY : test_sample_engine_fileplayback/fast
+
+#=============================================================================
+# Target rules for targets named test_onnx_daemon_client
+
+# Build rule for target.
+test_onnx_daemon_client: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_onnx_daemon_client
+.PHONY : test_onnx_daemon_client
+
+# fast build rule for target.
+test_onnx_daemon_client/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/build
+.PHONY : test_onnx_daemon_client/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -246,6 +347,13 @@ Libs/JUCE/modules/juce_core/juce_core.o: Libs/JUCE/modules/juce_core/juce_core.m
 # target to build an object file
 Libs/JUCE/modules/juce_core/juce_core.mm.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core.mm.o
 .PHONY : Libs/JUCE/modules/juce_core/juce_core.mm.o
 
 Libs/JUCE/modules/juce_core/juce_core.i: Libs/JUCE/modules/juce_core/juce_core.mm.i
@@ -254,6 +362,13 @@ Libs/JUCE/modules/juce_core/juce_core.i: Libs/JUCE/modules/juce_core/juce_core.m
 # target to preprocess a source file
 Libs/JUCE/modules/juce_core/juce_core.mm.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core.mm.i
 .PHONY : Libs/JUCE/modules/juce_core/juce_core.mm.i
 
 Libs/JUCE/modules/juce_core/juce_core.s: Libs/JUCE/modules/juce_core/juce_core.mm.s
@@ -262,6 +377,13 @@ Libs/JUCE/modules/juce_core/juce_core.s: Libs/JUCE/modules/juce_core/juce_core.m
 # target to generate assembly for a file
 Libs/JUCE/modules/juce_core/juce_core.mm.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core.mm.s
 .PHONY : Libs/JUCE/modules/juce_core/juce_core.mm.s
 
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.o: Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
@@ -270,6 +392,13 @@ Libs/JUCE/modules/juce_core/juce_core_CompilationTime.o: Libs/JUCE/modules/juce_
 # target to build an object file
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
 .PHONY : Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.o
 
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.i: Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
@@ -278,6 +407,13 @@ Libs/JUCE/modules/juce_core/juce_core_CompilationTime.i: Libs/JUCE/modules/juce_
 # target to preprocess a source file
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
 .PHONY : Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.i
 
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.s: Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
@@ -286,7 +422,38 @@ Libs/JUCE/modules/juce_core/juce_core_CompilationTime.s: Libs/JUCE/modules/juce_
 # target to generate assembly for a file
 Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_audio_engine_core.dir/build.make CMakeFiles/test_audio_engine_core.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
 .PHONY : Libs/JUCE/modules/juce_core/juce_core_CompilationTime.cpp.s
+
+Source/ai/ONNXDaemonClient.o: Source/ai/ONNXDaemonClient.cpp.o
+.PHONY : Source/ai/ONNXDaemonClient.o
+
+# target to build an object file
+Source/ai/ONNXDaemonClient.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Source/ai/ONNXDaemonClient.cpp.o
+.PHONY : Source/ai/ONNXDaemonClient.cpp.o
+
+Source/ai/ONNXDaemonClient.i: Source/ai/ONNXDaemonClient.cpp.i
+.PHONY : Source/ai/ONNXDaemonClient.i
+
+# target to preprocess a source file
+Source/ai/ONNXDaemonClient.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Source/ai/ONNXDaemonClient.cpp.i
+.PHONY : Source/ai/ONNXDaemonClient.cpp.i
+
+Source/ai/ONNXDaemonClient.s: Source/ai/ONNXDaemonClient.cpp.s
+.PHONY : Source/ai/ONNXDaemonClient.s
+
+# target to generate assembly for a file
+Source/ai/ONNXDaemonClient.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/Source/ai/ONNXDaemonClient.cpp.s
+.PHONY : Source/ai/ONNXDaemonClient.cpp.s
 
 Source/plugin_core/plugin_core_stub.o: Source/plugin_core/plugin_core_stub.cpp.o
 .PHONY : Source/plugin_core/plugin_core_stub.o
@@ -311,6 +478,174 @@ Source/plugin_core/plugin_core_stub.s: Source/plugin_core/plugin_core_stub.cpp.s
 Source/plugin_core/plugin_core_stub.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/plugin_core.dir/build.make CMakeFiles/plugin_core.dir/Source/plugin_core/plugin_core_stub.cpp.s
 .PHONY : Source/plugin_core/plugin_core_stub.cpp.s
+
+tests/unit/ai/test_ONNXDaemonClient.o: tests/unit/ai/test_ONNXDaemonClient.cpp.o
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.o
+
+# target to build an object file
+tests/unit/ai/test_ONNXDaemonClient.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/tests/unit/ai/test_ONNXDaemonClient.cpp.o
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.cpp.o
+
+tests/unit/ai/test_ONNXDaemonClient.i: tests/unit/ai/test_ONNXDaemonClient.cpp.i
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.i
+
+# target to preprocess a source file
+tests/unit/ai/test_ONNXDaemonClient.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/tests/unit/ai/test_ONNXDaemonClient.cpp.i
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.cpp.i
+
+tests/unit/ai/test_ONNXDaemonClient.s: tests/unit/ai/test_ONNXDaemonClient.cpp.s
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.s
+
+# target to generate assembly for a file
+tests/unit/ai/test_ONNXDaemonClient.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_onnx_daemon_client.dir/build.make CMakeFiles/test_onnx_daemon_client.dir/tests/unit/ai/test_ONNXDaemonClient.cpp.s
+.PHONY : tests/unit/ai/test_ONNXDaemonClient.cpp.s
+
+tests/unit/audio_engine_tests/test_EffectsChain.o: tests/unit/audio_engine_tests/test_EffectsChain.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_EffectsChain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/tests/unit/audio_engine_tests/test_EffectsChain.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.cpp.o
+
+tests/unit/audio_engine_tests/test_EffectsChain.i: tests/unit/audio_engine_tests/test_EffectsChain.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_EffectsChain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/tests/unit/audio_engine_tests/test_EffectsChain.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.cpp.i
+
+tests/unit/audio_engine_tests/test_EffectsChain.s: tests/unit/audio_engine_tests/test_EffectsChain.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_EffectsChain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_effects_chain.dir/build.make CMakeFiles/test_effects_chain.dir/tests/unit/audio_engine_tests/test_EffectsChain.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_EffectsChain.cpp.s
+
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.o: tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.o
+
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.i: tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.i
+
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.s: tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_instrument_library_manager.dir/build.make CMakeFiles/test_instrument_library_manager.dir/tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_InstrumentLibraryManager.cpp.s
+
+tests/unit/audio_engine_tests/test_SampleEngine.o: tests/unit/audio_engine_tests/test_SampleEngine.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_SampleEngine.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/tests/unit/audio_engine_tests/test_SampleEngine.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.cpp.o
+
+tests/unit/audio_engine_tests/test_SampleEngine.i: tests/unit/audio_engine_tests/test_SampleEngine.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_SampleEngine.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/tests/unit/audio_engine_tests/test_SampleEngine.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.cpp.i
+
+tests/unit/audio_engine_tests/test_SampleEngine.s: tests/unit/audio_engine_tests/test_SampleEngine.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_SampleEngine.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine.dir/build.make CMakeFiles/test_sample_engine.dir/tests/unit/audio_engine_tests/test_SampleEngine.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine.cpp.s
+
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.o: tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.o
+
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.i: tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.i
+
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.s: tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sample_engine_fileplayback.dir/build.make CMakeFiles/test_sample_engine_fileplayback.dir/tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.cpp.s
+
+tests/unit/audio_engine_tests/test_SynthVoice.o: tests/unit/audio_engine_tests/test_SynthVoice.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_SynthVoice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/tests/unit/audio_engine_tests/test_SynthVoice.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.cpp.o
+
+tests/unit/audio_engine_tests/test_SynthVoice.i: tests/unit/audio_engine_tests/test_SynthVoice.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_SynthVoice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/tests/unit/audio_engine_tests/test_SynthVoice.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.cpp.i
+
+tests/unit/audio_engine_tests/test_SynthVoice.s: tests/unit/audio_engine_tests/test_SynthVoice.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_SynthVoice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_synth_voice.dir/build.make CMakeFiles/test_synth_voice.dir/tests/unit/audio_engine_tests/test_SynthVoice.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_SynthVoice.cpp.s
+
+tests/unit/audio_engine_tests/test_VoiceManager.o: tests/unit/audio_engine_tests/test_VoiceManager.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.o
+
+# target to build an object file
+tests/unit/audio_engine_tests/test_VoiceManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/tests/unit/audio_engine_tests/test_VoiceManager.cpp.o
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.cpp.o
+
+tests/unit/audio_engine_tests/test_VoiceManager.i: tests/unit/audio_engine_tests/test_VoiceManager.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.i
+
+# target to preprocess a source file
+tests/unit/audio_engine_tests/test_VoiceManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/tests/unit/audio_engine_tests/test_VoiceManager.cpp.i
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.cpp.i
+
+tests/unit/audio_engine_tests/test_VoiceManager.s: tests/unit/audio_engine_tests/test_VoiceManager.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.s
+
+# target to generate assembly for a file
+tests/unit/audio_engine_tests/test_VoiceManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_voice_manager.dir/build.make CMakeFiles/test_voice_manager.dir/tests/unit/audio_engine_tests/test_VoiceManager.cpp.s
+.PHONY : tests/unit/audio_engine_tests/test_VoiceManager.cpp.s
 
 tests/unit/audio_engine_tests/test_plugin_core_smoke.o: tests/unit/audio_engine_tests/test_plugin_core_smoke.cpp.o
 .PHONY : tests/unit/audio_engine_tests/test_plugin_core_smoke.o
@@ -348,21 +683,53 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... gmock"
 	@echo "... gmock_main"
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... plugin_core"
 	@echo "... test_audio_engine_core"
+	@echo "... test_effects_chain"
+	@echo "... test_instrument_library_manager"
+	@echo "... test_onnx_daemon_client"
+	@echo "... test_sample_engine"
+	@echo "... test_sample_engine_fileplayback"
+	@echo "... test_synth_voice"
+	@echo "... test_voice_manager"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core.o"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core.i"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core.s"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core_CompilationTime.o"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core_CompilationTime.i"
 	@echo "... Libs/JUCE/modules/juce_core/juce_core_CompilationTime.s"
+	@echo "... Source/ai/ONNXDaemonClient.o"
+	@echo "... Source/ai/ONNXDaemonClient.i"
+	@echo "... Source/ai/ONNXDaemonClient.s"
 	@echo "... Source/plugin_core/plugin_core_stub.o"
 	@echo "... Source/plugin_core/plugin_core_stub.i"
 	@echo "... Source/plugin_core/plugin_core_stub.s"
+	@echo "... tests/unit/ai/test_ONNXDaemonClient.o"
+	@echo "... tests/unit/ai/test_ONNXDaemonClient.i"
+	@echo "... tests/unit/ai/test_ONNXDaemonClient.s"
+	@echo "... tests/unit/audio_engine_tests/test_EffectsChain.o"
+	@echo "... tests/unit/audio_engine_tests/test_EffectsChain.i"
+	@echo "... tests/unit/audio_engine_tests/test_EffectsChain.s"
+	@echo "... tests/unit/audio_engine_tests/test_InstrumentLibraryManager.o"
+	@echo "... tests/unit/audio_engine_tests/test_InstrumentLibraryManager.i"
+	@echo "... tests/unit/audio_engine_tests/test_InstrumentLibraryManager.s"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine.o"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine.i"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine.s"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.o"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.i"
+	@echo "... tests/unit/audio_engine_tests/test_SampleEngine_FilePlayback.s"
+	@echo "... tests/unit/audio_engine_tests/test_SynthVoice.o"
+	@echo "... tests/unit/audio_engine_tests/test_SynthVoice.i"
+	@echo "... tests/unit/audio_engine_tests/test_SynthVoice.s"
+	@echo "... tests/unit/audio_engine_tests/test_VoiceManager.o"
+	@echo "... tests/unit/audio_engine_tests/test_VoiceManager.i"
+	@echo "... tests/unit/audio_engine_tests/test_VoiceManager.s"
 	@echo "... tests/unit/audio_engine_tests/test_plugin_core_smoke.o"
 	@echo "... tests/unit/audio_engine_tests/test_plugin_core_smoke.i"
 	@echo "... tests/unit/audio_engine_tests/test_plugin_core_smoke.s"

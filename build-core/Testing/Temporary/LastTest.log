@@ -1,3 +1,1133 @@
-Start testing: Aug 07 15:30 EDT
+Start testing: Aug 07 19:32 EDT
 ----------------------------------------------------------
-End testing: Aug 07 15:30 EDT
+1/39 Testing: PluginCoreSmokeTest.InitDoesNotThrow
+1/39 Test: PluginCoreSmokeTest.InitDoesNotThrow
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core" "--gtest_filter=PluginCoreSmokeTest.InitDoesNotThrow" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"PluginCoreSmokeTest.InitDoesNotThrow" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PluginCoreSmokeTest.InitDoesNotThrow
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PluginCoreSmokeTest
+[ RUN      ] PluginCoreSmokeTest.InitDoesNotThrow
+[       OK ] PluginCoreSmokeTest.InitDoesNotThrow (0 ms)
+[----------] 1 test from PluginCoreSmokeTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"PluginCoreSmokeTest.InitDoesNotThrow" end time: Aug 07 19:32 EDT
+"PluginCoreSmokeTest.InitDoesNotThrow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/39 Testing: PluginCoreSmokeTest.Sanity
+2/39 Test: PluginCoreSmokeTest.Sanity
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core" "--gtest_filter=PluginCoreSmokeTest.Sanity" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"PluginCoreSmokeTest.Sanity" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PluginCoreSmokeTest.Sanity
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PluginCoreSmokeTest
+[ RUN      ] PluginCoreSmokeTest.Sanity
+[       OK ] PluginCoreSmokeTest.Sanity (0 ms)
+[----------] 1 test from PluginCoreSmokeTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"PluginCoreSmokeTest.Sanity" end time: Aug 07 19:32 EDT
+"PluginCoreSmokeTest.Sanity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/39 Testing: SampleEngineTest.DefaultSampleRateIsPositive
+3/39 Test: SampleEngineTest.DefaultSampleRateIsPositive
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine" "--gtest_filter=SampleEngineTest.DefaultSampleRateIsPositive" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineTest.DefaultSampleRateIsPositive" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SampleEngineTest.DefaultSampleRateIsPositive
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineTest
+[ RUN      ] SampleEngineTest.DefaultSampleRateIsPositive
+[       OK ] SampleEngineTest.DefaultSampleRateIsPositive (0 ms)
+[----------] 1 test from SampleEngineTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineTest.DefaultSampleRateIsPositive" end time: Aug 07 19:32 EDT
+"SampleEngineTest.DefaultSampleRateIsPositive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/39 Testing: SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize
+4/39 Test: SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine" "--gtest_filter=SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineTest
+[ RUN      ] SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize
+[       OK ] SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize (0 ms)
+[----------] 1 test from SampleEngineTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize" end time: Aug 07 19:32 EDT
+"SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/39 Testing: SampleEngineTest.PhaseContinuityBetweenCalls
+5/39 Test: SampleEngineTest.PhaseContinuityBetweenCalls
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine" "--gtest_filter=SampleEngineTest.PhaseContinuityBetweenCalls" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineTest.PhaseContinuityBetweenCalls" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SampleEngineTest.PhaseContinuityBetweenCalls
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineTest
+[ RUN      ] SampleEngineTest.PhaseContinuityBetweenCalls
+[       OK ] SampleEngineTest.PhaseContinuityBetweenCalls (0 ms)
+[----------] 1 test from SampleEngineTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineTest.PhaseContinuityBetweenCalls" end time: Aug 07 19:32 EDT
+"SampleEngineTest.PhaseContinuityBetweenCalls" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/39 Testing: SampleEngineTest.ResetPhaseResetsWaveformStart
+6/39 Test: SampleEngineTest.ResetPhaseResetsWaveformStart
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine" "--gtest_filter=SampleEngineTest.ResetPhaseResetsWaveformStart" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineTest.ResetPhaseResetsWaveformStart" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SampleEngineTest.ResetPhaseResetsWaveformStart
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineTest
+[ RUN      ] SampleEngineTest.ResetPhaseResetsWaveformStart
+[       OK ] SampleEngineTest.ResetPhaseResetsWaveformStart (0 ms)
+[----------] 1 test from SampleEngineTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineTest.ResetPhaseResetsWaveformStart" end time: Aug 07 19:32 EDT
+"SampleEngineTest.ResetPhaseResetsWaveformStart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/39 Testing: SynthVoiceTest.DefaultsAndSampleRatePropagation
+7/39 Test: SynthVoiceTest.DefaultsAndSampleRatePropagation
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice" "--gtest_filter=SynthVoiceTest.DefaultsAndSampleRatePropagation" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest.DefaultsAndSampleRatePropagation" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SynthVoiceTest.DefaultsAndSampleRatePropagation
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.DefaultsAndSampleRatePropagation
+[       OK ] SynthVoiceTest.DefaultsAndSampleRatePropagation (0 ms)
+[----------] 1 test from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest.DefaultsAndSampleRatePropagation" end time: Aug 07 19:32 EDT
+"SynthVoiceTest.DefaultsAndSampleRatePropagation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/39 Testing: SynthVoiceTest.NoteOnActivatesAndProducesAudio
+8/39 Test: SynthVoiceTest.NoteOnActivatesAndProducesAudio
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice" "--gtest_filter=SynthVoiceTest.NoteOnActivatesAndProducesAudio" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest.NoteOnActivatesAndProducesAudio" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SynthVoiceTest.NoteOnActivatesAndProducesAudio
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.NoteOnActivatesAndProducesAudio
+[       OK ] SynthVoiceTest.NoteOnActivatesAndProducesAudio (0 ms)
+[----------] 1 test from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest.NoteOnActivatesAndProducesAudio" end time: Aug 07 19:32 EDT
+"SynthVoiceTest.NoteOnActivatesAndProducesAudio" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/39 Testing: SynthVoiceTest.NoteOffSilencesAudio
+9/39 Test: SynthVoiceTest.NoteOffSilencesAudio
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice" "--gtest_filter=SynthVoiceTest.NoteOffSilencesAudio" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest.NoteOffSilencesAudio" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SynthVoiceTest.NoteOffSilencesAudio
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.NoteOffSilencesAudio
+[       OK ] SynthVoiceTest.NoteOffSilencesAudio (0 ms)
+[----------] 1 test from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest.NoteOffSilencesAudio" end time: Aug 07 19:32 EDT
+"SynthVoiceTest.NoteOffSilencesAudio" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/39 Testing: SynthVoiceTest.FrequencyRoughlyTracksMidiNote
+10/39 Test: SynthVoiceTest.FrequencyRoughlyTracksMidiNote
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice" "--gtest_filter=SynthVoiceTest.FrequencyRoughlyTracksMidiNote" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest.FrequencyRoughlyTracksMidiNote" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SynthVoiceTest.FrequencyRoughlyTracksMidiNote
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.FrequencyRoughlyTracksMidiNote
+[       OK ] SynthVoiceTest.FrequencyRoughlyTracksMidiNote (0 ms)
+[----------] 1 test from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest.FrequencyRoughlyTracksMidiNote" end time: Aug 07 19:32 EDT
+"SynthVoiceTest.FrequencyRoughlyTracksMidiNote" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/39 Testing: SynthVoiceTest.ResetPhaseResetsWaveStart
+11/39 Test: SynthVoiceTest.ResetPhaseResetsWaveStart
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice" "--gtest_filter=SynthVoiceTest.ResetPhaseResetsWaveStart" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest.ResetPhaseResetsWaveStart" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SynthVoiceTest.ResetPhaseResetsWaveStart
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.ResetPhaseResetsWaveStart
+[       OK ] SynthVoiceTest.ResetPhaseResetsWaveStart (0 ms)
+[----------] 1 test from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest.ResetPhaseResetsWaveStart" end time: Aug 07 19:32 EDT
+"SynthVoiceTest.ResetPhaseResetsWaveStart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/39 Testing: EffectsChainTest.DefaultsAndSampleRate
+12/39 Test: EffectsChainTest.DefaultsAndSampleRate
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain" "--gtest_filter=EffectsChainTest.DefaultsAndSampleRate" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest.DefaultsAndSampleRate" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = EffectsChainTest.DefaultsAndSampleRate
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from EffectsChainTest
+[ RUN      ] EffectsChainTest.DefaultsAndSampleRate
+[       OK ] EffectsChainTest.DefaultsAndSampleRate (0 ms)
+[----------] 1 test from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest.DefaultsAndSampleRate" end time: Aug 07 19:32 EDT
+"EffectsChainTest.DefaultsAndSampleRate" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/39 Testing: EffectsChainTest.GainOnlyAppliesApproximately
+13/39 Test: EffectsChainTest.GainOnlyAppliesApproximately
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain" "--gtest_filter=EffectsChainTest.GainOnlyAppliesApproximately" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest.GainOnlyAppliesApproximately" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = EffectsChainTest.GainOnlyAppliesApproximately
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from EffectsChainTest
+[ RUN      ] EffectsChainTest.GainOnlyAppliesApproximately
+[       OK ] EffectsChainTest.GainOnlyAppliesApproximately (0 ms)
+[----------] 1 test from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest.GainOnlyAppliesApproximately" end time: Aug 07 19:32 EDT
+"EffectsChainTest.GainOnlyAppliesApproximately" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/39 Testing: EffectsChainTest.LowpassAttenuatesHighFrequencies
+14/39 Test: EffectsChainTest.LowpassAttenuatesHighFrequencies
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain" "--gtest_filter=EffectsChainTest.LowpassAttenuatesHighFrequencies" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest.LowpassAttenuatesHighFrequencies" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = EffectsChainTest.LowpassAttenuatesHighFrequencies
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from EffectsChainTest
+[ RUN      ] EffectsChainTest.LowpassAttenuatesHighFrequencies
+[       OK ] EffectsChainTest.LowpassAttenuatesHighFrequencies (0 ms)
+[----------] 1 test from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest.LowpassAttenuatesHighFrequencies" end time: Aug 07 19:32 EDT
+"EffectsChainTest.LowpassAttenuatesHighFrequencies" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/39 Testing: EffectsChainTest.BypassSkipsProcessing
+15/39 Test: EffectsChainTest.BypassSkipsProcessing
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain" "--gtest_filter=EffectsChainTest.BypassSkipsProcessing" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest.BypassSkipsProcessing" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = EffectsChainTest.BypassSkipsProcessing
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from EffectsChainTest
+[ RUN      ] EffectsChainTest.BypassSkipsProcessing
+[       OK ] EffectsChainTest.BypassSkipsProcessing (0 ms)
+[----------] 1 test from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest.BypassSkipsProcessing" end time: Aug 07 19:32 EDT
+"EffectsChainTest.BypassSkipsProcessing" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/39 Testing: EffectsChainTest.ResetClearsFilterState
+16/39 Test: EffectsChainTest.ResetClearsFilterState
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain" "--gtest_filter=EffectsChainTest.ResetClearsFilterState" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest.ResetClearsFilterState" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = EffectsChainTest.ResetClearsFilterState
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from EffectsChainTest
+[ RUN      ] EffectsChainTest.ResetClearsFilterState
+[       OK ] EffectsChainTest.ResetClearsFilterState (0 ms)
+[----------] 1 test from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest.ResetClearsFilterState" end time: Aug 07 19:32 EDT
+"EffectsChainTest.ResetClearsFilterState" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/39 Testing: InstrumentLibraryManagerTest.StartsEmptyAndClearWorks
+17/39 Test: InstrumentLibraryManagerTest.StartsEmptyAndClearWorks
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager" "--gtest_filter=InstrumentLibraryManagerTest.StartsEmptyAndClearWorks" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest.StartsEmptyAndClearWorks" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = InstrumentLibraryManagerTest.StartsEmptyAndClearWorks
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.StartsEmptyAndClearWorks
+[       OK ] InstrumentLibraryManagerTest.StartsEmptyAndClearWorks (0 ms)
+[----------] 1 test from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest.StartsEmptyAndClearWorks" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest.StartsEmptyAndClearWorks" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/39 Testing: InstrumentLibraryManagerTest.RegisterInsertAndUpdate
+18/39 Test: InstrumentLibraryManagerTest.RegisterInsertAndUpdate
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager" "--gtest_filter=InstrumentLibraryManagerTest.RegisterInsertAndUpdate" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest.RegisterInsertAndUpdate" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = InstrumentLibraryManagerTest.RegisterInsertAndUpdate
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.RegisterInsertAndUpdate
+[       OK ] InstrumentLibraryManagerTest.RegisterInsertAndUpdate (0 ms)
+[----------] 1 test from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest.RegisterInsertAndUpdate" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest.RegisterInsertAndUpdate" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/39 Testing: InstrumentLibraryManagerTest.ListIsSortedByName
+19/39 Test: InstrumentLibraryManagerTest.ListIsSortedByName
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager" "--gtest_filter=InstrumentLibraryManagerTest.ListIsSortedByName" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest.ListIsSortedByName" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = InstrumentLibraryManagerTest.ListIsSortedByName
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.ListIsSortedByName
+[       OK ] InstrumentLibraryManagerTest.ListIsSortedByName (0 ms)
+[----------] 1 test from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest.ListIsSortedByName" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest.ListIsSortedByName" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/39 Testing: InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive
+20/39 Test: InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager" "--gtest_filter=InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive
+[       OK ] InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive (0 ms)
+[----------] 1 test from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/39 Testing: InstrumentLibraryManagerTest.RemoveById
+21/39 Test: InstrumentLibraryManagerTest.RemoveById
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager" "--gtest_filter=InstrumentLibraryManagerTest.RemoveById" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest.RemoveById" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = InstrumentLibraryManagerTest.RemoveById
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.RemoveById
+[       OK ] InstrumentLibraryManagerTest.RemoveById (0 ms)
+[----------] 1 test from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest.RemoveById" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest.RemoveById" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/39 Testing: VoiceManagerTest.CapacityAndSampleRatePropagation
+22/39 Test: VoiceManagerTest.CapacityAndSampleRatePropagation
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager" "--gtest_filter=VoiceManagerTest.CapacityAndSampleRatePropagation" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest.CapacityAndSampleRatePropagation" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = VoiceManagerTest.CapacityAndSampleRatePropagation
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.CapacityAndSampleRatePropagation
+[       OK ] VoiceManagerTest.CapacityAndSampleRatePropagation (0 ms)
+[----------] 1 test from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest.CapacityAndSampleRatePropagation" end time: Aug 07 19:32 EDT
+"VoiceManagerTest.CapacityAndSampleRatePropagation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/39 Testing: VoiceManagerTest.AllocateUpToCapacity
+23/39 Test: VoiceManagerTest.AllocateUpToCapacity
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager" "--gtest_filter=VoiceManagerTest.AllocateUpToCapacity" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest.AllocateUpToCapacity" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = VoiceManagerTest.AllocateUpToCapacity
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.AllocateUpToCapacity
+[       OK ] VoiceManagerTest.AllocateUpToCapacity (0 ms)
+[----------] 1 test from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest.AllocateUpToCapacity" end time: Aug 07 19:32 EDT
+"VoiceManagerTest.AllocateUpToCapacity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/39 Testing: VoiceManagerTest.StealsOldestWhenFull
+24/39 Test: VoiceManagerTest.StealsOldestWhenFull
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager" "--gtest_filter=VoiceManagerTest.StealsOldestWhenFull" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest.StealsOldestWhenFull" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = VoiceManagerTest.StealsOldestWhenFull
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.StealsOldestWhenFull
+[       OK ] VoiceManagerTest.StealsOldestWhenFull (0 ms)
+[----------] 1 test from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest.StealsOldestWhenFull" end time: Aug 07 19:32 EDT
+"VoiceManagerTest.StealsOldestWhenFull" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/39 Testing: VoiceManagerTest.MixProducesSignalWhenActive
+25/39 Test: VoiceManagerTest.MixProducesSignalWhenActive
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager" "--gtest_filter=VoiceManagerTest.MixProducesSignalWhenActive" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest.MixProducesSignalWhenActive" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = VoiceManagerTest.MixProducesSignalWhenActive
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.MixProducesSignalWhenActive
+[       OK ] VoiceManagerTest.MixProducesSignalWhenActive (0 ms)
+[----------] 1 test from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest.MixProducesSignalWhenActive" end time: Aug 07 19:32 EDT
+"VoiceManagerTest.MixProducesSignalWhenActive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/39 Testing: VoiceManagerTest.NoteOffReducesActiveCount
+26/39 Test: VoiceManagerTest.NoteOffReducesActiveCount
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager" "--gtest_filter=VoiceManagerTest.NoteOffReducesActiveCount" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest.NoteOffReducesActiveCount" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = VoiceManagerTest.NoteOffReducesActiveCount
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.NoteOffReducesActiveCount
+[       OK ] VoiceManagerTest.NoteOffReducesActiveCount (0 ms)
+[----------] 1 test from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest.NoteOffReducesActiveCount" end time: Aug 07 19:32 EDT
+"VoiceManagerTest.NoteOffReducesActiveCount" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/39 Testing: SampleEngineFilePlaybackTest.LoadFromTextFileAndRender
+27/39 Test: SampleEngineFilePlaybackTest.LoadFromTextFileAndRender
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine_fileplayback" "--gtest_filter=SampleEngineFilePlaybackTest.LoadFromTextFileAndRender" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineFilePlaybackTest.LoadFromTextFileAndRender" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = SampleEngineFilePlaybackTest.LoadFromTextFileAndRender
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineFilePlaybackTest
+[ RUN      ] SampleEngineFilePlaybackTest.LoadFromTextFileAndRender
+[       OK ] SampleEngineFilePlaybackTest.LoadFromTextFileAndRender (0 ms)
+[----------] 1 test from SampleEngineFilePlaybackTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineFilePlaybackTest.LoadFromTextFileAndRender" end time: Aug 07 19:32 EDT
+"SampleEngineFilePlaybackTest.LoadFromTextFileAndRender" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/39 Testing: ONNXDaemonClientTest.LifecycleAndStatus
+28/39 Test: ONNXDaemonClientTest.LifecycleAndStatus
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client" "--gtest_filter=ONNXDaemonClientTest.LifecycleAndStatus" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"ONNXDaemonClientTest.LifecycleAndStatus" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = ONNXDaemonClientTest.LifecycleAndStatus
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ONNXDaemonClientTest
+[ RUN      ] ONNXDaemonClientTest.LifecycleAndStatus
+[       OK ] ONNXDaemonClientTest.LifecycleAndStatus (0 ms)
+[----------] 1 test from ONNXDaemonClientTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"ONNXDaemonClientTest.LifecycleAndStatus" end time: Aug 07 19:32 EDT
+"ONNXDaemonClientTest.LifecycleAndStatus" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/39 Testing: ONNXDaemonClientTest.LoadModelRequiresRunning
+29/39 Test: ONNXDaemonClientTest.LoadModelRequiresRunning
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client" "--gtest_filter=ONNXDaemonClientTest.LoadModelRequiresRunning" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"ONNXDaemonClientTest.LoadModelRequiresRunning" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = ONNXDaemonClientTest.LoadModelRequiresRunning
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ONNXDaemonClientTest
+[ RUN      ] ONNXDaemonClientTest.LoadModelRequiresRunning
+[       OK ] ONNXDaemonClientTest.LoadModelRequiresRunning (0 ms)
+[----------] 1 test from ONNXDaemonClientTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"ONNXDaemonClientTest.LoadModelRequiresRunning" end time: Aug 07 19:32 EDT
+"ONNXDaemonClientTest.LoadModelRequiresRunning" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/39 Testing: ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg
+30/39 Test: ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client" "--gtest_filter=ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ONNXDaemonClientTest
+[ RUN      ] ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg
+[       OK ] ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg (0 ms)
+[----------] 1 test from ONNXDaemonClientTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg" end time: Aug 07 19:32 EDT
+"ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/39 Testing: ONNXDaemonClientTest.RequestsInFlightChangesDuringCall
+31/39 Test: ONNXDaemonClientTest.RequestsInFlightChangesDuringCall
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client" "--gtest_filter=ONNXDaemonClientTest.RequestsInFlightChangesDuringCall" "--gtest_also_run_disabled_tests"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"ONNXDaemonClientTest.RequestsInFlightChangesDuringCall" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = ONNXDaemonClientTest.RequestsInFlightChangesDuringCall
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ONNXDaemonClientTest
+[ RUN      ] ONNXDaemonClientTest.RequestsInFlightChangesDuringCall
+[       OK ] ONNXDaemonClientTest.RequestsInFlightChangesDuringCall (0 ms)
+[----------] 1 test from ONNXDaemonClientTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"ONNXDaemonClientTest.RequestsInFlightChangesDuringCall" end time: Aug 07 19:32 EDT
+"ONNXDaemonClientTest.RequestsInFlightChangesDuringCall" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/39 Testing: PluginCoreSmokeTest
+32/39 Test: PluginCoreSmokeTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_audio_engine_core"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"PluginCoreSmokeTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 2 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 2 tests from PluginCoreSmokeTest
+[ RUN      ] PluginCoreSmokeTest.InitDoesNotThrow
+[       OK ] PluginCoreSmokeTest.InitDoesNotThrow (0 ms)
+[ RUN      ] PluginCoreSmokeTest.Sanity
+[       OK ] PluginCoreSmokeTest.Sanity (0 ms)
+[----------] 2 tests from PluginCoreSmokeTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 2 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 2 tests.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"PluginCoreSmokeTest" end time: Aug 07 19:32 EDT
+"PluginCoreSmokeTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/39 Testing: SampleEngineTest
+33/39 Test: SampleEngineTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from SampleEngineTest
+[ RUN      ] SampleEngineTest.DefaultSampleRateIsPositive
+[       OK ] SampleEngineTest.DefaultSampleRateIsPositive (0 ms)
+[ RUN      ] SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize
+[       OK ] SampleEngineTest.RenderSineProducesNonZeroAndRespectsSize (0 ms)
+[ RUN      ] SampleEngineTest.PhaseContinuityBetweenCalls
+[       OK ] SampleEngineTest.PhaseContinuityBetweenCalls (0 ms)
+[ RUN      ] SampleEngineTest.ResetPhaseResetsWaveformStart
+[       OK ] SampleEngineTest.ResetPhaseResetsWaveformStart (0 ms)
+[----------] 4 tests from SampleEngineTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 4 tests.
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineTest" end time: Aug 07 19:32 EDT
+"SampleEngineTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/39 Testing: SynthVoiceTest
+34/39 Test: SynthVoiceTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_synth_voice"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SynthVoiceTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from SynthVoiceTest
+[ RUN      ] SynthVoiceTest.DefaultsAndSampleRatePropagation
+[       OK ] SynthVoiceTest.DefaultsAndSampleRatePropagation (0 ms)
+[ RUN      ] SynthVoiceTest.NoteOnActivatesAndProducesAudio
+[       OK ] SynthVoiceTest.NoteOnActivatesAndProducesAudio (0 ms)
+[ RUN      ] SynthVoiceTest.NoteOffSilencesAudio
+[       OK ] SynthVoiceTest.NoteOffSilencesAudio (0 ms)
+[ RUN      ] SynthVoiceTest.FrequencyRoughlyTracksMidiNote
+[       OK ] SynthVoiceTest.FrequencyRoughlyTracksMidiNote (0 ms)
+[ RUN      ] SynthVoiceTest.ResetPhaseResetsWaveStart
+[       OK ] SynthVoiceTest.ResetPhaseResetsWaveStart (0 ms)
+[----------] 5 tests from SynthVoiceTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 5 tests.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"SynthVoiceTest" end time: Aug 07 19:32 EDT
+"SynthVoiceTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/39 Testing: EffectsChainTest
+35/39 Test: EffectsChainTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"EffectsChainTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from EffectsChainTest
+[ RUN      ] EffectsChainTest.DefaultsAndSampleRate
+[       OK ] EffectsChainTest.DefaultsAndSampleRate (0 ms)
+[ RUN      ] EffectsChainTest.GainOnlyAppliesApproximately
+[       OK ] EffectsChainTest.GainOnlyAppliesApproximately (0 ms)
+[ RUN      ] EffectsChainTest.LowpassAttenuatesHighFrequencies
+[       OK ] EffectsChainTest.LowpassAttenuatesHighFrequencies (0 ms)
+[ RUN      ] EffectsChainTest.BypassSkipsProcessing
+[       OK ] EffectsChainTest.BypassSkipsProcessing (0 ms)
+[ RUN      ] EffectsChainTest.ResetClearsFilterState
+[       OK ] EffectsChainTest.ResetClearsFilterState (0 ms)
+[----------] 5 tests from EffectsChainTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 5 tests.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"EffectsChainTest" end time: Aug 07 19:32 EDT
+"EffectsChainTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/39 Testing: InstrumentLibraryManagerTest
+36/39 Test: InstrumentLibraryManagerTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_instrument_library_manager"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"InstrumentLibraryManagerTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from InstrumentLibraryManagerTest
+[ RUN      ] InstrumentLibraryManagerTest.StartsEmptyAndClearWorks
+[       OK ] InstrumentLibraryManagerTest.StartsEmptyAndClearWorks (0 ms)
+[ RUN      ] InstrumentLibraryManagerTest.RegisterInsertAndUpdate
+[       OK ] InstrumentLibraryManagerTest.RegisterInsertAndUpdate (0 ms)
+[ RUN      ] InstrumentLibraryManagerTest.ListIsSortedByName
+[       OK ] InstrumentLibraryManagerTest.ListIsSortedByName (0 ms)
+[ RUN      ] InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive
+[       OK ] InstrumentLibraryManagerTest.FindByTagIsCaseInsensitive (0 ms)
+[ RUN      ] InstrumentLibraryManagerTest.RemoveById
+[       OK ] InstrumentLibraryManagerTest.RemoveById (0 ms)
+[----------] 5 tests from InstrumentLibraryManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 5 tests.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"InstrumentLibraryManagerTest" end time: Aug 07 19:32 EDT
+"InstrumentLibraryManagerTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/39 Testing: VoiceManagerTest
+37/39 Test: VoiceManagerTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_voice_manager"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"VoiceManagerTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from VoiceManagerTest
+[ RUN      ] VoiceManagerTest.CapacityAndSampleRatePropagation
+[       OK ] VoiceManagerTest.CapacityAndSampleRatePropagation (0 ms)
+[ RUN      ] VoiceManagerTest.AllocateUpToCapacity
+[       OK ] VoiceManagerTest.AllocateUpToCapacity (0 ms)
+[ RUN      ] VoiceManagerTest.StealsOldestWhenFull
+[       OK ] VoiceManagerTest.StealsOldestWhenFull (0 ms)
+[ RUN      ] VoiceManagerTest.MixProducesSignalWhenActive
+[       OK ] VoiceManagerTest.MixProducesSignalWhenActive (0 ms)
+[ RUN      ] VoiceManagerTest.NoteOffReducesActiveCount
+[       OK ] VoiceManagerTest.NoteOffReducesActiveCount (0 ms)
+[----------] 5 tests from VoiceManagerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 5 tests.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"VoiceManagerTest" end time: Aug 07 19:32 EDT
+"VoiceManagerTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/39 Testing: SampleEngineFilePlaybackTest
+38/39 Test: SampleEngineFilePlaybackTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_sample_engine_fileplayback"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"SampleEngineFilePlaybackTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from SampleEngineFilePlaybackTest
+[ RUN      ] SampleEngineFilePlaybackTest.LoadFromTextFileAndRender
+[       OK ] SampleEngineFilePlaybackTest.LoadFromTextFileAndRender (0 ms)
+[----------] 1 test from SampleEngineFilePlaybackTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"SampleEngineFilePlaybackTest" end time: Aug 07 19:32 EDT
+"SampleEngineFilePlaybackTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/39 Testing: ONNXDaemonClientTest
+39/39 Test: ONNXDaemonClientTest
+Command: "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client"
+Directory: /Users/laurencedoby/Desktop/Development/spawn-clone/build-core
+"ONNXDaemonClientTest" start time: Aug 07 19:32 EDT
+Output:
+----------------------------------------------------------
+JUCE v8.0.8
+Running main() from /Users/laurencedoby/Desktop/Development/spawn-clone/build-core/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from ONNXDaemonClientTest
+[ RUN      ] ONNXDaemonClientTest.LifecycleAndStatus
+[       OK ] ONNXDaemonClientTest.LifecycleAndStatus (0 ms)
+[ RUN      ] ONNXDaemonClientTest.LoadModelRequiresRunning
+[       OK ] ONNXDaemonClientTest.LoadModelRequiresRunning (0 ms)
+[ RUN      ] ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg
+[       OK ] ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg (0 ms)
+[ RUN      ] ONNXDaemonClientTest.RequestsInFlightChangesDuringCall
+[       OK ] ONNXDaemonClientTest.RequestsInFlightChangesDuringCall (0 ms)
+[----------] 4 tests from ONNXDaemonClientTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 4 tests.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"ONNXDaemonClientTest" end time: Aug 07 19:32 EDT
+"ONNXDaemonClientTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Aug 07 19:32 EDT

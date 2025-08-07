@@ -1,0 +1,68 @@
+name: Core Matrix (ONNX Runtime ON/OFF)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  core-matrix:
+    name: Core build and tests (USE_ONNX_RUNTIME=${{ matrix.runtime }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [ "OFF", "ON" ]
+
+    env:
+      BUILD_DIR: build-core
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      BUILD_UI_ONLY: "OFF"
+      BUILD_TESTS: "ON"
+      BUILD_LEGACY_TESTS: "OFF"
+      BUILD_PLUGIN: "OFF"
+      ENABLE_DAEMON_IPC: "OFF"
+      USE_ONNX_RUNTIME: ${{ matrix.runtime }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        run: |
+          uname -a
+          cmake --version
+          brew --version
+
+      - name: Install ONNX Runtime (when runtime=ON)
+        if: matrix.runtime == 'ON'
+        run: |
+          brew update
+          brew install onnxruntime || true
+          ls -l /opt/homebrew/lib | sed -n '1,200p' || true
+          ls -l /opt/homebrew/Cellar/onnxruntime || true
+
+      - name: Configure
+        run: |
+          cmake -S . -B "${BUILD_DIR}" \
+            -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
+            -DBUILD_UI_ONLY="${BUILD_UI_ONLY}" \
+            -DBUILD_TESTS="${BUILD_TESTS}" \
+            -DBUILD_LEGACY_TESTS="${BUILD_LEGACY_TESTS}" \
+            -DBUILD_PLUGIN="${BUILD_PLUGIN}" \
+            -DUSE_ONNX_RUNTIME="${USE_ONNX_RUNTIME}" \
+            -DENABLE_DAEMON_IPC="${ENABLE_DAEMON_IPC}"
+
+      - name: Build
+        run: cmake --build "${BUILD_DIR}" -j 4
+
+      - name: Run tests (all)
+        run: ctest --test-dir "${BUILD_DIR}" --output-on-failure
+
+      - name: Summarize ONNX status
+        run: |
+          echo "USE_ONNX_RUNTIME=${USE_ONNX_RUNTIME}"
+          if [[ "${USE_ONNX_RUNTIME}" == "ON" ]]; then
+            test -f /opt/homebrew/lib/libonnxruntime.dylib && echo "ONNX lib present" || echo "ONNX lib missing"
+          fi

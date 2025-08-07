@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_onnx_daemon_client[1]_tests.cmake")
+else()
+  add_test(test_onnx_daemon_client_NOT_BUILT test_onnx_daemon_client_NOT_BUILT)
+endif()

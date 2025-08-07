@@ -1,0 +1,5 @@
+if(EXISTS "/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain[1]_tests.cmake")
+  include("/Users/laurencedoby/Desktop/Development/spawn-clone/build-core/test_effects_chain[1]_tests.cmake")
+else()
+  add_test(test_effects_chain_NOT_BUILT test_effects_chain_NOT_BUILT)
+endif()

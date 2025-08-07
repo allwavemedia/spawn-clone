@@ -1,76 +1,52 @@
-//==============================================================================
-// ONNXDaemonClient.h
-// Production-ready client for persistent ONNX Python daemon
-// Integrated with JUCE framework for SpawnClone
-//==============================================================================
-
+// SPDX-License-Identifier: MIT
 #pragma once
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <random>
+#include <string>
+#include <vector>
 
-#include <juce_core/juce_core.h>
-#include <memory>
+namespace spawnclone::ai {
 
-/**
- * Production-ready client for persistent ONNX Python daemon.
- * Provides thread-safe, high-performance model inference with session caching.
- */
-class ONNXDaemonClient
-{
+// Minimal, dependency-light ONNX daemon client stub for Sprint 2.
+// Purpose: Provide a robust, deterministic interface suitable for unit/integration tests
+// without requiring ONNX Runtime or Python daemon at this stage.
+class ONNXDaemonClient {
 public:
+    struct Status {
+        bool running { false };
+        double averageInferenceMs { 0.0 };
+        int requestsInFlight { 0 };
+    };
+
     ONNXDaemonClient();
-    ~ONNXDaemonClient();
-    
-    // Lifecycle management
-    bool startDaemon();
-    void shutdownDaemon();
-    bool isDaemonRunning() const;
-    
-    // Model operations
-    bool loadModel(const juce::String& modelName);
-    bool isModelLoaded(const juce::String& modelName) const;
-    juce::String getModelStatus(const juce::String& modelName) const;
-    
-    // Pattern generation
-    struct GenerationResult
-    {
-        bool success = false;
-        juce::String errorMessage;
-        juce::Array<juce::Array<float>> patternData;
-        juce::Array<int> outputShape;
-        double inferenceTimeMs = 0.0;
-        
-        GenerationResult() = default;
-    };
-    
-    GenerationResult generatePattern(const juce::String& modelName, 
-                                   const juce::var& parameters = juce::var());
-    
-    // Status and monitoring
-    struct DaemonStatus
-    {
-        bool running = false;
-        juce::StringArray loadedModels;
-        double uptimeSeconds = 0.0;
-        int totalRequests = 0;
-        juce::String lastError;
-    };
-    
-    DaemonStatus getDaemonStatus() const;
-    
-    // Performance monitoring
-    double getAverageInferenceTime() const;
-    int getTotalRequests() const;
-    
+
+    // Lifecycle
+    bool startDaemon() noexcept;
+    void shutdownDaemon() noexcept;
+    bool isDaemonRunning() const noexcept;
+
+    // Status/metrics
+    Status getDaemonStatus() const noexcept;
+    double getAverageInferenceTime() const noexcept;
+
+    // Model operations (no-ops in stub, persistent flags for tests)
+    bool loadModel(const std::string& modelPath) noexcept;
+
+    // Inference (deterministic pattern for tests; updates avg inference time)
+    std::vector<float> generatePattern(const std::string& mode, std::size_t length = 128) noexcept;
+
 private:
-    struct Impl;
-    std::unique_ptr<Impl> pImpl;
-    
-    // Thread safety
-    juce::CriticalSection commandLock;
-    
-    // Internal methods
-    juce::String sendCommand(const juce::String& jsonCommand) const;
-    bool parseDaemonResponse(const juce::String& response, juce::var& result) const;
-    juce::String createJsonCommand(const juce::String& action, const juce::var& parameters = juce::var()) const;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ONNXDaemonClient)
+    void updateAverageMs(double elapsedMs) noexcept;
+
+    std::atomic<bool> running { false };
+    std::atomic<int> inFlight { 0 };
+    std::atomic<double> avgMs { 0.0 };
+    std::atomic<bool> modelLoaded { false };
+
+    // Deterministic RNG for repeatable tests
+    std::mt19937 rng;
 };
+
+} // namespace spawnclone::ai
