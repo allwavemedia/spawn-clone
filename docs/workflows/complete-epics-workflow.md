@@ -20,7 +20,7 @@ Progress summary (as of 2025‑08‑07)
 - [x] Unit tests added and passing:
   - PluginCoreSmokeTest (link/init)
   - SampleEngineTest (size/energy/phase/reset)
-- [ ] Docs consolidation (canonical epics structure)
+- [x] Docs consolidation (canonical epics structure)
 - [x] Engine MVP complete (SynthVoice, EffectsChain, InstrumentLibraryManager)
 - [ ] ONNX/AI integration completion
 - [ ] Plugin integration + headless E2E
@@ -30,13 +30,13 @@ Principles
 - [x] Keep BUILD_UI_ONLY=ON as default CI job until plugin is ready.
 - [x] Add new targets behind feature flags to avoid breaking green builds.
 - [x] Make small, reviewable PRs; each PR includes tests and docs updates.
-- [ ] Canonicalize documents and archive duplicates to prevent drift.
+- [x] Canonicalize documents and archive duplicates to prevent drift.
 
 Status Snapshot (inputs)
 - [x] Phase 1 UI‑only green build complete (ui_tests target; WaveformDisplayComponent tests pass).
 - [x] CMake refactor started: gates in place; legacy/ONNX‑heavy demos wrapped under BUILD_LEGACY_TESTS where applicable.
 - [x] Core‑only job established and green (39/39 tests).
-- [ ] Docs: canonical epics directories not yet created (planned below).
+- [x] Docs: canonical epics directories created; legacy files migrated with archive banners; link checker added.
 - Epic statuses:
   - [x] Epic 7: largely complete (multiple completion/final docs).
   - [x] Epic 8: complete (8.1–8.4 story completion docs).
@@ -51,11 +51,11 @@ Repository Switches (CMake options)
 - [x] ENABLE_DAEMON_IPC: OFF (guard real daemon process/IPC paths; ON enables process hooks)
 
 CI Jobs (matrix)
-- [x] ui‑only: BUILD_UI_ONLY=ON (validated locally; CI wiring pending)
+- [x] ui‑only: BUILD_UI_ONLY=ON (wired in .github/workflows/core-matrix.yml)
 - [x] core‑tests: BUILD_UI_ONLY=OFF; build plugin_core + unit tests (validated locally; 39/39 pass)
 - [x] ai‑integration: BUILD_UI_ONLY=OFF; USE_ONNX_RUNTIME={ON,OFF} (CI: .github/workflows/core-matrix.yml)
-- [ ] plugin: BUILD_UI_ONLY=OFF; BUILD_PLUGIN=ON
-- [ ] e2e: BUILD_UI_ONLY=OFF; headless render tests
+- [ ] plugin: BUILD_UI_ONLY=OFF; BUILD_PLUGIN=ON (stubbed in CI; enable post‑PR 5)
+- [ ] e2e: BUILD_UI_ONLY=OFF; headless render tests (stubbed in CI; enable post‑PR 6)
 
 Milestones and PR Sequence
 
@@ -74,7 +74,7 @@ Deliverables
 - [x] Unit tests: voice allocation, file‑backed sample playback
 
 PRs
-1) Docs Reorg PR (docs only) — Status: Open
+1) Docs Reorg PR (docs only) — Status: Completed
    Summary:
    - Canonicalize epic documents and purge duplicates to create a single source of truth for planning and status.
 
@@ -85,10 +85,10 @@ PRs
    - Provide an index (docs/epics/README.md) with epic statuses and links
 
    Tasks:
-   - [ ] Create directories and move files
-   - [ ] Add archive banners to superseded files
-   - [ ] Update links in: docs/Project_Status_Summary_*.md, docs/SpawnClone_Workflow_Guidance.md
-   - [ ] Add docs/epics/README.md (table of epics, status, links)
+   - [x] Create directories and move files
+   - [x] Add archive banners to superseded files
+   - [x] Update links in: docs/Project_Status_Summary_*.md, docs/SpawnClone_Workflow_Guidance.md
+   - [x] Add docs/epics/README.md (table of epics, status, links)
    - [ ] PR description includes before/after link map
 
    Artifacts:
@@ -139,7 +139,7 @@ PRs
    Meta:
    - Branch: engine/mvp-core
    - Status: Merged
-   - Follow-ups: [ ] Add nightly sanitizers job (ASan/UBSan) for core targets
+   - Follow-ups: [x] Add nightly sanitizers job (ASan/UBSan) for core targets
 
 ## Sprint 2 (ONNX/AI Integration)
 Goal
@@ -244,10 +244,10 @@ Engine/core tests (core job; plugin_core + unit tests)
   - Result: 39/39 passing (PluginCoreSmokeTest.*, SampleEngineTest.*, SynthVoiceTest.*, EffectsChainTest.*, InstrumentLibraryManagerTest.*, VoiceManagerTest.*, SampleEngineFilePlaybackTest.*, ONNXDaemonClientTest.*)
 
 AI integration tests (matrix) – to be enabled in Sprint 2
-- [ ] `cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_UI_ONLY=OFF -DBUILD_TESTS=ON -DUSE_ONNX_RUNTIME=ON`
-- [ ] `cmake --build build -j 8`
-- [ ] `ctest --test-dir build -R epic7_ai_integration --output-on-failure`
-- [ ] Repeat with `-DUSE_ONNX_RUNTIME=OFF` for fallback.
+- [x] `cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_UI_ONLY=OFF -DBUILD_TESTS=ON -DUSE_ONNX_RUNTIME=ON`
+- [x] `cmake --build build -j 8`
+- [x] `ctest --test-dir build -R epic7_ai_integration --output-on-failure`
+- [x] Repeat with `-DUSE_ONNX_RUNTIME=OFF` for fallback.
 
 Plugin build (manual gate) – Sprint 3
 - [ ] `cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_UI_ONLY=OFF -DBUILD_PLUGIN=ON`
@@ -259,12 +259,12 @@ E2E headless render tests – Sprint 3
 Risk Controls
 - [x] Keep engine work behind `if(NOT BUILD_UI_ONLY)`; never break `ui_tests`.
 - [x] Use target‑specific include directories; avoid accidental link of stubs/demos.
-- [ ] Deterministic seeds in AI tests; assertions tolerant to minor numeric drift.
+- [x] Deterministic seeds in AI tests; assertions tolerant to minor numeric drift.
 
 Documentation Governance
-- [ ] Canonicalize: `docs/epics/{epic}/index.md`, `status.md`, `plan.md`, `reports/`
+- [x] Canonicalize: `docs/epics/{epic}/index.md`, `status.md`, `plan.md`, `reports/`
 - [ ] Archive banner for superseded docs; move to `docs/archive/`
-- [ ] `docs/epics/README.md`: single source of truth for epic mapping and status.
+- [x] `docs/epics/README.md`: single source of truth for epic mapping and status.
 
 Change Log Template (PR footer)
 - Summary:
@@ -276,8 +276,8 @@ Change Log Template (PR footer)
 - Risks & mitigations:
 
 Appendix: Initial Task Checklist (Do Now)
-- [ ] Create/normalize `docs/epics/` directories and move existing Epic7/8/9 docs under canonical structure.
-- [ ] Add `docs/epics/README.md` with current status table.
+- [x] Create/normalize `docs/epics/` directories and move existing Epic7/8/9 docs under canonical structure.
+- [x] Add `docs/epics/README.md` with current status table.
 - [x] CMake: add `plugin_core` (STATIC), guarded by `if(NOT BUILD_UI_ONLY)`.
 - [x] Add tests under `tests/unit/audio_engine_tests` (core smoke + SampleEngine).
 - [x] Establish core job runbook and verify tests green.

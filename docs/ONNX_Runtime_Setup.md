@@ -30,7 +30,7 @@ brew upgrade onnxruntime
 If your ONNX Runtime version differs, update the CMake variables in `CMakeLists.txt` accordingly:
 ```cmake
 set(ONNXRUNTIME_INCLUDE_DIR /opt/homebrew/Cellar/onnxruntime/1.22.1/include/onnxruntime)
-set(ONNXRUNTIME_LIBRARY /opt/homebrew/lib/libonnxruntime.dylylb)
+set(ONNXRUNTIME_LIBRARY /opt/homebrew/lib/libonnxruntime.dylib)
 ```
 
 Note: If you use a custom installation, you can also set:

@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace spawnclone::ai {
 
@@ -37,6 +38,26 @@ public:
     // Inference (deterministic pattern for tests; updates avg inference time)
     std::vector<float> generatePattern(const std::string& mode, std::size_t length = 128) noexcept;
 
+    // Configuration and telemetry
+    struct Config {
+        int maxRetries { 0 };           // number of retries after initial attempt
+        int requestTimeoutMs { 100 };   // reserved for future IPC integration
+        bool failureInjection { false };// when true, allows deterministic failure scenarios in tests
+    };
+    struct Telemetry {
+        uint64_t calls { 0 };
+        uint64_t failures { 0 };
+        double lastMs { 0.0 };
+        std::string lastError;
+    };
+
+    void setConfig(const Config& c) noexcept;
+    Config getConfig() const noexcept;
+    Telemetry getTelemetry() const noexcept;
+
+    // Health: basic check for stub implementation
+    bool isHealthy() const noexcept;
+
 private:
     void updateAverageMs(double elapsedMs) noexcept;
 
@@ -47,6 +68,14 @@ private:
 
     // Deterministic RNG for repeatable tests
     std::mt19937 rng;
+
+    // Config and telemetry
+    Config config {};
+    std::atomic<uint64_t> totalCalls { 0 };
+    std::atomic<uint64_t> totalFailures { 0 };
+    std::atomic<double> lastMsValue { 0.0 };
+    mutable std::mutex telemetryMutex;
+    std::string lastError;
 };
 
 } // namespace spawnclone::ai

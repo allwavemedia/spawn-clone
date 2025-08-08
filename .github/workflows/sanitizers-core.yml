@@ -1,0 +1,55 @@
+name: Nightly Sanitizers (Core)
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  asan-ubsan-core:
+    name: Core with ASan/UBSan
+    runs-on: macos-latest
+    env:
+      BUILD_DIR: build-sanitizers
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      BUILD_UI_ONLY: "OFF"
+      BUILD_TESTS: "ON"
+      BUILD_LEGACY_TESTS: "OFF"
+      BUILD_PLUGIN: "OFF"
+      ENABLE_DAEMON_IPC: "OFF"
+      USE_ONNX_RUNTIME: "OFF"
+      # Sanitizer runtime options (tune as needed)
+      ASAN_OPTIONS: "detect_leaks=1,check_initialization_order=1,strict_init_order=1"
+      UBSAN_OPTIONS: "print_stacktrace=1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          uname -a
+          clang --version || true
+          cmake --version
+
+      - name: Configure (ASan/UBSan)
+        run: |
+          cmake -S . -B "${BUILD_DIR}" \
+            -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
+            -DBUILD_UI_ONLY="${BUILD_UI_ONLY}" \
+            -DBUILD_TESTS="${BUILD_TESTS}" \
+            -DBUILD_LEGACY_TESTS="${BUILD_LEGACY_TESTS}" \
+            -DBUILD_PLUGIN="${BUILD_PLUGIN}" \
+            -DUSE_ONNX_RUNTIME="${USE_ONNX_RUNTIME}" \
+            -DENABLE_DAEMON_IPC="${ENABLE_DAEMON_IPC}" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build
+        run: cmake --build "${BUILD_DIR}" -j 3
+
+      - name: Run tests (sanitizers)
+        run: |
+          ctest --test-dir "${BUILD_DIR}" --output-on-failure -j 1

@@ -82,6 +82,20 @@ std::vector<float> ONNXDaemonClient::generatePattern(const std::string& mode, st
 {
     // Emulate request lifecycle
     inFlight.fetch_add(1, std::memory_order_acq_rel);
+    totalCalls.fetch_add(1, std::memory_order_acq_rel);
+
+    // Optional deterministic failure injection for tests (off by default)
+    if (config.failureInjection && mode == "fail")
+    {
+        {
+            std::lock_guard<std::mutex> lock(telemetryMutex);
+            lastError = "Injected failure: mode=fail";
+        }
+        totalFailures.fetch_add(1, std::memory_order_acq_rel);
+        lastMsValue.store(0.0, std::memory_order_release);
+        inFlight.fetch_sub(1, std::memory_order_acq_rel);
+        return {};
+    }
 
     // Simulate deterministic "compute" time based on mode + length
     // No sleeping; just compute a value to fold into avgMs
@@ -122,10 +136,45 @@ std::vector<float> ONNXDaemonClient::generatePattern(const std::string& mode, st
     }
 #endif
 
+    // Update telemetry
+    lastMsValue.store(simulatedMs, std::memory_order_release);
+    {
+        std::lock_guard<std::mutex> lock(telemetryMutex);
+        lastError.clear();
+    }
+
     updateAverageMs(simulatedMs);
 
     inFlight.fetch_sub(1, std::memory_order_acq_rel);
     return out;
+}
+
+void ONNXDaemonClient::setConfig(const Config& c) noexcept
+{
+    config = c;
+}
+
+ONNXDaemonClient::Config ONNXDaemonClient::getConfig() const noexcept
+{
+    return config;
+}
+
+ONNXDaemonClient::Telemetry ONNXDaemonClient::getTelemetry() const noexcept
+{
+    Telemetry t;
+    t.calls = totalCalls.load(std::memory_order_acquire);
+    t.failures = totalFailures.load(std::memory_order_acquire);
+    t.lastMs = lastMsValue.load(std::memory_order_acquire);
+    {
+        std::lock_guard<std::mutex> lock(telemetryMutex);
+        t.lastError = lastError;
+    }
+    return t;
+}
+
+bool ONNXDaemonClient::isHealthy() const noexcept
+{
+    return running.load(std::memory_order_acquire) && inFlight.load(std::memory_order_acquire) == 0;
 }
 
 void ONNXDaemonClient::updateAverageMs(double elapsedMs) noexcept

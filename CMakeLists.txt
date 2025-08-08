@@ -17,6 +17,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(Libs/JUCE)
 
 # -----------------------------------------------------------------------------
+# Global ONNX Runtime detection (available to tests and non-plugin targets)
+# This ensures matrix CI with BUILD_PLUGIN=OFF can still detect ONNX presence.
+# -----------------------------------------------------------------------------
+if(NOT DEFINED ONNXRUNTIME_FOUND)
+    option(USE_ONNX_RUNTIME "Enable ONNX Runtime for Quality Mode" ON)
+    if(USE_ONNX_RUNTIME)
+        # Default Homebrew paths on macOS; can be overridden by environment/cache
+        set(ONNXRUNTIME_INCLUDE_DIR /opt/homebrew/Cellar/onnxruntime/1.22.1/include/onnxruntime)
+        set(ONNXRUNTIME_LIBRARY /opt/homebrew/lib/libonnxruntime.dylib)
+
+        if(EXISTS ${ONNXRUNTIME_INCLUDE_DIR}/onnxruntime_cxx_api.h AND EXISTS ${ONNXRUNTIME_LIBRARY})
+            set(ONNXRUNTIME_FOUND TRUE)
+            set(ONNXRUNTIME_INCLUDE_DIRS ${ONNXRUNTIME_INCLUDE_DIR})
+            set(ONNXRUNTIME_LIBRARIES ${ONNXRUNTIME_LIBRARY})
+            message(STATUS "Global ONNX Runtime found for tests and non-plugin targets")
+        else()
+            set(ONNXRUNTIME_FOUND FALSE)
+            message(STATUS "Global ONNX Runtime not found at expected Homebrew paths")
+        endif()
+    else()
+        set(ONNXRUNTIME_FOUND FALSE)
+        message(STATUS "Global ONNX Runtime disabled (USE_ONNX_RUNTIME=OFF)")
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
 # UI-only test target (Phase 1 green-build)
 # -----------------------------------------------------------------------------
 if(BUILD_UI_ONLY)
@@ -1514,7 +1540,7 @@ endif()
         if(ONNXRUNTIME_FOUND)
             target_include_directories(test_Epic7_AI_Integration PRIVATE ${ONNXRUNTIME_INCLUDE_DIRS})
             target_link_libraries(test_Epic7_AI_Integration PRIVATE ${ONNXRUNTIME_LIBRARIES})
-            target_compile_definitions(test_Epic7_AI_Integration PRIVATE USE_ONNX_RUNTIME=1)
+            target_compile_definitions(test_Epic7_AI_Integration PRIVATE ONNX_RUNTIME_AVAILABLE=1)
         endif()
 
         target_compile_features(test_Epic7_AI_Integration PRIVATE cxx_std_17)
@@ -1524,6 +1550,15 @@ endif()
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
         )
+
+        # Offline render placeholder E2E (to be wired to plugin render in PR 6)
+        add_executable(test_offline_render
+            tests/e2e/audio/offline_render_tests.cpp
+        )
+        target_link_libraries(test_offline_render PRIVATE
+            gtest_main
+        )
+        target_compile_features(test_offline_render PRIVATE cxx_std_17)
 
         # Epic 7 Security Audit Test
         add_executable(test_Epic7_Security_Audit
@@ -1600,6 +1635,7 @@ endif()
         gtest_discover_tests(test_Epic7_Security_Audit)
         gtest_discover_tests(test_Epic7_Error_Handling)
         gtest_discover_tests(test_Epic7_Cross_Platform)
+        gtest_discover_tests(test_offline_render)
 
         message(STATUS "E2E Testing enabled - Building comprehensive test suite including Epic 7 AI validation and security audit")
     else()

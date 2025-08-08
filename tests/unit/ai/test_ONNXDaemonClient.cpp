@@ -68,3 +68,39 @@ TEST(ONNXDaemonClientTest, RequestsInFlightChangesDuringCall)
     auto st = client.getDaemonStatus();
     EXPECT_EQ(st.requestsInFlight, 0);
 }
+
+TEST(ONNXDaemonClientTest, ConfigTelemetryAndHealth)
+{
+    ONNXDaemonClient client;
+    EXPECT_TRUE(client.startDaemon());
+    EXPECT_TRUE(client.isHealthy());
+
+    // Default config round-trip
+    auto cfg = client.getConfig();
+    EXPECT_EQ(cfg.maxRetries, 0);
+    EXPECT_EQ(cfg.requestTimeoutMs, 100);
+    EXPECT_FALSE(cfg.failureInjection);
+
+    // Make a normal call and inspect telemetry
+    (void)client.generatePattern("speed", 32);
+    auto t1 = client.getTelemetry();
+    EXPECT_EQ(t1.failures, 0u);
+    EXPECT_GT(t1.calls, 0u);
+    EXPECT_GE(t1.lastMs, 0.0);
+    EXPECT_TRUE(client.isHealthy()); // inFlight should settle to 0
+
+    // Enable deterministic failure injection and make a failure call
+    cfg.failureInjection = true;
+    client.setConfig(cfg);
+    auto out = client.generatePattern("fail", 16);
+    EXPECT_TRUE(out.empty());
+
+    auto t2 = client.getTelemetry();
+    EXPECT_EQ(t2.failures, t1.failures + 1);
+    EXPECT_EQ(t2.calls, t1.calls + 1);
+    EXPECT_EQ(t2.lastMs, 0.0);
+    EXPECT_FALSE(t2.lastError.empty());
+
+    // Health remains true after the call finishes
+    EXPECT_TRUE(client.isHealthy());
+}

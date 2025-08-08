@@ -32,9 +32,10 @@ VoiceManagerTest.NoteOffReducesActiveCount 3 0.00468254
 SampleEngineFilePlaybackTest.LoadFromTextFileAndRender 3 0.00483913
 VoiceManagerTest 3 0.00504193
 SampleEngineFilePlaybackTest 3 0.00495951
-ONNXDaemonClientTest.LifecycleAndStatus 2 0.00731148
-ONNXDaemonClientTest.LoadModelRequiresRunning 2 0.00774648
-ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg 1 0.0155037
-ONNXDaemonClientTest.RequestsInFlightChangesDuringCall 2 0.00726429
-ONNXDaemonClientTest 1 0.014701
+ONNXDaemonClientTest.LifecycleAndStatus 3 0.00505258
+ONNXDaemonClientTest.LoadModelRequiresRunning 3 0.00499565
+ONNXDaemonClientTest.GeneratePatternDeterministicAndUpdatesAvg 2 0.00746744
+ONNXDaemonClientTest.RequestsInFlightChangesDuringCall 3 0.00500724
+ONNXDaemonClientTest 2 0.0071849
+ONNXDaemonClientTest.ConfigTelemetryAndHealth 1 0.0148149
 ---

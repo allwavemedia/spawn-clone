@@ -66,3 +66,95 @@ jobs:
           if [[ "${USE_ONNX_RUNTIME}" == "ON" ]]; then
             test -f /opt/homebrew/lib/libonnxruntime.dylib && echo "ONNX lib present" || echo "ONNX lib missing"
           fi
+
+  ui-only:
+    name: UI-only build and tests
+    runs-on: macos-latest
+
+    env:
+      BUILD_DIR: build-ui
+      CMAKE_BUILD_TYPE: Debug
+      BUILD_UI_ONLY: "ON"
+      BUILD_TESTS: "ON"
+      BUILD_LEGACY_TESTS: "OFF"
+      BUILD_PLUGIN: "OFF"
+      ENABLE_DAEMON_IPC: "OFF"
+      USE_ONNX_RUNTIME: "OFF"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          cmake -S . -B "${BUILD_DIR}" \
+            -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
+            -DBUILD_UI_ONLY="${BUILD_UI_ONLY}" \
+            -DBUILD_TESTS="${BUILD_TESTS}"
+
+      - name: Build
+        run: cmake --build "${BUILD_DIR}" -j 4
+
+      - name: Run tests (ui-only)
+        run: ctest --test-dir "${BUILD_DIR}" --output-on-failure
+
+  plugin:
+    name: Plugin build (stub - enable when plugin target ready)
+    if: ${{ false }}
+    runs-on: macos-latest
+
+    env:
+      BUILD_DIR: build-plugin
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      BUILD_UI_ONLY: "OFF"
+      BUILD_TESTS: "ON"
+      BUILD_LEGACY_TESTS: "OFF"
+      BUILD_PLUGIN: "ON"
+      ENABLE_DAEMON_IPC: "OFF"
+      USE_ONNX_RUNTIME: "OFF"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure (stub)
+        run: echo "Plugin job stub - to be enabled once plugin target lands"
+
+  e2e:
+    name: E2E headless render tests (stub)
+    if: ${{ false }}
+    runs-on: macos-latest
+    needs: plugin
+
+    env:
+      BUILD_DIR: build
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      BUILD_UI_ONLY: "OFF"
+      BUILD_TESTS: "ON"
+      BUILD_PLUGIN: "ON"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stub
+        run: echo "E2E job stub - will run offline_render tests"
+
+  packaging:
+    name: Packaging (DMG) (stub)
+    if: ${{ false }}
+    runs-on: macos-latest
+    needs: plugin
+
+    env:
+      BUILD_DIR: build
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      BUILD_UI_ONLY: "OFF"
+      BUILD_PLUGIN: "ON"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stub
+        run: echo "Packaging job stub - produce DMG artifacts when enabled"
